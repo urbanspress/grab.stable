@@ -1,0 +1,25 @@
+# Build artifacts
+/bin/
+/dist/
+/build/
+/coverage/
+*.test
+*.prof
+coverage.out
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.log
