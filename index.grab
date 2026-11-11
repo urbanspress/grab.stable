@@ -1,0 +1,3 @@
+set name to "GRAB"
+show "Hello from " joined with name
+show record {active: yes, count: 3, note: nothing}

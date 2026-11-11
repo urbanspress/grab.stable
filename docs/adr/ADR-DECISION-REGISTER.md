@@ -43,14 +43,14 @@ The following questions remain open; this register does not decide them:
 6. **Module and browser security boundary:** How should server-only and browser-safe modules be identified, and what serialization, escaping and authorization contracts are required?
 7. **Frontend strategy:** What specific React/TypeScript interoperability use case is intended, if any? Is a GRAB browser compiler wanted, and what target and compatibility obligations would it carry?
 8. **Rendering model:** Is incremental server rendering with selective client interactivity needed? If so, what rendering, hydration and component model should it use?
-9. **HTML templates:** How should `.grab.html` templates be loaded and reused, what interpolation syntax should they use, and what context-aware escaping and output rules are required?
+9. **HTML templates:** The owner approved a separate future `.grab.html` template milestone on November 10, 2026. That milestone must define the precise interpolation syntax, template lookup and reuse rules, value-binding contract, context-aware escaping and output behavior before implementation.
 
 A future proposal must resolve the relevant questions and receive owner approval before these deferred details become architectural commitments or implementation work.
 
-## Unapproved future roadmap proposals
+## Future roadmap proposals and approved future milestones
 
-### HTML template files
+### HTML template files — approved future milestone
 
-**Status: UNAPPROVED FUTURE ROADMAP PROPOSAL.** The preferred direction is Option B: keep program logic in `.grab` files and place reusable HTML in `.grab.html` files, with an explicit interpolation form such as `{show variable}`. A template file could then be reused by multiple `.grab` programs without copying its HTML. The `show block` / `show html` approach is not selected as the preferred direction.
+**Status: APPROVED FUTURE MILESTONE; NOT PART OF GRAB 0.1.** On November 10, 2026, the project owner approved a separate milestone for reusable HTML templates, with `.grab.html` as the preferred direction. Program logic remains in `.grab` files, and a `.grab.html` template is intended to be reusable by multiple `.grab` programs. The template model will interpolate GRAB values and provide context-aware HTML escaping. An explicit form such as `{show variable}` is a design example, not a frozen syntax decision. The `show block` / `show html` approach is not the preferred direction.
 
-This records a future design preference only. It adds no milestone and approves no syntax, automatic output behavior, template lookup or inclusion rules, execution model, escaping policy, or browser integration. Those details require a separate template contract and owner approval. HTML templates are outside GRAB 0.1 and must not be treated as approved for implementation.
+This approval establishes the milestone and its goals only. The milestone must specify and validate the exact interpolation grammar, template lookup and reuse rules, how values are bound from `.grab` programs, context handling and escaping rules, output behavior, and diagnostics before implementation begins. It does not approve a browser compiler, React/TypeScript interoperability, or server rendering. HTML templates remain outside GRAB 0.1.

@@ -1,0 +1,23 @@
+# collections.grab — Lists, maps, and records side by side.
+# Demonstrates: nested composite values, insertion-order preservation,
+# trailing commas, empty collections, and canonical display.
+# Note: list, map, and record literals must be single-line in GRAB 0.1.
+
+# List: ordered, heterogeneous elements (trailing comma is fine).
+set tags to ["urgent", "new", "sale",]
+show tags
+show []
+
+# Map: text keys, insertion order preserved (single line, trailing comma allowed).
+set config to {"host": "localhost", "port": "5432", "tls": yes,}
+show config
+
+# Record: identifier fields, source order preserved.
+set row to record {id: 1, name: "widget", price: 9.99, available: yes, notes: nothing,}
+show row
+
+# Nested: a list containing two records.
+set first_item to record {code: "X1", qty: 10}
+set second_item to record {code: "X2", qty: 5}
+set inventory to [first_item, second_item]
+show inventory

@@ -1,0 +1,7 @@
+# hello.grab — The approved first vertical slice from the GRAB 0.1 specification.
+# Demonstrates: set, show, text literals, joined with, and variables.
+
+set name to "Allen"
+set language to "GRAB"
+show "Welcome to " joined with language
+show "Hello " joined with name

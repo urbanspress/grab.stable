@@ -1,0 +1,6 @@
+# product.grab — The approved portable-values conformance case from Section 9
+# of the GRAB 0.1 specification.
+# Demonstrates: record with every core value kind, canonical display.
+
+set product to record {sku: "A-17", active: yes, stock: 12, price: 19.95, ratio: 1.25e-2, labels: ["new", "sale"], payload: b"\x00\xff", note: nothing}
+show product

@@ -91,6 +91,7 @@ func TestLexerLexErrors(t *testing.T) {
 		{name: "incomplete text escape", input: `"a\`, kind: LexInvalidEscape},
 		{name: "unterminated text", input: `"abc`, kind: LexUnterminatedText},
 		{name: "raw newline in text", input: "\"a\nb\"", kind: LexUnterminatedText},
+		{name: "raw carriage return in text", input: "\"a\rb\"", kind: LexUnterminatedText},
 		{name: "malformed exponent", input: "1e+", kind: LexMalformedNumber},
 		{name: "decimal point without fraction", input: "1.", kind: LexMalformedNumber},
 		{name: "invalid byte escape", input: `b"\x0"`, kind: LexInvalidEscape},

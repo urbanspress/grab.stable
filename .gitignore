@@ -19,6 +19,7 @@ coverage.out
 .idea/
 .DS_Store
 Thumbs.db
+.codex/
 
 # Temporary files
 *.tmp

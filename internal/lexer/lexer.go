@@ -224,16 +224,19 @@ func (l *Lexer) consumeDigits() {
 }
 
 func (l *Lexer) scanText(start Position) (Token, error) {
+	// The opening quote is the smallest meaningful location for a literal
+	// that never closes (specification Sections 6 and 8).
+	opening := Span{Start: start, End: l.reader.Position()}
 	for {
 		value, span, ok := l.reader.ReadRune()
 		if !ok {
-			return Token{}, &LexError{Kind: LexUnterminatedText, Span: Span{Start: start, End: l.reader.Position()}}
+			return Token{}, &LexError{Kind: LexUnterminatedText, Span: opening}
 		}
 		switch value {
 		case '"':
 			return l.token(TokenTextLiteral, start), nil
-		case '\n':
-			return Token{}, &LexError{Kind: LexUnterminatedText, Span: Span{Start: start, End: span.End}}
+		case '\n', '\r':
+			return Token{}, &LexError{Kind: LexUnterminatedText, Span: opening}
 		case '\\':
 			escaped, escapedSpan, ok := l.reader.ReadRune()
 			if !ok || !isTextEscape(escaped) {
@@ -315,10 +318,12 @@ func (l *Lexer) spanFrom(start Position) Span {
 	return Span{Start: start, End: l.reader.Position()}
 }
 
+// nextRuneIsDigit reports whether the rune immediately ahead (the character
+// right after the already-consumed '-') is an ASCII digit.  The '-' has been
+// consumed from l.reader before this helper is called, so we only need to
+// peek at the current position — no extra ReadRune is required.
 func (l *Lexer) nextRuneIsDigit() bool {
-	reader := *l.reader
-	reader.ReadRune()
-	value, ok := reader.PeekRune()
+	value, ok := l.reader.PeekRune()
 	return ok && isASCIIDigit(value)
 }
 

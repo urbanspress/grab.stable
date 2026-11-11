@@ -23,7 +23,7 @@ On November 10, 2026, the project owner approved this planning scope for GRAB 0.
 
 On November 10, 2026, the project owner approved the 0.1 syntax in Sections 3-4 as written, including identifiers and keywords, line and comment rules, string escapes, numeric and byte literal forms, list/map/record forms, and the statement and expression grammar. The runtime and diagnostic rules were approved separately as written on November 10, 2026. Numeric operators and equality remain deferred beyond 0.1.
 
-The approved syntax and value scope do not approve database connections, vendor-specific values, HTML templates, multiline strings, or interpolation. Those remain later work or separate proposals as described below.
+The approved syntax and value scope do not include database connections, vendor-specific values, HTML templates, multiline strings, or interpolation in GRAB 0.1. On November 10, 2026, the owner separately approved a future HTML-template milestone, with `.grab.html` as the preferred direction; its goals and remaining design work are recorded in `docs/adr/ADR-DECISION-REGISTER.md`. This later milestone does not change GRAB 0.1.
 
 ## 1. Purpose and scope
 
@@ -286,7 +286,7 @@ The following are outside this 0.1 proposal and require separate design before i
 - concurrency syntax and task-group semantics;
 - filesystem, network, database, server, UI and browser capabilities;
 - database connections, schema inspection, driver selection, vendor codecs and database-specific type mapping;
-- HTML template files, automatic HTML output, interpolation, and `show block` / `show html` template constructs. The separate architecture register records `.grab.html` files as the preferred direction of an unapproved future roadmap proposal;
+- HTML template files, automatic HTML output, interpolation, and `show block` / `show html` template constructs are outside GRAB 0.1. A separate future `.grab.html` template milestone was approved on November 10, 2026; see the architecture register for its approved goals and unresolved contract details;
 - mandatory IR, bytecode, VM, optimization and browser compilation.
 
 ## 11. Owner approval record
@@ -315,4 +315,4 @@ The project owner approved the following GRAB 0.1 decisions on November 10, 2026
 - [x] Resolve unbound names before execution, so such errors produce no program output.
 - [x] Use one-based Unicode-scalar columns and half-open source spans.
 
-The approved specification defines GRAB 0.1 language behavior. User-facing diagnostic wording and CLI exit codes remain CLI design details; features in Section 10 and the HTML template proposal in the architecture register are not part of 0.1.
+The approved specification defines GRAB 0.1 language behavior. User-facing diagnostic wording and CLI exit codes remain CLI design details; features in Section 10 and the separately approved future HTML-template milestone are not part of 0.1.

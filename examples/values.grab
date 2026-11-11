@@ -1,0 +1,48 @@
+# values.grab — Portable value showcase.
+# Demonstrates every core value kind available in GRAB 0.1:
+# text, Boolean, nothing, integer, exact decimal, binary64 float, bytes,
+# list, map, and record — plus canonical display for each.
+# Note: list, map, and record literals must be single-line in GRAB 0.1.
+
+show "--- text ---"
+set greeting to "Hello, GRAB!"
+show greeting
+
+show "--- booleans ---"
+show yes
+show no
+
+show "--- nothing ---"
+show nothing
+
+show "--- integers ---"
+show 0
+show 42
+show -100
+
+show "--- exact decimals ---"
+show 19.95
+show -5.5
+show 3.14159
+
+show "--- binary64 floats ---"
+show 1.25e-2
+show 6.022e23
+show -2.5e0
+
+show "--- bytes ---"
+show b"\x00\xff"
+show b"hello"
+show b"\x41\x42\x43"
+
+show "--- list ---"
+show [1, "two", nothing, yes]
+show []
+
+show "--- map ---"
+show {"sku": "A-17", "active": yes}
+show {}
+
+show "--- record ---"
+show record {name: "GRAB", version: 1, active: yes}
+show record {}

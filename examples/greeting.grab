@@ -1,0 +1,20 @@
+# greeting.grab — Text building with joined with.
+# Demonstrates: set, show, joined with chaining, and variable rebinding.
+
+set title to "Dr."
+set first to "Ada"
+set last to "Lovelace"
+
+# Build a full greeting from parts using left-to-right joining.
+set full_name to title joined with " " joined with first joined with " " joined with last
+show "Greetings, " joined with full_name joined with "!"
+
+# Rebind a variable to a completely different kind — GRAB 0.1 allows this.
+set full_name to 1815
+show "Born in year:"
+show full_name
+
+# Inline join without intermediate variable.
+set lang to "GRAB"
+set ver to "0.1"
+show lang joined with " version " joined with ver
