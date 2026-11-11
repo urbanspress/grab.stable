@@ -1,0 +1,56 @@
+# GRAB Architecture Decision Register
+
+## Purpose
+
+This register records the project owner's architecture planning decisions for proposed ADR-011 through ADR-018. It captures approved principles, limits their scope, and identifies work that remains deferred or requires a later decision. It does not claim that any described capability is implemented.
+
+**Approval date:** November 10, 2026
+
+## Document authority
+
+- GRAB Master Engineering Blueprint v1.0 remains the approved architectural baseline.
+- Blueprint v1.1 remains a proposed update and is not approved wholesale.
+- Existing baseline decisions ADR-001 through ADR-010 are preserved as recorded in Blueprint v1.0, Section 15. This register does not amend them.
+- The corrected repository structure on the final page of each blueprint is authoritative. The initial language-engine packages use the existing Go `internal/` tree: `internal/lexer`, `internal/parser`, `internal/ast`, `internal/interpreter`, and `internal/runtime`. Future package locations remain open unless separately decided.
+- ADR-011 through ADR-018 below are approved only at the planning or principle level stated in each entry. This register does not approve unresolved details or authorize implementation of deferred features.
+
+## Decision register
+
+| ADR | Decision and rationale | Scope and future dependencies | Explicit deferrals |
+|---|---|---|---|
+| **ADR-011 — Prepared applications and request isolation** | **MODIFY — approved principle.** Treat immutable prepared application definitions and request-owned execution isolation as design goals. This supports reuse while reducing cross-request state leakage. | A future server contract will define execution frames, ownership and lifecycle. It depends on defined runtime value/state behavior and server lifecycle requirements. | No request machinery or server lifecycle implementation in GRAB 0.1. Immutability boundaries, frame contents, state sharing and reload behavior remain open. |
+| **ADR-012 — Parse-on-load and bytecode caching** | **MODIFY — approved principle.** Retain parsing and validation once per application load as a future persistent-server goal, avoiding repeated frontend work. | The parse-on-load policy belongs to future server loading/reload design and depends on stable parsing and validation behavior. | Defer bytecode caching until a VM exists and measurements justify it. Cache format, keys, invalidation, dependency tracking and integrity rules are not approved. |
+| **ADR-013 — Optional intermediate representation** | **APPROVE.** An intermediate representation (IR) is optional, not a required pipeline stage. GRAB 0.1 uses an AST interpreter without a mandatory IR, keeping the first implementation direct and testable. | Reconsider an IR only in a later optimization/VM milestone, based on profiling and stabilized language semantics. Any later VM must preserve the conformance behavior of the interpreter. | No IR, bytecode VM, optimizer or native/JIT backend is part of GRAB 0.1. Their designs and implementation remain deferred. |
+| **ADR-014 — React/TypeScript interoperability and browser compiler** | **DEFER.** React/TypeScript interoperability and a GRAB-to-browser compiler remain roadmap proposals. Deferring them avoids committing the language to an undefined frontend integration model. | Reconsider under a future UI strategy, with an explicit use case and defined API/type contracts, module boundaries, serialization and browser/server responsibilities. | No particular React integration, generated client, component model, rendering model or browser compiler target is approved. This decision does not approve Blueprint v1.1 wholesale. |
+| **ADR-015 — Language concurrency and server resource policy** | **MODIFY — approved principle.** Preserve explicit language-level concurrency goals, consistent with baseline ADR-007, while separating language semantics from server backpressure and resource-management policy. This keeps language behavior distinct from deployment controls. | Future language/concurrency specifications will define task-group behavior. A separate server contract will define admission control, queueing, backpressure and resource budgets. These designs must coordinate without making Go implementation details the language semantics. | Exact task-group syntax and behavior, cancellation, error propagation, result ordering, fairness, shared state, server limits and overload handling remain open. Concurrency constructs are outside GRAB 0.1. |
+| **ADR-016 — Evidence-based performance goals** | **APPROVE.** Use reproducible, workload-specific benchmarks and evidence to set performance goals. This makes comparisons actionable and avoids unsupported performance claims. | Define workloads, environment, methodology and repeatability for the milestones where performance is relevant. Set numeric targets only after representative baselines exist. | No unsupported numeric targets or blanket performance claims are approved. Benchmark criteria do not replace GRAB 0.1 correctness and conformance requirements. |
+| **ADR-017 — Server/browser security separation** | **MODIFY — approved principle.** Preserve a clear security boundary between server-side capabilities and browser-delivered code. This reduces accidental exposure of secrets and privileged APIs. | Define detailed contracts at the relevant module, server, security and UI milestones, coordinating imports, data transfer and trust boundaries. | Module rules, serialization formats, output escaping behavior and authorization contracts remain deferred and unapproved. No browser architecture or implementation is part of GRAB 0.1. |
+| **ADR-018 — Incremental server rendering and browser interactivity** | **DEFER.** Incremental server rendering and selective browser interactivity remain future implementation proposals, not approved architecture. Their value and design depend on a chosen UI integration model. | Reconsider only after owner approval of a UI strategy and relevant server/browser contracts. Dependencies include ADR-014's integration decision and ADR-017's security boundaries. | No server-rendering model, hydration behavior, client compiler, component syntax or React compatibility is approved. This is not part of GRAB 0.1. |
+
+## GRAB 0.1 scope
+
+GRAB 0.1 remains limited to the formal language specification, lexer, parser, AST, basic interpreter/runtime, CLI, and conformance tests. Its purpose is a small, deterministic language foundation. It does not include a bytecode VM, mandatory IR, request machinery, server, UI, browser compiler, language-level concurrency implementation, or CMS.
+
+## Open design questions requiring future owner approval
+
+The following questions remain open; this register does not decide them:
+
+1. **Later language semantics:** The GRAB 0.1 value scope, syntax, semantics, diagnostics and conformance cases in `specifications/GRAB-LANGUAGE-SPEC-001.md` were approved on November 10, 2026. Numeric operators, equality, coercion, additional value kinds, modules and other features listed as deferred in that specification require future design and owner approval.
+2. **Runtime state and server lifecycle:** What is immutable in a prepared application, what state belongs to each request, how are shared values handled, and what are the load, reload, cancellation and cleanup rules?
+3. **Concurrency contract:** What syntax and semantics govern task creation and joining, result order, cancellation, failures, fairness, timeouts and shared mutable state? Which resource controls belong only to the server?
+4. **Server preparation and caching:** What constitutes an application load or reload, and what evidence would justify bytecode caching after a VM exists? If justified, what cache compatibility, invalidation and integrity rules are required?
+5. **Performance evidence:** Which workloads and environments represent GRAB's goals, and what numeric thresholds, if any, should be set after baselines are measured?
+6. **Module and browser security boundary:** How should server-only and browser-safe modules be identified, and what serialization, escaping and authorization contracts are required?
+7. **Frontend strategy:** What specific React/TypeScript interoperability use case is intended, if any? Is a GRAB browser compiler wanted, and what target and compatibility obligations would it carry?
+8. **Rendering model:** Is incremental server rendering with selective client interactivity needed? If so, what rendering, hydration and component model should it use?
+9. **HTML templates:** How should `.grab.html` templates be loaded and reused, what interpolation syntax should they use, and what context-aware escaping and output rules are required?
+
+A future proposal must resolve the relevant questions and receive owner approval before these deferred details become architectural commitments or implementation work.
+
+## Unapproved future roadmap proposals
+
+### HTML template files
+
+**Status: UNAPPROVED FUTURE ROADMAP PROPOSAL.** The preferred direction is Option B: keep program logic in `.grab` files and place reusable HTML in `.grab.html` files, with an explicit interpolation form such as `{show variable}`. A template file could then be reused by multiple `.grab` programs without copying its HTML. The `show block` / `show html` approach is not selected as the preferred direction.
+
+This records a future design preference only. It adds no milestone and approves no syntax, automatic output behavior, template lookup or inclusion rules, execution model, escaping policy, or browser integration. Those details require a separate template contract and owner approval. HTML templates are outside GRAB 0.1 and must not be treated as approved for implementation.
