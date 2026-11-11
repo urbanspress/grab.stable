@@ -27,6 +27,39 @@ const (
 	TokenRightBrace
 	TokenComma
 	TokenColon
+	TokenLeftParen
+	TokenRightParen
+	TokenDot
+	TokenIf
+	TokenOtherwise
+	TokenEnd
+	TokenRepeat
+	TokenTimes
+	TokenFor
+	TokenEach
+	TokenIn
+	TokenWhile
+	TokenMake
+	TokenUsing
+	TokenGive
+	TokenBack
+	TokenCall
+	TokenIs
+	TokenNot
+	TokenGreater
+	TokenLess
+	TokenThan
+	TokenAt
+	TokenLeast
+	TokenMost
+	TokenAnd
+	TokenOr
+	TokenPlus
+	TokenMinus
+	TokenDivided
+	TokenBy
+	TokenModulo
+	TokenHas
 )
 
 var tokenKindNames = [...]string{
@@ -53,6 +86,39 @@ var tokenKindNames = [...]string{
 	TokenRightBrace:     "}",
 	TokenComma:          ",",
 	TokenColon:          ":",
+	TokenLeftParen:      "(",
+	TokenRightParen:     ")",
+	TokenDot:            ".",
+	TokenIf:             "if",
+	TokenOtherwise:      "otherwise",
+	TokenEnd:            "end",
+	TokenRepeat:         "repeat",
+	TokenTimes:          "times",
+	TokenFor:            "for",
+	TokenEach:           "each",
+	TokenIn:             "in",
+	TokenWhile:          "while",
+	TokenMake:           "make",
+	TokenUsing:          "using",
+	TokenGive:           "give",
+	TokenBack:           "back",
+	TokenCall:           "call",
+	TokenIs:             "is",
+	TokenNot:            "not",
+	TokenGreater:        "greater",
+	TokenLess:           "less",
+	TokenThan:           "than",
+	TokenAt:             "at",
+	TokenLeast:          "least",
+	TokenMost:           "most",
+	TokenAnd:            "and",
+	TokenOr:             "or",
+	TokenPlus:           "plus",
+	TokenMinus:          "minus",
+	TokenDivided:        "divided",
+	TokenBy:             "by",
+	TokenModulo:         "modulo",
+	TokenHas:            "has",
 }
 
 // String returns a readable name for the token kind.

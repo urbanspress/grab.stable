@@ -1,0 +1,25 @@
+# inventory.grab — GRAB 0.3 showcase of collection lookup and loops.
+# Demonstrates: record.field, list at index, map at key, has, for each, repeat, and while.
+
+set item to record {sku: "A-17", name: "GRAB Starter Kit", tags: ["new", "sale", "featured"]}
+set warehouse to {"A-17": 12, "B-22": 0}
+
+if item has sku and warehouse has "A-17"
+  show item.name joined with " [" joined with item.sku joined with "]"
+  show "Lead tag: " joined with (item.tags at 0)
+  show "Stock on hand:"
+  show warehouse at "A-17"
+end
+
+set tag_count to 0
+for each tag in item.tags
+  set tag_count to tag_count plus 1
+  show "Tag: " joined with tag
+end
+show tag_count
+
+set countdown to 3
+while countdown is greater than 0
+  set countdown to countdown minus 1
+end
+show countdown

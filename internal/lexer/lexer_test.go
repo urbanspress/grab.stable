@@ -51,6 +51,24 @@ func TestLexerLexAll(t *testing.T) {
 			kinds:   []TokenKind{TokenIdentifier, TokenIdentifier, TokenTextLiteral, TokenEOF},
 			lexemes: []string{"b", "b", `"text"`, ""},
 		},
+		{
+			name:  "GRAB 0.3 keywords, parentheses, and field dot",
+			input: "if otherwise end repeat times for each in while make using give back call is not greater less than at least most and or plus minus divided by modulo has (product.sku)\n",
+			kinds: []TokenKind{
+				TokenIf, TokenOtherwise, TokenEnd, TokenRepeat, TokenTimes, TokenFor, TokenEach, TokenIn, TokenWhile,
+				TokenMake, TokenUsing, TokenGive, TokenBack, TokenCall,
+				TokenIs, TokenNot, TokenGreater, TokenLess, TokenThan, TokenAt, TokenLeast, TokenMost,
+				TokenAnd, TokenOr, TokenPlus, TokenMinus, TokenDivided, TokenBy, TokenModulo, TokenHas,
+				TokenLeftParen, TokenIdentifier, TokenDot, TokenIdentifier, TokenRightParen, TokenNewline, TokenEOF,
+			},
+			lexemes: []string{
+				"if", "otherwise", "end", "repeat", "times", "for", "each", "in", "while",
+				"make", "using", "give", "back", "call",
+				"is", "not", "greater", "less", "than", "at", "least", "most",
+				"and", "or", "plus", "minus", "divided", "by", "modulo", "has",
+				"(", "product", ".", "sku", ")", "\n", "",
+			},
+		},
 	}
 
 	for _, tt := range tests {

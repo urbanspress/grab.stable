@@ -194,3 +194,112 @@ func TestParseTokens(t *testing.T) {
 		t.Fatalf("statement count = %d, want 1", len(program.Statements))
 	}
 }
+
+func TestParseGRAB03Constructs(t *testing.T) {
+	tests := []struct {
+		name   string
+		source string
+		check  func(*testing.T, *ast.Program)
+	}{
+		{
+			name:   "operator precedence and grouping",
+			source: "show (1 plus 2) times 3 minus 4 divided by 2 modulo 3 is at least 1 and not no or yes",
+			check: func(t *testing.T, p *ast.Program) {
+				show := p.Statements[0].(*ast.ShowStatement)
+				orExpr, ok := show.Value.(*ast.BinaryExpr)
+				if !ok || orExpr.Op != ast.OpOr {
+					t.Fatalf("top expr = %#v, want BinaryExpr OpOr", show.Value)
+				}
+			},
+		},
+		{
+			name:   "collection lookup and membership",
+			source: "show product.tags at 0\nshow product has sku\nshow catalog has \"sku\"",
+			check: func(t *testing.T, p *ast.Program) {
+				if len(p.Statements) != 3 {
+					t.Fatalf("len(Statements) = %d, want 3", len(p.Statements))
+				}
+				s0 := p.Statements[0].(*ast.ShowStatement)
+				idx, ok := s0.Value.(*ast.IndexAccessExpr)
+				if !ok {
+					t.Fatalf("stmt 0 expr = %T, want *ast.IndexAccessExpr", s0.Value)
+				}
+				if _, ok := idx.Target.(*ast.FieldAccessExpr); !ok {
+					t.Fatalf("idx.Target = %T, want *ast.FieldAccessExpr", idx.Target)
+				}
+			},
+		},
+		{
+			name: "if otherwise if otherwise end",
+			source: `if score is at least 90
+  show "A"
+otherwise if score is greater than 70
+  show "B"
+otherwise
+  show "C"
+end`,
+			check: func(t *testing.T, p *ast.Program) {
+				ifStmt, ok := p.Statements[0].(*ast.IfStatement)
+				if !ok || len(ifStmt.Branches) != 2 || !ifStmt.HasElse {
+					t.Fatalf("ifStmt = %#v, want 2 branches and else", p.Statements[0])
+				}
+			},
+		},
+		{
+			name: "repeat for each and while loops",
+			source: `repeat 2 times 3 times
+  show "hi"
+end
+for each item in items
+  show item
+end
+while active
+  set active to no
+end`,
+			check: func(t *testing.T, p *ast.Program) {
+				if len(p.Statements) != 3 {
+					t.Fatalf("len(Statements) = %d, want 3", len(p.Statements))
+				}
+				if _, ok := p.Statements[0].(*ast.RepeatStatement); !ok {
+					t.Fatalf("stmt 0 = %T, want *ast.RepeatStatement", p.Statements[0])
+				}
+				if _, ok := p.Statements[1].(*ast.ForEachStatement); !ok {
+					t.Fatalf("stmt 1 = %T, want *ast.ForEachStatement", p.Statements[1])
+				}
+				if _, ok := p.Statements[2].(*ast.WhileStatement); !ok {
+					t.Fatalf("stmt 2 = %T, want *ast.WhileStatement", p.Statements[2])
+				}
+			},
+		},
+		{
+			name: "functions make using give back and call",
+			source: `make add using a, b
+  give back a plus b
+end
+make ping
+  give back
+end
+call ping
+set sum to add using 10, 20`,
+			check: func(t *testing.T, p *ast.Program) {
+				if len(p.Statements) != 4 {
+					t.Fatalf("len(Statements) = %d, want 4", len(p.Statements))
+				}
+				fn, ok := p.Statements[0].(*ast.FunctionDef)
+				if !ok || fn.Name != "add" || len(fn.Parameters) != 2 {
+					t.Fatalf("stmt 0 = %#v, want FunctionDef add(a,b)", p.Statements[0])
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			program, err := Parse("grab03.grab", tt.source)
+			if err != nil {
+				t.Fatalf("Parse() error = %v", err)
+			}
+			tt.check(t, program)
+		})
+	}
+}

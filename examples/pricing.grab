@@ -1,0 +1,25 @@
+# pricing.grab — GRAB 0.3 showcase of functions, exact decimal math, and conditions.
+# Demonstrates: make / using / give back, plus / minus / times, and if / otherwise / end.
+
+make calculate_total using subtotal, tax_rate
+  set tax to subtotal times tax_rate
+  give back subtotal plus tax
+end
+
+make shipping_status using order_total
+  if order_total is at least 100
+    give back "Free Express Shipping"
+  otherwise if order_total is at least 50
+    give back "Standard Flat-Rate Shipping"
+  otherwise
+    give back "Economy Shipping"
+  end
+end
+
+set subtotal to 100
+set total to calculate_total using subtotal, 0.08
+set shipping to shipping_status using total
+
+show "Order total:"
+show total
+show "Shipping tier: " joined with shipping

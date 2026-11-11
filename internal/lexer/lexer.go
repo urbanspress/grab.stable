@@ -123,6 +123,12 @@ func (l *Lexer) NextToken() (Token, error) {
 		return l.token(TokenComma, start), nil
 	case value == ':':
 		return l.token(TokenColon, start), nil
+	case value == '(':
+		return l.token(TokenLeftParen, start), nil
+	case value == ')':
+		return l.token(TokenRightParen, start), nil
+	case value == '.':
+		return l.token(TokenDot, start), nil
 	default:
 		return Token{}, &LexError{Kind: LexInvalidCharacter, Span: l.spanFrom(start)}
 	}
@@ -178,6 +184,66 @@ func (l *Lexer) scanIdentifierOrBytes(start Position, first rune) (Token, error)
 		kind = TokenNothingLiteral
 	case "record":
 		kind = TokenRecord
+	case "if":
+		kind = TokenIf
+	case "otherwise":
+		kind = TokenOtherwise
+	case "end":
+		kind = TokenEnd
+	case "repeat":
+		kind = TokenRepeat
+	case "times":
+		kind = TokenTimes
+	case "for":
+		kind = TokenFor
+	case "each":
+		kind = TokenEach
+	case "in":
+		kind = TokenIn
+	case "while":
+		kind = TokenWhile
+	case "make":
+		kind = TokenMake
+	case "using":
+		kind = TokenUsing
+	case "give":
+		kind = TokenGive
+	case "back":
+		kind = TokenBack
+	case "call":
+		kind = TokenCall
+	case "is":
+		kind = TokenIs
+	case "not":
+		kind = TokenNot
+	case "greater":
+		kind = TokenGreater
+	case "less":
+		kind = TokenLess
+	case "than":
+		kind = TokenThan
+	case "at":
+		kind = TokenAt
+	case "least":
+		kind = TokenLeast
+	case "most":
+		kind = TokenMost
+	case "and":
+		kind = TokenAnd
+	case "or":
+		kind = TokenOr
+	case "plus":
+		kind = TokenPlus
+	case "minus":
+		kind = TokenMinus
+	case "divided":
+		kind = TokenDivided
+	case "by":
+		kind = TokenBy
+	case "modulo":
+		kind = TokenModulo
+	case "has":
+		kind = TokenHas
 	}
 	return l.token(kind, start), nil
 }

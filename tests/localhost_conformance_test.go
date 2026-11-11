@@ -156,7 +156,7 @@ func TestLocalhostSpecificationConformance(t *testing.T) {
 		if err != nil {
 			t.Fatalf("RenderFiles(examples/product): %v", err)
 		}
-		if !strings.Contains(productHTML, "record {sku: &#34;A-17&#34;, active: yes") {
+		if !strings.Contains(productHTML, "<h1>GRAB Starter Kit</h1>") || !strings.Contains(productHTML, "record {sku: &#34;A-17&#34;, active: yes") {
 			t.Errorf("unexpected productHTML:\n%s", productHTML)
 		}
 	})

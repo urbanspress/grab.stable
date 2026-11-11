@@ -8,6 +8,9 @@ implementation of unapproved milestones.
 **How to read the status labels:**
 
 - **Complete** — milestone acceptance criteria and automated tests all pass.
+- **Approved target; specification in review** — owner has approved the milestone
+  target; the formal specification is drafted and awaits owner approval before
+  code implementation begins.
 - **Approved target; specification approved** — owner has approved both the
   milestone goal and its formal specification; authorized for implementation.
 - **Planned (Not Yet Approved for Implementation)** — derived from the GRAB
@@ -63,19 +66,26 @@ framework.
 
 ## GRAB 0.3 — Control flow, functions, and richer language
 
-**Status:** Planned (Not Yet Approved for Implementation)
+**Status:** Complete — November 11, 2026
+**Approval date:** November 11, 2026 (milestone and specification in `specifications/GRAB-LANGUAGE-SPEC-003.md`)
 **Source:** Blueprint v1.0 Section 12; Blueprint v1.1 roadmap table
 
-Intended scope (requires owner approval before implementation):
+Approved and verified milestone outcome:
 
-- Control flow: `if` / `otherwise` / `end` conditions and `repeat` / `for each`
-  loops.
-- Functions: `make` / `give back` / `using` constructs with explicit lexical
-  scope and isolated call frames.
-- Richer operations: numeric arithmetic, equality and comparison operators, and
-  collection lookup.
-- Initial profiling harness to establish memory and allocation baselines.
-- Expanded conformance suite covering all new language constructs.
+- Control flow: `if` / `otherwise if` / `otherwise` / `end` conditions and
+  `repeat <count> times`, `for each <item> in <collection>`, and `while <condition>`
+  loops (`1,000,000`-step safety guard).
+- Functions: `make` / `give back` / `using` / `call` constructs with explicit
+  lexical scope, pre-execution arity checking, and isolated call frames (`256`-frame recursion limit).
+- Richer operations: numeric arithmetic (`plus`, `minus`, `times`, `divided by`,
+  `modulo`), equality and comparison operators (`is`, `is not`, `[is] greater than`,
+  `[is] less than`, `[is] at least`, `[is] at most`), Boolean logic (`not`, `and`,
+  `or`), and collection lookup (`.field`, `at`, `has`).
+- Initial profiling harness (`ADR-016` / `ADR-020f`) in
+  `internal/interpreter/benchmark_test.go` establishing memory and allocation
+  baselines.
+- Expanded conformance suite in `tests/grab03_conformance_test.go` covering all
+  new language constructs.
 
 ---
 

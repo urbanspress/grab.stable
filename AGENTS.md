@@ -41,12 +41,15 @@ programming language and application platform.
   - If an issue remains unresolved after 2 attempts on **Opus 5.5 (High)** or **Gemini 4 Argon (High)**, trigger the **Tandem Handoff Protocol** and hand off to **OpenAI Codex**.
 
 ## Current Priority
-GRAB 0.1 and **GRAB 0.2 (Localhost browser preview)** are complete and verified
-by `go test ./...`. Milestones GRAB 0.3 through 1.0 in `docs/ROADMAP.md` are
+GRAB 0.1, **GRAB 0.2 (Localhost browser preview)**, and **GRAB 0.3 (Control
+flow, functions, and richer language)** are complete and verified by
+`go test ./...`. Milestones GRAB 0.4 through 1.0 in `docs/ROADMAP.md` remain
 marked `Status: Planned (Not Yet Approved for Implementation)` and await
 project-owner approval before work begins.
 
-Do not implement the production server, database, VM, UI framework, or CMS yet.
+Do not implement GRAB 0.4–1.0 features (standard library, structured error model,
+HTTP client, production server, database, VM, UI framework, or CMS) until
+explicitly approved.
 
 ## Live GRAB 0.1 Status & Repository Map
 
@@ -56,22 +59,22 @@ Status below is based on the source, tests, and documentation currently in this 
 
 | Component or feature | Current status |
 | --- | --- |
-| Language specification | The approved 0.1 specification is in `specifications/GRAB-LANGUAGE-SPEC-001.md`. It defines the intended behavior; approval is not itself proof of implementation. |
-| Source reader and lexer | Implemented and tested: UTF-8 validation, LF/CRLF positions, comments and whitespace, ASCII identifiers and keywords, text and byte escapes, numeric and byte literal tokens, punctuation, and source-located lexical errors. Bug fixed: `nextRuneIsDigit` now correctly peeks one character ahead after a consumed `-`, fixing single-digit and all negative decimal/float literals. Conformance fixes reject raw carriage returns inside text and locate unterminated text at its opening quote. Lexer and end-to-end tests pass. |
-| Parser | Implemented and tested: `set` and `show`, identifiers and literals, left-associative `joined with`, single-line lists/maps/records, optional trailing commas, duplicate map-key/record-field errors, and source spans. Parser tests pass. |
-| AST | Implemented: program, statement, literal, identifier, joined-expression, list, map, and record nodes. Parser tests exercise AST creation; the AST package has no separate test files. |
-| Runtime values and display | Implemented and tested: text, Boolean, `nothing`, arbitrary-precision integer, exact decimal, binary64 float, bytes, lists, ordered maps, and ordered records, with canonical display. Runtime tests pass. |
-| Interpreter | Implemented and tested: ordered `set`/rebind and `show`, pre-execution name resolution, left-to-right evaluation, text-only joining, deterministic output with LF, and source-located name/type errors. Interpreter tests pass. |
+| Language specification | The approved 0.1, 0.2, and 0.3 specifications are in `specifications/GRAB-LANGUAGE-SPEC-001.md`, `specifications/GRAB-LOCALHOST-SPEC-002.md`, and `specifications/GRAB-LANGUAGE-SPEC-003.md`. |
+| Source reader and lexer | Implemented and tested: UTF-8 validation, LF/CRLF positions, comments and whitespace, ASCII identifiers and GRAB 0.1/0.3 keywords, text and byte escapes, numeric and byte literal tokens, punctuation (`[ ] { } , : ( ) .`), and source-located lexical errors. Bug fixed: `nextRuneIsDigit` now correctly peeks one character ahead after a consumed `-`, fixing single-digit and all negative decimal/float literals. Conformance fixes reject raw carriage returns inside text and locate unterminated text at its opening quote. Lexer and end-to-end tests pass. |
+| Parser | Implemented and tested: `set`, `show`, `if`/`otherwise if`/`otherwise`/`end`, `repeat <count> times`, `for each <item> in <coll>`, `while <cond>`, `make`/`using`/`give back`/`call`, parenthesized grouping, full GRAB 0.3 operator precedence (`not`, `times`/`divided by`/`modulo`, `plus`/`minus`, `joined with`, comparisons, `is`/`is not`, `and`, `or`), collection lookup (`.field`, `at`, `has`), single-line lists/maps/records, optional trailing commas, duplicate map-key/record-field errors, and source spans. Parser tests pass. |
+| AST | Implemented: program, statements (`set`, `show`, `if`, `repeat`, `for each`, `while`, `make`, `give back`, `call`), literals, identifiers, parenthesized/unary/binary/joined expressions, `.field`/`at`/`has` lookup nodes, function call expressions, and list/map/record nodes. |
+| Runtime values and display | Implemented and tested: text, Boolean, `nothing`, arbitrary-precision integer, exact decimal, binary64 float, bytes, lists, ordered maps, and ordered records, with canonical display, exact integer/decimal arithmetic (`Add`, `Sub`, `Mul`, `Div`, `Mod`), deep equality (`Equal`), and ordered comparison (`Compare`). Runtime tests pass. |
+| Interpreter | Implemented and tested: ordered `set`/rebind and `show`, pre-execution validation (name resolution, exhaustive branch bindings, function registration, and arity checking), control flow (`if`, `repeat`, `for each`, `while` with `1,000,000`-step guard), functions (`make`/`using`/`give back`/`call` with isolated call frames and `256`-frame recursion limit), collection lookup, deterministic output with LF, source-located diagnostics, and Go benchmark/allocation suite (`benchmark_test.go`). Interpreter tests pass. |
 | CLI | Implemented and tested: `grab run <file.grab>` and `grab serve [--addr 127.0.0.1:8080] <file.grab> [template.grab.html]`. `cmd/grab/main_test.go` provides 42 table-driven CLI tests covering `run` and `serve` valid usage, flags, loopback enforcement, preflight diagnostics, and runtime errors. All pass. |
-| Tests and conformance | GRAB 0.1 and GRAB 0.2 specification conformance milestones complete. `go test ./...` passes 100% across all packages (`cmd/grab`, `internal/lexer`, `internal/parser`, `internal/runtime`, `internal/interpreter`, `internal/template`, `internal/server`, and `tests`). |
-| Example programs | Five runnable `.grab` programs (`hello.grab`, `values.grab`, `product.grab`, `greeting.grab`, `collections.grab`) plus two companion `.grab.html` templates (`hello.grab.html`, `product.grab.html`) in `examples/`. All verified with `grab run` and `grab serve`. |
+| Tests and conformance | GRAB 0.1, GRAB 0.2, and GRAB 0.3 specification conformance milestones complete. `go test ./...` passes 100% across all packages (`cmd/grab`, `internal/lexer`, `internal/parser`, `internal/runtime`, `internal/interpreter`, `internal/template`, `internal/server`, and `tests`). |
+| Example programs | Seven runnable `.grab` programs (`hello.grab`, `values.grab`, `product.grab`, `greeting.grab`, `collections.grab`, `pricing.grab`, `inventory.grab`) plus two companion `.grab.html` templates (`hello.grab.html`, `product.grab.html`) in `examples/`. All verified with `grab run` and `grab serve`. |
 | GRAB 0.2 templates and localhost server | Implemented and tested in `internal/template` and `internal/server` per `specifications/GRAB-LOCALHOST-SPEC-002.md`: `.grab.html` `{<identifier>}` interpolation (e.g. `{title}`), `{{`/`}}` literal braces, companion and reusable template lookup, value binding, context-aware HTML escaping, source-located diagnostics, and loopback-only `grab serve` with security headers and graceful shutdown. |
 
 ### Not implemented
 
-- GRAB 0.1/0.2 does not include numeric operators, equality, or implicit coercions; conditions, loops, functions, user-defined types, modules/imports, exceptions, or concurrency; or collection lookup and mutation.
-- Database connections and vendor-specific values, production multi-route server/browser/UI/CMS features, IR, bytecode, and a VM remain unimplemented and planned for later milestones (`docs/ROADMAP.md`, GRAB 0.3–1.0).
-- The approved 0.1 and 0.2 conformance milestones are complete; this is rule-based test coverage, not a proof over every possible program. Float overflow/non-finite and underflow policy are not explicitly specified; current behavior and this boundary are documented in `tests/README.md`.
+- GRAB 0.1–0.3 does not include user-defined types, modules/imports, `try`/`catch`/`raise` exception handling, async task groups (`do together`/`wait for`), or in-place collection mutation.
+- Standard library modules, HTTP client, database connections and vendor-specific values, production multi-route server/browser/UI/CMS features, IR, bytecode, and a VM remain unimplemented and planned for later milestones (`docs/ROADMAP.md`, GRAB 0.4–1.0).
+- The approved 0.1, 0.2, and 0.3 conformance milestones are complete; this is rule-based test coverage, not a proof over every possible program.
 
 ### Repository directory and package map
 
@@ -81,16 +84,16 @@ Status below is based on the source, tests, and documentation currently in this 
 | `docs/` | Project documentation, including `docs/ROADMAP.md` (GRAB 0.1 through 1.0 + Post-1.0). |
 | `docs/adr/` | Architecture decision register (`ADR-DECISION-REGISTER.md`) and recorded design boundaries. |
 | `docs/blueprints/` | GRAB architecture blueprint PDFs; v1.0 is the approved baseline and v1.1 is not approved wholesale. |
-| `examples/` | Five runnable `.grab` programs and two `.grab.html` templates (`hello.grab.html`, `product.grab.html`). |
+| `examples/` | Seven runnable `.grab` programs (including GRAB 0.3 `pricing.grab`, `inventory.grab`, and updated `product.grab`) and two `.grab.html` templates (`hello.grab.html`, `product.grab.html`). |
 | `internal/ast/` | Abstract syntax tree node types used by the parser and interpreter. |
-| `internal/interpreter/` | Name resolution, expression evaluation, statement execution, environment snapshots, and output. |
+| `internal/interpreter/` | Pre-execution validation, expression evaluation, control-flow and function execution, environment snapshots, output, and benchmarks (`benchmark_test.go`). |
 | `internal/lexer/` | Source reader, positions/spans, tokens, lexical analysis, and lexical diagnostics. |
-| `internal/parser/` | Parser for GRAB 0.1 tokens and construction of AST nodes. |
-| `internal/runtime/` | Portable runtime values and their canonical display forms. |
+| `internal/parser/` | Parser for GRAB 0.1–0.3 tokens and construction of AST nodes. |
+| `internal/runtime/` | Portable runtime values, arithmetic/comparison operations, and canonical display forms. |
 | `internal/server/` | Loopback-only `grab serve` development server, path confinement, preflight validation, and HTTP security headers (`server_test.go`). |
 | `internal/template/` | `.grab.html` `{<identifier>}` parser, HTML lexical context analyzer, context-aware HTML/URL escaper, and renderer (`template_test.go`). |
-| `specifications/` | `GRAB-LANGUAGE-SPEC-001.md` (approved 0.1 spec) and `GRAB-LOCALHOST-SPEC-002.md` (approved 0.2 localhost/template spec). |
-| `tests/` | `conformance_test.go` (0.1 conformance), `localhost_conformance_test.go` (0.2 conformance), `structure_test.go` (AST spans), and `README.md`. |
+| `specifications/` | `GRAB-LANGUAGE-SPEC-001.md` (approved 0.1 spec), `GRAB-LOCALHOST-SPEC-002.md` (approved 0.2 localhost/template spec), and `GRAB-LANGUAGE-SPEC-003.md` (approved 0.3 language spec). |
+| `tests/` | `conformance_test.go` (0.1 conformance), `localhost_conformance_test.go` (0.2 conformance), `grab03_conformance_test.go` (0.3 conformance), `structure_test.go` (AST spans), and `README.md`. |
 | Repository root | `go.mod` declares module `grab` and Go 1.22.2; `index.grab` is a runnable sample; `.gitignore` lists local build artifacts and editor files. |
 
 ### Build, run, and test commands

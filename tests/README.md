@@ -52,3 +52,12 @@ opening quote rather than extending through subsequent content/newline.
 - context-aware HTML escaping across element text, quoted attributes, and quoted URL attributes (`href`, `src`, `action`, `formaction`);
 - preflight and render-time diagnostics (`invalid template encoding`, `malformed template interpolation`, `disallowed interpolation context`, `unbound template variable`, and `unsafe URL scheme`);
 - checked-in example templates (`examples/hello.grab.html`, `examples/product.grab.html`).
+
+## GRAB 0.3 control flow, functions, and richer language conformance
+
+`grab03_conformance_test.go` verifies `specifications/GRAB-LANGUAGE-SPEC-003.md`:
+- reserved GRAB 0.3 keywords, parenthesized grouping, and operator precedence;
+- exact integer/decimal arithmetic, binary64 float operations, division-by-zero checks, equality (`is` / `is not`), relational comparisons, and short-circuit Boolean logic (`not`, `and`, `or`);
+- record field lookup (`.field`), list and map lookup (`at`), and existence checks (`has`);
+- `if` / `otherwise if` / `otherwise` / `end`, `repeat <count> times`, `for each <item> in <collection>`, and `while <condition>` loops (including the `1,000,000`-step safety guard);
+- top-level functions (`make` / `using` / `give back` / `call`), isolated lexical call frames, pre-execution arity verification, and the `256`-frame recursion guard.
