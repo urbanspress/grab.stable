@@ -174,6 +174,13 @@ func Preflight(grabPath, templatePath string) (string, string, error) {
 // RenderFiles executes grabPath in a fresh isolated environment and renders
 // templatePath with the resulting bound variables.
 func RenderFiles(grabPath, templatePath string, consoleOut io.Writer) (string, error) {
+	return RenderFilesWithOptions(grabPath, templatePath, interpreter.Options{}, consoleOut)
+}
+
+// RenderFilesWithOptions executes grabPath with the supplied interpreter
+// options in a fresh isolated environment and renders templatePath with the
+// resulting bound variables.
+func RenderFilesWithOptions(grabPath, templatePath string, opts interpreter.Options, consoleOut io.Writer) (string, error) {
 	resolvedGrab, resolvedTmpl, err := ResolveFiles(grabPath, templatePath)
 	if err != nil {
 		return "", err
@@ -200,7 +207,7 @@ func RenderFiles(grabPath, templatePath string, consoleOut io.Writer) (string, e
 	if consoleOut == nil {
 		consoleOut = io.Discard
 	}
-	env, err := interpreter.RunWithEnvironment(program, consoleOut)
+	env, err := interpreter.RunWithEnvironmentAndOptions(program, consoleOut, opts)
 	if err != nil {
 		return "", err
 	}
@@ -212,6 +219,12 @@ func RenderFiles(grabPath, templatePath string, consoleOut io.Writer) (string, e
 // headers, GET/HEAD '/' routing, per-request isolated execution, and a 5-second
 // execution timeout.
 func NewHandler(grabPath, templatePath string, consoleOut io.Writer) http.Handler {
+	return NewHandlerWithOptions(grabPath, templatePath, interpreter.Options{}, consoleOut)
+}
+
+// NewHandlerWithOptions creates the HTTP handler for grab serve with the
+// supplied interpreter capability options.
+func NewHandlerWithOptions(grabPath, templatePath string, opts interpreter.Options, consoleOut io.Writer) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		setSecurityHeaders(w.Header())
 
@@ -239,7 +252,7 @@ func NewHandler(grabPath, templatePath string, consoleOut io.Writer) http.Handle
 		}
 		done := make(chan renderResult, 1)
 		go func() {
-			html, err := RenderFiles(grabPath, templatePath, consoleOut)
+			html, err := RenderFilesWithOptions(grabPath, templatePath, opts, consoleOut)
 			done <- renderResult{html: html, err: err}
 		}()
 
@@ -275,6 +288,13 @@ func setSecurityHeaders(h http.Header) {
 // .grab.html files, binds the TCP listener, announces the URL to stdout, and
 // serves HTTP requests until ctx is cancelled.
 func Serve(ctx context.Context, addr, grabPath, templatePath string, stdout io.Writer, ready chan<- string) error {
+	return ServeWithOptions(ctx, addr, grabPath, templatePath, interpreter.Options{}, stdout, ready)
+}
+
+// ServeWithOptions validates loopback binding, runs startup preflight on the
+// .grab and .grab.html files, and serves HTTP requests with the supplied
+// interpreter capability options until ctx is cancelled.
+func ServeWithOptions(ctx context.Context, addr, grabPath, templatePath string, opts interpreter.Options, stdout io.Writer, ready chan<- string) error {
 	if addr == "" {
 		addr = DefaultAddr
 	}
@@ -290,7 +310,7 @@ func Serve(ctx context.Context, addr, grabPath, templatePath string, stdout io.W
 	if err != nil {
 		return err
 	}
-	return serveWithListener(ctx, listener, resolvedGrab, resolvedTmpl, stdout, ready)
+	return serveWithListener(ctx, listener, resolvedGrab, resolvedTmpl, opts, stdout, ready)
 }
 
 // ServeListener validates loopback address and startup preflight, then runs the
@@ -303,10 +323,10 @@ func ServeListener(ctx context.Context, listener net.Listener, grabPath, templat
 	if err != nil {
 		return err
 	}
-	return serveWithListener(ctx, listener, resolvedGrab, resolvedTmpl, stdout, ready)
+	return serveWithListener(ctx, listener, resolvedGrab, resolvedTmpl, interpreter.Options{}, stdout, ready)
 }
 
-func serveWithListener(ctx context.Context, listener net.Listener, resolvedGrab, resolvedTmpl string, stdout io.Writer, ready chan<- string) error {
+func serveWithListener(ctx context.Context, listener net.Listener, resolvedGrab, resolvedTmpl string, opts interpreter.Options, stdout io.Writer, ready chan<- string) error {
 	defer listener.Close()
 
 	boundAddr := listener.Addr().String()
@@ -319,7 +339,7 @@ func serveWithListener(ctx context.Context, listener net.Listener, resolvedGrab,
 	}
 
 	srv := &http.Server{
-		Handler:           NewHandler(resolvedGrab, resolvedTmpl, stdout),
+		Handler:           NewHandlerWithOptions(resolvedGrab, resolvedTmpl, opts, stdout),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       5 * time.Second,
 		WriteTimeout:      10 * time.Second,

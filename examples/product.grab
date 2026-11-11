@@ -2,9 +2,12 @@
 # of the GRAB 0.1 specification.
 # Demonstrates: record with every core value kind, canonical display.
 
+use text
+
 set product_name to "GRAB Starter Kit"
 set product to record {sku: "A-17", active: yes, stock: 12, price: 19.95, ratio: 1.25e-2, labels: ["new", "sale"], payload: b"\x00\xff", note: nothing}
 set sku to product.sku
 set primary_label to product.labels at 0
-show product_name joined with " (SKU: " joined with sku joined with ", tag: " joined with primary_label joined with ")"
+set formatted_price to "$" joined with (text.from using product.price)
+show product_name joined with " (SKU: " joined with sku joined with ", price: " joined with formatted_price joined with ", tag: " joined with primary_label joined with ")"
 show product

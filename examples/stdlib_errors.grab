@@ -1,0 +1,34 @@
+# stdlib_errors.grab — GRAB 0.4 standard library and structured error recovery.
+# Demonstrates: use text/math/collections/dates, text.from, math.round, and try/catch/raise.
+
+use text
+use math
+use collections
+use dates
+
+make apply_discount using price, percent
+  if percent is greater than 50
+    raise "Discount cannot exceed 50%"
+  end
+  set discounted to price minus (price times percent divided by 100)
+  give back math.round using discounted, 2
+end
+
+set product to record {sku: "A-17", price: 19.95, tags: ["new", "sale"]}
+set taxed to math.round using (product.price times 1.08), 2
+set price_label to "$" joined with (text.from using taxed)
+set all_tags to collections.append using product.tags, "featured"
+set release_date to dates.parse_iso using "2026-11-11"
+
+show "Taxed price: " joined with price_label
+show "Tags: " joined with (text.join using all_tags, ", ")
+show "Release date: " joined with release_date.iso
+
+try
+  set final_price to apply_discount using product.price, 75
+catch err
+  show "Caught [" joined with err.code joined with "]: " joined with err.message
+  set final_price to product.price
+end
+
+show "Final checkout price: $" joined with (text.from using final_price)

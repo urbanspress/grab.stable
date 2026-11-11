@@ -26,6 +26,31 @@ func (e *LexError) Error() string {
 	return fmt.Sprintf("%s at line %d, column %d", e.Kind, e.Span.Start.Line, e.Span.Start.Column)
 }
 
+// Code returns the stable GRAB 0.4 error code for the lexical failure.
+func (e *LexError) Code() string {
+	return e.Kind.Code()
+}
+
+// Code returns the stable GRAB 0.4 error code for the lexical error kind.
+func (kind LexErrorKind) Code() string {
+	switch kind {
+	case LexInvalidCharacter:
+		return "GRAB-E002"
+	case LexInvalidEscape:
+		return "GRAB-E003"
+	case LexUnterminatedText:
+		return "GRAB-E004"
+	case LexUnterminatedBytes:
+		return "GRAB-E005"
+	case LexMalformedNumber:
+		return "GRAB-E006"
+	case LexInvalidByte:
+		return "GRAB-E007"
+	default:
+		return "GRAB-E002"
+	}
+}
+
 // String returns a stable category name for the lexical error.
 func (kind LexErrorKind) String() string {
 	switch kind {
@@ -244,6 +269,14 @@ func (l *Lexer) scanIdentifierOrBytes(start Position, first rune) (Token, error)
 		kind = TokenModulo
 	case "has":
 		kind = TokenHas
+	case "use":
+		kind = TokenUse
+	case "try":
+		kind = TokenTry
+	case "catch":
+		kind = TokenCatch
+	case "raise":
+		kind = TokenRaise
 	}
 	return l.token(kind, start), nil
 }

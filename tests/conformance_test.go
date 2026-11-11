@@ -158,7 +158,7 @@ func specificationCases() []conformanceCase {
 	ok("line endings and indentation", "\r\n\t set x to \"ok\" # comment\r\n\n show x\nshow\t\"end\"# eof", "ok\nend\n")
 	ok("adjacent punctuation", `show[1,2]`, "[1, 2]\n")
 	ok("identifier grammar and case", "set _ to 1\nset A_z09 to 2\nset a_z09 to 3\nshow [_, A_z09, a_z09]", "[1, 2, 3]\n")
-	for _, word := range strings.Fields("else loop function type import module try catch async html block true false null b Set SHOW Record date uuid") {
+	for _, word := range strings.Fields("else loop function type import module async html block true false null b Set SHOW Record date uuid") {
 		ok("unreserved/"+word, "set "+word+" to 1\nshow "+word, "1\n")
 	}
 	for _, word := range strings.Fields("set to show joined with yes no nothing record") {

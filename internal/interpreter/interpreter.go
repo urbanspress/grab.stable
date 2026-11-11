@@ -36,6 +36,9 @@ const (
 	NegativeRepeatCount
 	CallStackOverflow
 	ExecutionLimitExceeded
+	UserRaisedError
+	StandardLibraryError
+	PermissionDenied
 )
 
 // String returns the stable specification category name for the interpreter error.
@@ -67,17 +70,99 @@ func (kind ErrorKind) String() string {
 		return "call stack overflow"
 	case ExecutionLimitExceeded:
 		return "execution limit exceeded"
+	case UserRaisedError:
+		return "user raised error"
+	case StandardLibraryError:
+		return "standard library error"
+	case PermissionDenied:
+		return "permission denied"
 	default:
 		return "unknown interpreter error"
 	}
 }
 
+// Code returns the stable GRAB 0.4 error code for the interpreter error kind.
+func (kind ErrorKind) Code() string {
+	switch kind {
+	case UnboundVariable:
+		return "GRAB-E201"
+	case DuplicateDefinition:
+		return "GRAB-E202"
+	case UnknownFunction:
+		return "GRAB-E203"
+	case FunctionArityMismatch:
+		return "GRAB-E204"
+	case InvalidGiveBack:
+		return "GRAB-E205"
+	case JoinedRequiresText, InvalidLiteral, TypeMismatch:
+		return "GRAB-E301"
+	case DivisionByZero:
+		return "GRAB-E302"
+	case AbsentFieldOrKey:
+		return "GRAB-E303"
+	case IndexOutOfBounds:
+		return "GRAB-E304"
+	case NegativeRepeatCount:
+		return "GRAB-E305"
+	case CallStackOverflow:
+		return "GRAB-E306"
+	case ExecutionLimitExceeded:
+		return "GRAB-E307"
+	case UserRaisedError:
+		return "GRAB-E308"
+	case StandardLibraryError:
+		return "GRAB-E309"
+	case PermissionDenied:
+		return "GRAB-E401"
+	default:
+		return "GRAB-E301"
+	}
+}
+
+// StackFrame records an active function invocation on the call stack.
+type StackFrame struct {
+	Function string
+	Span     lexer.Span
+}
+
 // Error carries the source span and stable category for an interpreter error.
 type Error struct {
-	Kind ErrorKind
-	Name string
-	Span lexer.Span
-	Err  error
+	Kind       ErrorKind
+	Name       string
+	CustomCode string
+	Message    string
+	Span       lexer.Span
+	Stack      []StackFrame
+	Err        error
+}
+
+// Code returns the stable GRAB 0.4 error code for this error.
+func (e *Error) Code() string {
+	if e.CustomCode != "" {
+		return e.CustomCode
+	}
+	return e.Kind.Code()
+}
+
+// IsFatal reports whether the error is a non-catchable resource safety limit.
+func (e *Error) IsFatal() bool {
+	return e.Kind == CallStackOverflow || e.Kind == ExecutionLimitExceeded
+}
+
+// ErrorRecord converts a recoverable runtime error into its GRAB record value
+// for binding in a 'catch' block.
+func (e *Error) ErrorRecord() grabrt.Value {
+	msg := e.Message
+	if msg == "" {
+		msg = e.Error()
+	}
+	return grabrt.Record([]grabrt.Entry{
+		{Name: "code", Value: grabrt.Text(e.Code())},
+		{Name: "category", Value: grabrt.Text(e.Kind.String())},
+		{Name: "message", Value: grabrt.Text(msg)},
+		{Name: "line", Value: grabrt.IntegerFromInt64(int64(e.Span.Start.Line))},
+		{Name: "column", Value: grabrt.IntegerFromInt64(int64(e.Span.Start.Column))},
+	})
 }
 
 func (e *Error) Error() string {
@@ -90,16 +175,37 @@ func (e *Error) Error() string {
 		return fmt.Sprintf("invalid literal at line %d, column %d: %v", e.Span.Start.Line, e.Span.Start.Column, e.Err)
 	case DuplicateDefinition, UnknownFunction, FunctionArityMismatch, AbsentFieldOrKey:
 		return fmt.Sprintf("%s %q at line %d, column %d", e.Kind, e.Name, e.Span.Start.Line, e.Span.Start.Column)
+	case UserRaisedError:
+		if e.Message != "" {
+			return fmt.Sprintf("%s: %s at line %d, column %d", e.Kind, e.Message, e.Span.Start.Line, e.Span.Start.Column)
+		}
+		return fmt.Sprintf("%s at line %d, column %d", e.Kind, e.Span.Start.Line, e.Span.Start.Column)
+	case StandardLibraryError:
+		if e.Err != nil {
+			return fmt.Sprintf("%s (%v) at line %d, column %d", e.Kind, e.Err, e.Span.Start.Line, e.Span.Start.Column)
+		}
+		return fmt.Sprintf("%s at line %d, column %d", e.Kind, e.Span.Start.Line, e.Span.Start.Column)
 	default:
 		return fmt.Sprintf("%s at line %d, column %d", e.Kind, e.Span.Start.Line, e.Span.Start.Column)
 	}
+}
+
+// Options configures runtime capabilities and safety bounds for execution.
+type Options struct {
+	Permissions Permissions
 }
 
 // Run validates names and functions in the complete program before executing statements.
 // Runtime output from successful earlier show statements is retained if a
 // later execution error occurs.
 func Run(program *ast.Program, output io.Writer) error {
-	_, err := RunWithEnvironment(program, output)
+	_, err := RunWithEnvironmentAndOptions(program, output, Options{})
+	return err
+}
+
+// RunWithOptions validates and executes program with the supplied runtime options.
+func RunWithOptions(program *ast.Program, output io.Writer, opts Options) error {
+	_, err := RunWithEnvironmentAndOptions(program, output, opts)
 	return err
 }
 
@@ -107,6 +213,13 @@ func Run(program *ast.Program, output io.Writer) error {
 // statements in source order, and returns a read-only snapshot of the final
 // top-level variable bindings.
 func RunWithEnvironment(program *ast.Program, output io.Writer) (map[string]grabrt.Value, error) {
+	return RunWithEnvironmentAndOptions(program, output, Options{})
+}
+
+// RunWithEnvironmentAndOptions validates the complete program, executes all
+// top-level statements with the supplied runtime options, and returns a
+// read-only snapshot of the final top-level variable bindings.
+func RunWithEnvironmentAndOptions(program *ast.Program, output io.Writer, opts Options) (map[string]grabrt.Value, error) {
 	functions, _, err := validateProgram(program)
 	if err != nil {
 		return nil, err
@@ -114,6 +227,7 @@ func RunWithEnvironment(program *ast.Program, output io.Writer) (map[string]grab
 	ctx := &execContext{
 		output:       output,
 		functions:    functions,
+		permissions:  opts.Permissions,
 		maxLoopSteps: DefaultMaxLoopSteps,
 		maxCallDepth: DefaultMaxCallDepth,
 	}
@@ -132,28 +246,55 @@ func Validate(program *ast.Program) (map[string]struct{}, error) {
 	return bound, err
 }
 
+type validationEnv struct {
+	functions  map[string]*ast.FunctionDef
+	modules    map[string]struct{}
+	inFunction bool
+}
+
 func validateProgram(program *ast.Program) (map[string]*ast.FunctionDef, map[string]struct{}, error) {
 	functions := make(map[string]*ast.FunctionDef)
+	modules := make(map[string]struct{})
+
 	for _, statement := range program.Statements {
-		fn, ok := statement.(*ast.FunctionDef)
-		if !ok {
-			continue
-		}
-		if _, exists := functions[fn.Name]; exists {
-			return nil, nil, &Error{Kind: DuplicateDefinition, Name: fn.Name, Span: fn.NameSpan}
-		}
-		seenParams := make(map[string]struct{}, len(fn.Parameters))
-		for _, param := range fn.Parameters {
-			if _, exists := seenParams[param.Name]; exists {
-				return nil, nil, &Error{Kind: DuplicateDefinition, Name: param.Name, Span: param.Span}
+		switch node := statement.(type) {
+		case *ast.UseDecl:
+			if !isValidStdlibModule(node.Module) {
+				return nil, nil, &Error{Kind: UnknownFunction, Name: node.Module, Span: node.ModuleSpan}
 			}
-			seenParams[param.Name] = struct{}{}
+			if _, exists := modules[node.Module]; exists {
+				return nil, nil, &Error{Kind: DuplicateDefinition, Name: node.Module, Span: node.ModuleSpan}
+			}
+			if _, exists := functions[node.Module]; exists {
+				return nil, nil, &Error{Kind: DuplicateDefinition, Name: node.Module, Span: node.ModuleSpan}
+			}
+			modules[node.Module] = struct{}{}
+		case *ast.FunctionDef:
+			if _, exists := functions[node.Name]; exists {
+				return nil, nil, &Error{Kind: DuplicateDefinition, Name: node.Name, Span: node.NameSpan}
+			}
+			if _, exists := modules[node.Name]; exists {
+				return nil, nil, &Error{Kind: DuplicateDefinition, Name: node.Name, Span: node.NameSpan}
+			}
+			seenParams := make(map[string]struct{}, len(node.Parameters))
+			for _, param := range node.Parameters {
+				if _, exists := seenParams[param.Name]; exists {
+					return nil, nil, &Error{Kind: DuplicateDefinition, Name: param.Name, Span: param.Span}
+				}
+				seenParams[param.Name] = struct{}{}
+			}
+			functions[node.Name] = node
 		}
-		functions[fn.Name] = fn
 	}
 
 	topBound := make(map[string]struct{})
+	topEnv := validationEnv{functions: functions, modules: modules, inFunction: false}
+	fnEnv := validationEnv{functions: functions, modules: modules, inFunction: true}
+
 	for _, statement := range program.Statements {
+		if _, ok := statement.(*ast.UseDecl); ok {
+			continue
+		}
 		if fn, ok := statement.(*ast.FunctionDef); ok {
 			if _, exists := topBound[fn.Name]; exists {
 				return nil, nil, &Error{Kind: DuplicateDefinition, Name: fn.Name, Span: fn.NameSpan}
@@ -162,56 +303,59 @@ func validateProgram(program *ast.Program) (map[string]*ast.FunctionDef, map[str
 			for _, param := range fn.Parameters {
 				fnScope[param.Name] = struct{}{}
 			}
-			if err := resolveStatements(fn.Body, fnScope, functions, true); err != nil {
+			if err := resolveStatements(fn.Body, fnScope, fnEnv); err != nil {
 				return nil, nil, err
 			}
 			continue
 		}
-		if setStmt, ok := statement.(*ast.SetStatement); ok {
-			if _, exists := functions[setStmt.Name]; exists {
-				return nil, nil, &Error{Kind: DuplicateDefinition, Name: setStmt.Name, Span: setStmt.NameSpan}
-			}
-		}
-		if err := resolveStatement(statement, topBound, functions, false); err != nil {
+		if err := resolveStatement(statement, topBound, topEnv); err != nil {
 			return nil, nil, err
 		}
 	}
 	return functions, topBound, nil
 }
 
-func resolveStatements(statements []ast.Statement, bound map[string]struct{}, functions map[string]*ast.FunctionDef, inFunction bool) error {
+func resolveStatements(statements []ast.Statement, bound map[string]struct{}, venv validationEnv) error {
 	for _, statement := range statements {
-		if err := resolveStatement(statement, bound, functions, inFunction); err != nil {
+		if err := resolveStatement(statement, bound, venv); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func resolveStatement(statement ast.Statement, bound map[string]struct{}, functions map[string]*ast.FunctionDef, inFunction bool) error {
+func resolveStatement(statement ast.Statement, bound map[string]struct{}, venv validationEnv) error {
 	switch node := statement.(type) {
 	case *ast.SetStatement:
-		if err := resolveExpression(node.Value, bound, functions); err != nil {
+		if !venv.inFunction {
+			if _, exists := venv.functions[node.Name]; exists {
+				return &Error{Kind: DuplicateDefinition, Name: node.Name, Span: node.NameSpan}
+			}
+			if _, exists := venv.modules[node.Name]; exists {
+				return &Error{Kind: DuplicateDefinition, Name: node.Name, Span: node.NameSpan}
+			}
+		}
+		if err := resolveExpression(node.Value, bound, venv); err != nil {
 			return err
 		}
 		bound[node.Name] = struct{}{}
 		return nil
 	case *ast.ShowStatement:
-		return resolveExpression(node.Value, bound, functions)
+		return resolveExpression(node.Value, bound, venv)
 	case *ast.IfStatement:
 		branchScopes := make([]map[string]struct{}, len(node.Branches))
 		for i, branch := range node.Branches {
-			if err := resolveExpression(branch.Condition, bound, functions); err != nil {
+			if err := resolveExpression(branch.Condition, bound, venv); err != nil {
 				return err
 			}
 			branchScopes[i] = cloneBound(bound)
-			if err := resolveStatements(branch.Body, branchScopes[i], functions, inFunction); err != nil {
+			if err := resolveStatements(branch.Body, branchScopes[i], venv); err != nil {
 				return err
 			}
 		}
 		if node.HasElse {
 			elseScope := cloneBound(bound)
-			if err := resolveStatements(node.Otherwise, elseScope, functions, inFunction); err != nil {
+			if err := resolveStatements(node.Otherwise, elseScope, venv); err != nil {
 				return err
 			}
 			for name := range elseScope {
@@ -229,101 +373,136 @@ func resolveStatement(statement ast.Statement, bound map[string]struct{}, functi
 		}
 		return nil
 	case *ast.RepeatStatement:
-		if err := resolveExpression(node.Count, bound, functions); err != nil {
+		if err := resolveExpression(node.Count, bound, venv); err != nil {
 			return err
 		}
 		bodyScope := cloneBound(bound)
-		return resolveStatements(node.Body, bodyScope, functions, inFunction)
+		return resolveStatements(node.Body, bodyScope, venv)
 	case *ast.ForEachStatement:
-		if err := resolveExpression(node.Collection, bound, functions); err != nil {
+		if err := resolveExpression(node.Collection, bound, venv); err != nil {
 			return err
 		}
 		bodyScope := cloneBound(bound)
 		bodyScope[node.Item] = struct{}{}
-		return resolveStatements(node.Body, bodyScope, functions, inFunction)
+		return resolveStatements(node.Body, bodyScope, venv)
 	case *ast.WhileStatement:
-		if err := resolveExpression(node.Condition, bound, functions); err != nil {
+		if err := resolveExpression(node.Condition, bound, venv); err != nil {
 			return err
 		}
 		bodyScope := cloneBound(bound)
-		return resolveStatements(node.Body, bodyScope, functions, inFunction)
+		return resolveStatements(node.Body, bodyScope, venv)
+	case *ast.TryStatement:
+		tryScope := cloneBound(bound)
+		if err := resolveStatements(node.TryBody, tryScope, venv); err != nil {
+			return err
+		}
+		catchScope := cloneBound(bound)
+		catchScope[node.CatchName] = struct{}{}
+		if err := resolveStatements(node.CatchBody, catchScope, venv); err != nil {
+			return err
+		}
+		for name := range tryScope {
+			if name == node.CatchName {
+				continue
+			}
+			if _, ok := catchScope[name]; ok {
+				bound[name] = struct{}{}
+			}
+		}
+		return nil
+	case *ast.RaiseStatement:
+		return resolveExpression(node.Value, bound, venv)
 	case *ast.GiveBackStatement:
-		if !inFunction {
+		if !venv.inFunction {
 			return &Error{Kind: InvalidGiveBack, Span: node.Span}
 		}
 		if node.Value != nil {
-			return resolveExpression(node.Value, bound, functions)
+			return resolveExpression(node.Value, bound, venv)
 		}
 		return nil
 	case *ast.CallStatement:
-		return resolveCall(node.Name, node.NameSpan, node.Span, node.Arguments, bound, functions)
+		return resolveCall(node.Module, node.Name, node.NameSpan, node.Span, node.Arguments, bound, venv)
 	default:
 		return nil
 	}
 }
 
-func resolveCall(name string, nameSpan, callSpan lexer.Span, args []ast.Expression, bound map[string]struct{}, functions map[string]*ast.FunctionDef) error {
-	fn, ok := functions[name]
-	if !ok {
-		return &Error{Kind: UnknownFunction, Name: name, Span: nameSpan}
-	}
-	if len(args) != len(fn.Parameters) {
-		return &Error{Kind: FunctionArityMismatch, Name: name, Span: callSpan}
+func resolveCall(module, name string, nameSpan, callSpan lexer.Span, args []ast.Expression, bound map[string]struct{}, venv validationEnv) error {
+	if module != "" {
+		qname := module + "." + name
+		if _, imported := venv.modules[module]; !imported {
+			return &Error{Kind: UnknownFunction, Name: qname, Span: nameSpan}
+		}
+		stdFn, ok := lookupStdlibFunc(module, name)
+		if !ok {
+			return &Error{Kind: UnknownFunction, Name: qname, Span: nameSpan}
+		}
+		if len(args) != stdFn.arity {
+			return &Error{Kind: FunctionArityMismatch, Name: qname, Span: callSpan}
+		}
+	} else {
+		fn, ok := venv.functions[name]
+		if !ok {
+			return &Error{Kind: UnknownFunction, Name: name, Span: nameSpan}
+		}
+		if len(args) != len(fn.Parameters) {
+			return &Error{Kind: FunctionArityMismatch, Name: name, Span: callSpan}
+		}
 	}
 	for _, arg := range args {
-		if err := resolveExpression(arg, bound, functions); err != nil {
+		if err := resolveExpression(arg, bound, venv); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func resolveExpression(expression ast.Expression, bound map[string]struct{}, functions map[string]*ast.FunctionDef) error {
+func resolveExpression(expression ast.Expression, bound map[string]struct{}, venv validationEnv) error {
 	switch node := expression.(type) {
 	case *ast.IdentifierExpr:
 		if _, ok := bound[node.Name]; !ok {
 			return &Error{Kind: UnboundVariable, Name: node.Name, Span: node.Span}
 		}
 	case *ast.ParenExpr:
-		return resolveExpression(node.Inner, bound, functions)
+		return resolveExpression(node.Inner, bound, venv)
 	case *ast.UnaryExpr:
-		return resolveExpression(node.Operand, bound, functions)
+		return resolveExpression(node.Operand, bound, venv)
 	case *ast.JoinedExpr:
-		if err := resolveExpression(node.Left, bound, functions); err != nil {
+		if err := resolveExpression(node.Left, bound, venv); err != nil {
 			return err
 		}
-		return resolveExpression(node.Right, bound, functions)
+		return resolveExpression(node.Right, bound, venv)
 	case *ast.BinaryExpr:
-		if err := resolveExpression(node.Left, bound, functions); err != nil {
+		if err := resolveExpression(node.Left, bound, venv); err != nil {
 			return err
 		}
-		return resolveExpression(node.Right, bound, functions)
+		return resolveExpression(node.Right, bound, venv)
 	case *ast.FieldAccessExpr:
-		return resolveExpression(node.Target, bound, functions)
+		return resolveExpression(node.Target, bound, venv)
 	case *ast.IndexAccessExpr:
-		if err := resolveExpression(node.Target, bound, functions); err != nil {
+		if err := resolveExpression(node.Target, bound, venv); err != nil {
 			return err
 		}
-		return resolveExpression(node.Index, bound, functions)
+		return resolveExpression(node.Index, bound, venv)
 	case *ast.HasExpr:
-		return resolveExpression(node.Target, bound, functions)
+		return resolveExpression(node.Target, bound, venv)
 	case *ast.CallExpr:
-		return resolveCall(node.Name, node.NameSpan, node.Span, node.Arguments, bound, functions)
+		return resolveCall(node.Module, node.Name, node.NameSpan, node.Span, node.Arguments, bound, venv)
 	case *ast.ListExpr:
 		for _, element := range node.Elements {
-			if err := resolveExpression(element, bound, functions); err != nil {
+			if err := resolveExpression(element, bound, venv); err != nil {
 				return err
 			}
 		}
 	case *ast.MapExpr:
 		for _, entry := range node.Entries {
-			if err := resolveExpression(entry.Value, bound, functions); err != nil {
+			if err := resolveExpression(entry.Value, bound, venv); err != nil {
 				return err
 			}
 		}
 	case *ast.RecordExpr:
 		for _, field := range node.Fields {
-			if err := resolveExpression(field.Value, bound, functions); err != nil {
+			if err := resolveExpression(field.Value, bound, venv); err != nil {
 				return err
 			}
 		}
@@ -389,16 +568,32 @@ func (s *scope) snapshot() map[string]grabrt.Value {
 type execContext struct {
 	output       io.Writer
 	functions    map[string]*ast.FunctionDef
+	permissions  Permissions
 	loopSteps    int
 	maxLoopSteps int
 	callDepth    int
 	maxCallDepth int
+	callStack    []StackFrame
+}
+
+func (ctx *execContext) attachStack(err error) error {
+	if err == nil {
+		return nil
+	}
+	if interpErr, ok := err.(*Error); ok && len(ctx.callStack) > 0 && len(interpErr.Stack) == 0 {
+		frames := make([]StackFrame, len(ctx.callStack))
+		for i := range ctx.callStack {
+			frames[i] = ctx.callStack[len(ctx.callStack)-1-i]
+		}
+		interpErr.Stack = frames
+	}
+	return err
 }
 
 func (ctx *execContext) stepLoop(span lexer.Span) error {
 	ctx.loopSteps++
 	if ctx.loopSteps > ctx.maxLoopSteps {
-		return &Error{Kind: ExecutionLimitExceeded, Span: span}
+		return ctx.attachStack(&Error{Kind: ExecutionLimitExceeded, Span: span})
 	}
 	return nil
 }
@@ -406,7 +601,7 @@ func (ctx *execContext) stepLoop(span lexer.Span) error {
 func (ctx *execContext) execBlock(statements []ast.Statement, env *scope) (grabrt.Value, bool, error) {
 	for _, statement := range statements {
 		switch node := statement.(type) {
-		case *ast.FunctionDef:
+		case *ast.UseDecl, *ast.FunctionDef:
 			// Already registered during pre-execution validation.
 			continue
 		case *ast.SetStatement:
@@ -528,6 +723,57 @@ func (ctx *execContext) execBlock(statements []ast.Statement, env *scope) (grabr
 					return retVal, returned, err
 				}
 			}
+		case *ast.TryStatement:
+			retVal, returned, err := ctx.execBlock(node.TryBody, env)
+			if err == nil {
+				if returned {
+					return retVal, true, nil
+				}
+				continue
+			}
+			var interpErr *Error
+			if !errors.As(err, &interpErr) || interpErr.IsFatal() {
+				return grabrt.Value{}, false, err
+			}
+			catchScope := newScope(env)
+			catchScope.defineLocal(node.CatchName, interpErr.ErrorRecord())
+			retVal, returned, err = ctx.execBlock(node.CatchBody, catchScope)
+			if err != nil || returned {
+				return retVal, returned, err
+			}
+		case *ast.RaiseStatement:
+			val, err := ctx.evaluate(node.Value, env)
+			if err != nil {
+				return grabrt.Value{}, false, err
+			}
+			switch val.Kind() {
+			case grabrt.TextKind:
+				return grabrt.Value{}, false, ctx.attachStack(&Error{
+					Kind:    UserRaisedError,
+					Message: val.TextValue(),
+					Span:    node.Span,
+				})
+			case grabrt.RecordKind:
+				msgVal, ok := val.LookupEntry("message")
+				if !ok || msgVal.Kind() != grabrt.TextKind {
+					return grabrt.Value{}, false, ctx.attachStack(&Error{Kind: TypeMismatch, Span: node.Span})
+				}
+				customCode := ""
+				if codeVal, hasCode := val.LookupEntry("code"); hasCode {
+					if codeVal.Kind() != grabrt.TextKind || codeVal.TextValue() == "" {
+						return grabrt.Value{}, false, ctx.attachStack(&Error{Kind: TypeMismatch, Span: node.Span})
+					}
+					customCode = codeVal.TextValue()
+				}
+				return grabrt.Value{}, false, ctx.attachStack(&Error{
+					Kind:       UserRaisedError,
+					CustomCode: customCode,
+					Message:    msgVal.TextValue(),
+					Span:       node.Span,
+				})
+			default:
+				return grabrt.Value{}, false, ctx.attachStack(&Error{Kind: TypeMismatch, Span: node.Span})
+			}
 		case *ast.GiveBackStatement:
 			if node.Value == nil {
 				return grabrt.Nothing(), true, nil
@@ -538,7 +784,7 @@ func (ctx *execContext) execBlock(statements []ast.Statement, env *scope) (grabr
 			}
 			return val, true, nil
 		case *ast.CallStatement:
-			if _, err := ctx.invokeFunction(node.Name, node.Span, node.Arguments, env); err != nil {
+			if _, err := ctx.invokeCall(node.Module, node.Name, node.Span, node.Arguments, env); err != nil {
 				return grabrt.Value{}, false, err
 			}
 		}
@@ -546,8 +792,7 @@ func (ctx *execContext) execBlock(statements []ast.Statement, env *scope) (grabr
 	return grabrt.Nothing(), false, nil
 }
 
-func (ctx *execContext) invokeFunction(name string, span lexer.Span, argExprs []ast.Expression, callerEnv *scope) (grabrt.Value, error) {
-	fn := ctx.functions[name]
+func (ctx *execContext) invokeCall(module, name string, span lexer.Span, argExprs []ast.Expression, callerEnv *scope) (grabrt.Value, error) {
 	argVals := make([]grabrt.Value, len(argExprs))
 	for i, argExpr := range argExprs {
 		val, err := ctx.evaluate(argExpr, callerEnv)
@@ -557,13 +802,22 @@ func (ctx *execContext) invokeFunction(name string, span lexer.Span, argExprs []
 		argVals[i] = val
 	}
 
+	if module != "" {
+		stdFn, _ := lookupStdlibFunc(module, name)
+		val, err := stdFn.fn(ctx, span, argVals)
+		return val, ctx.attachStack(err)
+	}
+
+	fn := ctx.functions[name]
 	ctx.callDepth++
 	if ctx.callDepth > ctx.maxCallDepth {
 		ctx.callDepth--
-		return grabrt.Value{}, &Error{Kind: CallStackOverflow, Span: span}
+		return grabrt.Value{}, ctx.attachStack(&Error{Kind: CallStackOverflow, Span: span})
 	}
+	ctx.callStack = append(ctx.callStack, StackFrame{Function: name, Span: span})
 	defer func() {
 		ctx.callDepth--
+		ctx.callStack = ctx.callStack[:len(ctx.callStack)-1]
 	}()
 
 	fnScope := newScope(nil)
@@ -572,7 +826,7 @@ func (ctx *execContext) invokeFunction(name string, span lexer.Span, argExprs []
 	}
 	retVal, returned, err := ctx.execBlock(fn.Body, fnScope)
 	if err != nil {
-		return grabrt.Value{}, err
+		return grabrt.Value{}, ctx.attachStack(err)
 	}
 	if !returned {
 		return grabrt.Nothing(), nil
@@ -680,7 +934,7 @@ func (ctx *execContext) evaluate(expression ast.Expression, env *scope) (grabrt.
 		_, ok := target.LookupEntry(node.Key)
 		return grabrt.Boolean(ok), nil
 	case *ast.CallExpr:
-		return ctx.invokeFunction(node.Name, node.Span, node.Arguments, env)
+		return ctx.invokeCall(node.Module, node.Name, node.Span, node.Arguments, env)
 	case *ast.ListExpr:
 		values := make([]grabrt.Value, len(node.Elements))
 		for i, item := range node.Elements {

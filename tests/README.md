@@ -61,3 +61,12 @@ opening quote rather than extending through subsequent content/newline.
 - record field lookup (`.field`), list and map lookup (`at`), and existence checks (`has`);
 - `if` / `otherwise if` / `otherwise` / `end`, `repeat <count> times`, `for each <item> in <collection>`, and `while <condition>` loops (including the `1,000,000`-step safety guard);
 - top-level functions (`make` / `using` / `give back` / `call`), isolated lexical call frames, pre-execution arity verification, and the `256`-frame recursion guard.
+
+## GRAB 0.4 standard library, error model, and permissions conformance
+
+`grab04_conformance_test.go` verifies `specifications/GRAB-STDLIB-SPEC-004.md`:
+- reserved GRAB 0.4 keywords (`use`, `try`, `catch`, `raise`) and top-level `use <module>` validation (`GRAB-E205`, `GRAB-E206`, `GRAB-E207`);
+- all five core standard library modules (`text`, `math`, `collections`, `dates`, `files`) and value-returning helper calls;
+- structured error model (`try ... catch <ident> ... end` and `raise <expr>`), error records (`code`, `category`, `message`, `line`, `column`), exhaustive branch bindings, and non-catchable fatal safety limits (`GRAB-E306`, `GRAB-E307`);
+- capability-based default-deny filesystem permissions (`--allow-read <dir>`, `--allow-write <dir>`), path confinement, symlink checking, `10 MiB` file limit, and mandatory sensitive-path blocklist (`GRAB-E401`);
+- CLI subcommands `grab check` and `grab format [--write]` plus diagnostic modes (`--diagnostics beginner|developer|production`).

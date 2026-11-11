@@ -41,6 +41,16 @@ type ShowStatement struct {
 func (statement *ShowStatement) SourceSpan() lexer.Span { return statement.Span }
 func (*ShowStatement) statementNode()                   {}
 
+// UseDecl imports a built-in standard library module at the top level (`use <module>`).
+type UseDecl struct {
+	Module     string
+	ModuleSpan lexer.Span
+	Span       lexer.Span
+}
+
+func (statement *UseDecl) SourceSpan() lexer.Span { return statement.Span }
+func (*UseDecl) statementNode()                   {}
+
 // Parameter is a named function parameter in a make declaration.
 type Parameter struct {
 	Name string
@@ -110,6 +120,27 @@ type WhileStatement struct {
 func (statement *WhileStatement) SourceSpan() lexer.Span { return statement.Span }
 func (*WhileStatement) statementNode()                   {}
 
+// TryStatement executes TryBody and catches recoverable runtime errors into CatchName (`try ... catch <ident> ... end`).
+type TryStatement struct {
+	TryBody       []Statement
+	CatchName     string
+	CatchNameSpan lexer.Span
+	CatchBody     []Statement
+	Span          lexer.Span
+}
+
+func (statement *TryStatement) SourceSpan() lexer.Span { return statement.Span }
+func (*TryStatement) statementNode()                   {}
+
+// RaiseStatement raises a recoverable runtime error (`raise <expression>`).
+type RaiseStatement struct {
+	Value Expression
+	Span  lexer.Span
+}
+
+func (statement *RaiseStatement) SourceSpan() lexer.Span { return statement.Span }
+func (*RaiseStatement) statementNode()                   {}
+
 // GiveBackStatement returns a value (or nothing if Value is nil) from a function.
 type GiveBackStatement struct {
 	Value Expression
@@ -119,16 +150,26 @@ type GiveBackStatement struct {
 func (statement *GiveBackStatement) SourceSpan() lexer.Span { return statement.Span }
 func (*GiveBackStatement) statementNode()                   {}
 
-// CallStatement invokes a function as a standalone statement.
+// CallStatement invokes a function or module function as a standalone statement.
 type CallStatement struct {
-	Name      string
-	NameSpan  lexer.Span
-	Arguments []Expression
-	Span      lexer.Span
+	Module     string
+	ModuleSpan lexer.Span
+	Name       string
+	NameSpan   lexer.Span
+	Arguments  []Expression
+	Span       lexer.Span
 }
 
 func (statement *CallStatement) SourceSpan() lexer.Span { return statement.Span }
 func (*CallStatement) statementNode()                   {}
+
+// QualifiedName returns "<Module>.<Name>" for module calls or "<Name>" for top-level functions.
+func (statement *CallStatement) QualifiedName() string {
+	if statement.Module != "" {
+		return statement.Module + "." + statement.Name
+	}
+	return statement.Name
+}
 
 // Expression is a value-producing syntax node.
 type Expression interface {
@@ -312,13 +353,23 @@ type HasExpr struct {
 func (expression *HasExpr) SourceSpan() lexer.Span { return expression.Span }
 func (*HasExpr) expressionNode()                   {}
 
-// CallExpr invokes a defined function inside an expression (`fn using args` or `call fn`).
+// CallExpr invokes a defined function or module function inside an expression (`fn using args` or `call fn`).
 type CallExpr struct {
-	Name      string
-	NameSpan  lexer.Span
-	Arguments []Expression
-	Span      lexer.Span
+	Module     string
+	ModuleSpan lexer.Span
+	Name       string
+	NameSpan   lexer.Span
+	Arguments  []Expression
+	Span       lexer.Span
 }
 
 func (expression *CallExpr) SourceSpan() lexer.Span { return expression.Span }
 func (*CallExpr) expressionNode()                   {}
+
+// QualifiedName returns "<Module>.<Name>" for module calls or "<Name>" for top-level functions.
+func (expression *CallExpr) QualifiedName() string {
+	if expression.Module != "" {
+		return expression.Module + "." + expression.Name
+	}
+	return expression.Name
+}

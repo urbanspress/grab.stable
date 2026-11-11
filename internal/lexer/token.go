@@ -60,6 +60,10 @@ const (
 	TokenBy
 	TokenModulo
 	TokenHas
+	TokenUse
+	TokenTry
+	TokenCatch
+	TokenRaise
 )
 
 var tokenKindNames = [...]string{
@@ -119,6 +123,10 @@ var tokenKindNames = [...]string{
 	TokenBy:             "by",
 	TokenModulo:         "modulo",
 	TokenHas:            "has",
+	TokenUse:            "use",
+	TokenTry:            "try",
+	TokenCatch:          "catch",
+	TokenRaise:          "raise",
 }
 
 // String returns a readable name for the token kind.

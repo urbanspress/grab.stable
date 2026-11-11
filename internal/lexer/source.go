@@ -29,6 +29,11 @@ func (e *InvalidUTF8Error) Error() string {
 	return fmt.Sprintf("invalid UTF-8 at line %d, column %d", e.Span.Start.Line, e.Span.Start.Column)
 }
 
+// Code returns the stable GRAB 0.4 error code for invalid source encoding.
+func (e *InvalidUTF8Error) Code() string {
+	return "GRAB-E001"
+}
+
 // SourceReader reads Unicode scalar values while retaining byte offsets and
 // one-based line and column positions.
 type SourceReader struct {

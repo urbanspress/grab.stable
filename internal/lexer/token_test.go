@@ -63,6 +63,10 @@ func TestTokenKindString(t *testing.T) {
 		{kind: TokenBy, want: "by"},
 		{kind: TokenModulo, want: "modulo"},
 		{kind: TokenHas, want: "has"},
+		{kind: TokenUse, want: "use"},
+		{kind: TokenTry, want: "try"},
+		{kind: TokenCatch, want: "catch"},
+		{kind: TokenRaise, want: "raise"},
 		{kind: TokenKind(255), want: "unknown"},
 	}
 

@@ -69,6 +69,20 @@ func TestLexerLexAll(t *testing.T) {
 				"(", "product", ".", "sku", ")", "\n", "",
 			},
 		},
+		{
+			name:  "GRAB 0.4 keywords and non-reserved module names",
+			input: "use text try catch raise math collections dates files\n",
+			kinds: []TokenKind{
+				TokenUse, TokenIdentifier, TokenTry, TokenCatch, TokenRaise,
+				TokenIdentifier, TokenIdentifier, TokenIdentifier, TokenIdentifier,
+				TokenNewline, TokenEOF,
+			},
+			lexemes: []string{
+				"use", "text", "try", "catch", "raise",
+				"math", "collections", "dates", "files",
+				"\n", "",
+			},
+		},
 	}
 
 	for _, tt := range tests {

@@ -40,6 +40,18 @@ func (e *ParseError) Error() string {
 	}
 }
 
+// Code returns the stable GRAB 0.4 error code for the syntax error.
+func (e *ParseError) Code() string {
+	switch e.Kind {
+	case ParseDuplicateMapKey:
+		return "GRAB-E102"
+	case ParseDuplicateRecordField:
+		return "GRAB-E103"
+	default:
+		return "GRAB-E101"
+	}
+}
+
 // Parse lexes and parses a complete GRAB source file.
 func Parse(name, source string) (*ast.Program, error) {
 	lexerInstance, err := lexer.NewLexer(name, source)
@@ -74,7 +86,9 @@ func (parser *Parser) parseProgram() (*ast.Program, error) {
 	for !parser.check(lexer.TokenEOF) {
 		var statement ast.Statement
 		var err error
-		if parser.check(lexer.TokenMake) {
+		if parser.check(lexer.TokenUse) {
+			statement, err = parser.parseUseDecl()
+		} else if parser.check(lexer.TokenMake) {
 			statement, err = parser.parseFunctionDef()
 		} else {
 			statement, err = parser.parseStatement()
@@ -97,6 +111,19 @@ func (parser *Parser) parseProgram() (*ast.Program, error) {
 	return &ast.Program{
 		Statements: statements,
 		Span:       lexer.Span{Start: start, End: end},
+	}, nil
+}
+
+func (parser *Parser) parseUseDecl() (ast.Statement, error) {
+	start := parser.advance().Span.Start // 'use'
+	mod, err := parser.consume(lexer.TokenIdentifier)
+	if err != nil {
+		return nil, err
+	}
+	return &ast.UseDecl{
+		Module:     mod.Lexeme,
+		ModuleSpan: mod.Span,
+		Span:       lexer.Span{Start: start, End: mod.Span.End},
 	}, nil
 }
 
@@ -173,12 +200,16 @@ func (parser *Parser) parseStatement() (ast.Statement, error) {
 		return parser.parseForEachStatement()
 	case lexer.TokenWhile:
 		return parser.parseWhileStatement()
+	case lexer.TokenTry:
+		return parser.parseTryStatement()
+	case lexer.TokenRaise:
+		return parser.parseRaiseStatement()
 	case lexer.TokenGive:
 		return parser.parseGiveBackStatement()
 	case lexer.TokenCall:
 		return parser.parseCallStatement()
 	case lexer.TokenIdentifier:
-		if parser.peekToken().Kind == lexer.TokenUsing {
+		if parser.peekToken().Kind == lexer.TokenUsing || parser.isImplicitQualifiedCall() {
 			return parser.parseImplicitCallStatement()
 		}
 		return nil, parser.unexpected(parser.currentToken())
@@ -378,6 +409,54 @@ func (parser *Parser) parseWhileStatement() (ast.Statement, error) {
 	}, nil
 }
 
+func (parser *Parser) parseTryStatement() (ast.Statement, error) {
+	start := parser.advance().Span.Start // 'try'
+	if _, err := parser.consume(lexer.TokenNewline); err != nil {
+		return nil, err
+	}
+	tryBody, err := parser.parseBlockBody(lexer.TokenCatch)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := parser.consume(lexer.TokenCatch); err != nil {
+		return nil, err
+	}
+	catchIdent, err := parser.consume(lexer.TokenIdentifier)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := parser.consume(lexer.TokenNewline); err != nil {
+		return nil, err
+	}
+	catchBody, err := parser.parseBlockBody(lexer.TokenEnd)
+	if err != nil {
+		return nil, err
+	}
+	endTok, err := parser.consume(lexer.TokenEnd)
+	if err != nil {
+		return nil, err
+	}
+	return &ast.TryStatement{
+		TryBody:       tryBody,
+		CatchName:     catchIdent.Lexeme,
+		CatchNameSpan: catchIdent.Span,
+		CatchBody:     catchBody,
+		Span:          lexer.Span{Start: start, End: endTok.Span.End},
+	}, nil
+}
+
+func (parser *Parser) parseRaiseStatement() (ast.Statement, error) {
+	start := parser.advance().Span.Start // 'raise'
+	val, err := parser.parseExpression()
+	if err != nil {
+		return nil, err
+	}
+	return &ast.RaiseStatement{
+		Value: val,
+		Span:  lexer.Span{Start: start, End: val.SourceSpan().End},
+	}, nil
+}
+
 func (parser *Parser) parseGiveBackStatement() (ast.Statement, error) {
 	start := parser.advance().Span.Start // 'give'
 	backTok, err := parser.consume(lexer.TokenBack)
@@ -400,14 +479,29 @@ func (parser *Parser) parseGiveBackStatement() (ast.Statement, error) {
 	}, nil
 }
 
+func (parser *Parser) parseCallableTarget() (string, lexer.Span, string, lexer.Span, error) {
+	first, err := parser.consume(lexer.TokenIdentifier)
+	if err != nil {
+		return "", lexer.Span{}, "", lexer.Span{}, err
+	}
+	if parser.match(lexer.TokenDot) {
+		second, err := parser.consume(lexer.TokenIdentifier)
+		if err != nil {
+			return "", lexer.Span{}, "", lexer.Span{}, err
+		}
+		return first.Lexeme, first.Span, second.Lexeme, lexer.Span{Start: first.Span.Start, End: second.Span.End}, nil
+	}
+	return "", lexer.Span{}, first.Lexeme, first.Span, nil
+}
+
 func (parser *Parser) parseCallStatement() (ast.Statement, error) {
 	start := parser.advance().Span.Start // 'call'
-	name, err := parser.consume(lexer.TokenIdentifier)
+	mod, modSpan, name, nameSpan, err := parser.parseCallableTarget()
 	if err != nil {
 		return nil, err
 	}
 	var args []ast.Expression
-	end := name.Span.End
+	end := nameSpan.End
 	if parser.match(lexer.TokenUsing) {
 		args, err = parser.parseArgList()
 		if err != nil {
@@ -416,25 +510,32 @@ func (parser *Parser) parseCallStatement() (ast.Statement, error) {
 		end = args[len(args)-1].SourceSpan().End
 	}
 	return &ast.CallStatement{
-		Name:      name.Lexeme,
-		NameSpan:  name.Span,
-		Arguments: args,
-		Span:      lexer.Span{Start: start, End: end},
+		Module:     mod,
+		ModuleSpan: modSpan,
+		Name:       name,
+		NameSpan:   nameSpan,
+		Arguments:  args,
+		Span:       lexer.Span{Start: start, End: end},
 	}, nil
 }
 
 func (parser *Parser) parseImplicitCallStatement() (ast.Statement, error) {
-	name := parser.advance() // identifier
-	parser.advance()         // 'using'
+	mod, modSpan, name, nameSpan, err := parser.parseCallableTarget()
+	if err != nil {
+		return nil, err
+	}
+	parser.advance() // 'using'
 	args, err := parser.parseArgList()
 	if err != nil {
 		return nil, err
 	}
 	return &ast.CallStatement{
-		Name:      name.Lexeme,
-		NameSpan:  name.Span,
-		Arguments: args,
-		Span:      lexer.Span{Start: name.Span.Start, End: args[len(args)-1].SourceSpan().End},
+		Module:     mod,
+		ModuleSpan: modSpan,
+		Name:       name,
+		NameSpan:   nameSpan,
+		Arguments:  args,
+		Span:       lexer.Span{Start: nameSpan.Start, End: args[len(args)-1].SourceSpan().End},
 	}, nil
 }
 
@@ -810,12 +911,12 @@ func (parser *Parser) parsePrimary() (ast.Expression, error) {
 	switch token.Kind {
 	case lexer.TokenCall:
 		start := parser.advance().Span.Start
-		name, err := parser.consume(lexer.TokenIdentifier)
+		mod, modSpan, name, nameSpan, err := parser.parseCallableTarget()
 		if err != nil {
 			return nil, err
 		}
 		var args []ast.Expression
-		end := name.Span.End
+		end := nameSpan.End
 		if parser.match(lexer.TokenUsing) {
 			args, err = parser.parseArgList()
 			if err != nil {
@@ -824,25 +925,34 @@ func (parser *Parser) parsePrimary() (ast.Expression, error) {
 			end = args[len(args)-1].SourceSpan().End
 		}
 		return &ast.CallExpr{
-			Name:      name.Lexeme,
-			NameSpan:  name.Span,
-			Arguments: args,
-			Span:      lexer.Span{Start: start, End: end},
+			Module:     mod,
+			ModuleSpan: modSpan,
+			Name:       name,
+			NameSpan:   nameSpan,
+			Arguments:  args,
+			Span:       lexer.Span{Start: start, End: end},
 		}, nil
 	case lexer.TokenIdentifier:
-		parser.advance()
-		if parser.match(lexer.TokenUsing) {
+		if parser.peekToken().Kind == lexer.TokenUsing || parser.isImplicitQualifiedCall() {
+			mod, modSpan, name, nameSpan, err := parser.parseCallableTarget()
+			if err != nil {
+				return nil, err
+			}
+			parser.advance() // 'using'
 			args, err := parser.parseArgList()
 			if err != nil {
 				return nil, err
 			}
 			return &ast.CallExpr{
-				Name:      token.Lexeme,
-				NameSpan:  token.Span,
-				Arguments: args,
-				Span:      lexer.Span{Start: token.Span.Start, End: args[len(args)-1].SourceSpan().End},
+				Module:     mod,
+				ModuleSpan: modSpan,
+				Name:       name,
+				NameSpan:   nameSpan,
+				Arguments:  args,
+				Span:       lexer.Span{Start: nameSpan.Start, End: args[len(args)-1].SourceSpan().End},
 			}, nil
 		}
+		parser.advance()
 		return &ast.IdentifierExpr{Name: token.Lexeme, Span: token.Span}, nil
 	case lexer.TokenLeftParen:
 		start := parser.advance().Span.Start
@@ -1029,10 +1139,23 @@ func (parser *Parser) previousToken() lexer.Token {
 }
 
 func (parser *Parser) peekToken() lexer.Token {
-	if parser.current+1 >= len(parser.tokens) {
+	return parser.tokenAt(1)
+}
+
+func (parser *Parser) tokenAt(offset int) lexer.Token {
+	if len(parser.tokens) == 0 {
+		return lexer.Token{Kind: lexer.TokenEOF}
+	}
+	if parser.current+offset >= len(parser.tokens) {
 		return parser.tokens[len(parser.tokens)-1]
 	}
-	return parser.tokens[parser.current+1]
+	return parser.tokens[parser.current+offset]
+}
+
+func (parser *Parser) isImplicitQualifiedCall() bool {
+	return parser.tokenAt(1).Kind == lexer.TokenDot &&
+		parser.tokenAt(2).Kind == lexer.TokenIdentifier &&
+		parser.tokenAt(3).Kind == lexer.TokenUsing
 }
 
 func (parser *Parser) currentToken() lexer.Token {

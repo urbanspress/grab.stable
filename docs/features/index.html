@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GRAB Feature Guides Hub — Milestone Releases</title>
+<style>
+  :root {
+    --page-bg: #f8fafc;
+    --surface: #ffffff;
+    --surface-muted: #f1f5f9;
+    --border: #e2e8f0;
+    --text-main: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    --accent: #0284c7;
+    --accent-soft: #e0f2fe;
+    --green: #15803d;
+    --green-soft: #dcfce7;
+    --amber: #b45309;
+    --amber-soft: #fef3c7;
+    --slate-soft: #e2e8f0;
+    --term-bg: #0b1120;
+    --radius: 14px;
+    --shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--page-bg);
+    color: var(--text-main);
+    line-height: 1.6;
+  }
+
+  a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  a:hover {
+    text-decoration: underline;
+  }
+
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+
+  .topbar-inner {
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 14px 24px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--text-main);
+  }
+
+  .brand-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: var(--term-bg);
+    color: #38bdf8;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  .milestone-nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+  }
+
+  .nav-pill {
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+
+  .nav-pill:hover {
+    background: var(--surface-muted);
+    text-decoration: none;
+  }
+
+  .nav-pill.active {
+    background: var(--term-bg);
+    color: #ffffff;
+    border-color: var(--term-bg);
+  }
+
+  .container {
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 36px 24px 64px;
+  }
+
+  .hero {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: var(--shadow);
+    margin-bottom: 36px;
+  }
+
+  .hero h1 {
+    margin: 0 0 10px;
+    font-size: 32px;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+
+  .hero p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 16px;
+    max-width: 820px;
+  }
+
+  .section-title {
+    margin: 34px 0 8px;
+    font-size: 22px;
+    letter-spacing: -0.01em;
+  }
+
+  .section-sub {
+    margin: 0 0 20px;
+    color: var(--text-secondary);
+    font-size: 15px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  @media (min-width: 820px) {
+    .grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .card.highlight {
+    border-color: #7dd3fc;
+    box-shadow: 0 6px 24px rgba(2, 132, 199, 0.12);
+  }
+
+  .card-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .version-label {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--text-muted);
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+  }
+
+  .badge {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+  }
+
+  .badge-green { background: var(--green-soft); color: var(--green); }
+  .badge-amber { background: var(--amber-soft); color: var(--amber); }
+  .badge-slate { background: var(--slate-soft); color: var(--text-secondary); }
+
+  .card h3 {
+    margin: 0 0 10px;
+    font-size: 20px;
+  }
+
+  .card p {
+    margin: 0 0 12px;
+    font-size: 14.5px;
+    color: var(--text-secondary);
+  }
+
+  .feature-bullets {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  .feature-bullets li {
+    margin-bottom: 6px;
+  }
+
+  .card-actions {
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 13.5px;
+  }
+
+  .btn-primary {
+    display: inline-block;
+    background: var(--term-bg);
+    color: #ffffff;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 8px;
+  }
+
+  .btn-primary:hover {
+    background: #1e293b;
+    text-decoration: none;
+  }
+
+  code.inline {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    background: var(--surface-muted);
+    padding: 2px 6px;
+    border-radius: 5px;
+    font-size: 0.9em;
+    color: var(--text-main);
+  }
+
+  .planned-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+
+  .planned-table th,
+  .planned-table td {
+    text-align: left;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+
+  .planned-table th {
+    background: var(--surface-muted);
+    color: var(--text-main);
+    font-weight: 700;
+  }
+
+  .planned-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .footer-note {
+    margin-top: 36px;
+    padding: 18px 22px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    font-size: 13.5px;
+    color: var(--text-secondary);
+  }
+</style>
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="index.html">
+        <span class="brand-mark">G</span>
+        <span>GRAB Milestone Feature Guides</span>
+      </a>
+      <nav class="milestone-nav" aria-label="Milestone links">
+        <a class="nav-pill active" href="index.html">All Milestones Hub</a>
+        <a class="nav-pill" href="grab_04_features.html">GRAB 0.4 Visual Guide &rarr;</a>
+        <a class="nav-pill" href="../ROADMAP.md">ROADMAP.md</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <section class="hero">
+      <h1>GRAB Release &amp; Feature Guides</h1>
+      <p>
+        Plain-English visual documentation for every GRAB milestone—built so non-coders and developers
+        alike can inspect what each release adds, why it helps builders, and how it improves the experience
+        for visitors using GRAB applications.
+      </p>
+    </section>
+
+    <h2 class="section-title">Released &amp; Active Milestones (GRAB 0.1 – 0.4)</h2>
+    <p class="section-sub">Each version builds cleanly on the last while keeping existing <code class="inline">.grab</code> programs compatible.</p>
+
+    <section class="grid">
+
+      <!-- GRAB 0.1 -->
+      <article class="card" id="grab-01">
+        <div>
+          <div class="card-top">
+            <span class="version-label">GRAB 0.1</span>
+            <span class="badge badge-green">Complete</span>
+          </div>
+          <h3>Language Foundation</h3>
+          <p>A clean, deterministic Go-implemented interpreter and CLI for running <code class="inline">.grab</code> scripts locally.</p>
+          <ul class="feature-bullets">
+            <li>Variables and output via <code class="inline">set</code>, <code class="inline">show</code>, and <code class="inline">joined with</code>.</li>
+            <li>Portable values: text, Boolean (<code class="inline">yes</code>/<code class="inline">no</code>), <code class="inline">nothing</code>, integers, exact decimals, floats, bytes, lists, maps, and records.</li>
+            <li>Command-line execution via <code class="inline">grab run &lt;file.grab&gt;</code> with clear source-located diagnostics.</li>
+          </ul>
+        </div>
+        <div class="card-actions">
+          <span>Spec: <a href="../../specifications/GRAB-LANGUAGE-SPEC-001.md">GRAB-LANGUAGE-SPEC-001.md</a></span>
+          <span style="color: var(--text-muted);">Baseline foundation</span>
+        </div>
+      </article>
+
+      <!-- GRAB 0.2 -->
+      <article class="card" id="grab-02">
+        <div>
+          <div class="card-top">
+            <span class="version-label">GRAB 0.2</span>
+            <span class="badge badge-green">Complete</span>
+          </div>
+          <h3>Localhost Browser Preview</h3>
+          <p>Separates program logic in <code class="inline">.grab</code> files from reusable HTML templates in <code class="inline">.grab.html</code> files.</p>
+          <ul class="feature-bullets">
+            <li>Simple <code class="inline">{identifier}</code> placeholders and literal <code class="inline">{{</code> / <code class="inline">}}</code> braces inside HTML templates.</li>
+            <li>Context-aware HTML escaping to help protect visitors against XSS and broken markup.</li>
+            <li>Loopback-only dev server via <code class="inline">grab serve</code> on <code class="inline">127.0.0.1:8080</code>.</li>
+          </ul>
+        </div>
+        <div class="card-actions">
+          <span>Spec: <a href="../../specifications/GRAB-LOCALHOST-SPEC-002.md">GRAB-LOCALHOST-SPEC-002.md</a></span>
+          <span style="color: var(--text-muted);">Live preview enabled</span>
+        </div>
+      </article>
+
+      <!-- GRAB 0.3 -->
+      <article class="card" id="grab-03">
+        <div>
+          <div class="card-top">
+            <span class="version-label">GRAB 0.3</span>
+            <span class="badge badge-green">Complete</span>
+          </div>
+          <h3>Control Flow, Functions &amp; Richer Language</h3>
+          <p>Turns GRAB into a general-purpose programming language with conditions, bounded loops, math, and reusable functions.</p>
+          <ul class="feature-bullets">
+            <li>Branching &amp; loops: <code class="inline">if</code> / <code class="inline">otherwise if</code> / <code class="inline">otherwise</code>, <code class="inline">repeat</code>, <code class="inline">for each</code>, and <code class="inline">while</code> (with 1,000,000-step safety guard).</li>
+            <li>Functions (<code class="inline">make</code> / <code class="inline">using</code> / <code class="inline">give back</code> / <code class="inline">call</code>) with isolated call frames and 256-frame limit.</li>
+            <li>Exact decimal/integer arithmetic, comparisons, Boolean logic, and <code class="inline">.field</code> / <code class="inline">at</code> / <code class="inline">has</code> lookups.</li>
+          </ul>
+        </div>
+        <div class="card-actions">
+          <span>Spec: <a href="../../specifications/GRAB-LANGUAGE-SPEC-003.md">GRAB-LANGUAGE-SPEC-003.md</a></span>
+          <span style="color: var(--text-muted);">Benchmark harness added</span>
+        </div>
+      </article>
+
+      <!-- GRAB 0.4 -->
+      <article class="card highlight" id="grab-04">
+        <div>
+          <div class="card-top">
+            <span class="version-label">GRAB 0.4</span>
+            <span class="badge badge-green">Complete</span>
+          </div>
+          <h3>Core Standard Library, Error Model &amp; Permissions</h3>
+          <p>Brings built-in helpers (<code class="inline">text</code>, <code class="inline">math</code>, <code class="inline">collections</code>, <code class="inline">dates</code>, <code class="inline">files</code>), crash recovery, capability security, and developer CLI checks.</p>
+          <ul class="feature-bullets">
+            <li><code class="inline">use text</code> (including <code class="inline">text.from</code> for <code class="inline">$19.95</code> badges), <code class="inline">math</code>, <code class="inline">collections</code>, <code class="inline">dates</code>, and <code class="inline">files</code>.</li>
+            <li><code class="inline">try</code> / <code class="inline">catch</code> / <code class="inline">raise</code> error handling with stable <code class="inline">GRAB-E...</code> codes and <code class="inline">beginner</code> / <code class="inline">developer</code> / <code class="inline">production</code> modes.</li>
+            <li>Default-deny filesystem safety (<code class="inline">--allow-read</code> / <code class="inline">--allow-write</code>) plus <code class="inline">grab check</code> and <code class="inline">grab format</code>.</li>
+          </ul>
+        </div>
+        <div class="card-actions">
+          <span>Spec: <a href="../../specifications/GRAB-STDLIB-SPEC-004.md">GRAB-STDLIB-SPEC-004.md</a></span>
+          <a class="btn-primary" href="grab_04_features.html">Open GRAB 0.4 Visual Guide &rarr;</a>
+        </div>
+      </article>
+
+    </section>
+
+    <h2 class="section-title" id="grab-05">Planned Roadmap Milestones (GRAB 0.5 – 1.0)</h2>
+    <p class="section-sub">Intended future sequence in <a href="../ROADMAP.md">docs/ROADMAP.md</a>. Future guides (<code class="inline">grab_05_features.html</code>, etc.) will be added as each milestone is drafted and approved.</p>
+
+    <table class="planned-table">
+      <thead>
+        <tr>
+          <th>Version</th>
+          <th>Milestone Focus</th>
+          <th>Status</th>
+          <th>Visual Guide</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>GRAB 0.5</strong></td>
+          <td>HTTP client (<code class="inline">GRAB Connect</code>), JSON, and async task groups (<code class="inline">do together</code> / <code class="inline">wait for</code>)</td>
+          <td><span class="badge badge-slate">Planned (Not Yet Approved)</span></td>
+          <td style="color: var(--text-muted);"><code class="inline">grab_05_features.html</code> (Pending)</td>
+        </tr>
+        <tr>
+          <td><strong>GRAB 0.6</strong></td>
+          <td>Persistent multi-route application server (<code class="inline">GRAB Server</code>)</td>
+          <td><span class="badge badge-slate">Planned (Not Yet Approved)</span></td>
+          <td style="color: var(--text-muted);"><code class="inline">grab_06_features.html</code> (Pending)</td>
+        </tr>
+        <tr>
+          <td><strong>GRAB 0.7</strong></td>
+          <td>Database access (<code class="inline">GRAB Data</code>: SQLite, MariaDB, PostgreSQL)</td>
+          <td><span class="badge badge-slate">Planned (Not Yet Approved)</span></td>
+          <td style="color: var(--text-muted);"><code class="inline">grab_07_features.html</code> (Pending)</td>
+        </tr>
+        <tr>
+          <td><strong>GRAB 0.8</strong></td>
+          <td>Connector SDK, webhooks, WebSockets, and server scaling</td>
+          <td><span class="badge badge-slate">Planned (Not Yet Approved)</span></td>
+          <td style="color: var(--text-muted);"><code class="inline">grab_08_features.html</code> (Pending)</td>
+        </tr>
+        <tr>
+          <td><strong>GRAB 0.9</strong></td>
+          <td>Profile-driven IR and bytecode VM</td>
+          <td><span class="badge badge-slate">Planned (Not Yet Approved)</span></td>
+          <td style="color: var(--text-muted);"><code class="inline">grab_09_features.html</code> (Pending)</td>
+        </tr>
+        <tr>
+          <td><strong>GRAB 1.0</strong></td>
+          <td>Stable, production-ready platform</td>
+          <td><span class="badge badge-slate">Planned (Not Yet Approved)</span></td>
+          <td style="color: var(--text-muted);"><code class="inline">grab_10_features.html</code> (Pending)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="footer-note">
+      <strong>Documentation Standard:</strong> Every new GRAB milestone adds or updates a self-contained visual guide under <code class="inline">docs/features/grab_&lt;version&gt;_features.html</code> and updates this hub page so builders and stakeholders can see new capabilities in plain English.
+    </div>
+
+  </main>
+
+</body>
+</html>

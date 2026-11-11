@@ -303,3 +303,59 @@ set sum to add using 10, 20`,
 		})
 	}
 }
+
+func TestParseAndFormatGRAB04Constructs(t *testing.T) {
+	source := `# Header comment
+use   text
+use  dates
+
+make   check_qty   using   qty
+if   qty is less than 1 # invalid qty
+raise   "Quantity must be positive"
+end
+give back   text.from   using qty
+end
+
+try
+set   now   to   call dates.now_utc
+set res   to check_qty   using   0
+catch   err
+set res to   err.message
+end
+show   res
+`
+	wantFormatted := `# Header comment
+use text
+use dates
+
+make check_qty using qty
+  if qty is less than 1 # invalid qty
+    raise "Quantity must be positive"
+  end
+  give back text.from using qty
+end
+
+try
+  set now to call dates.now_utc
+  set res to check_qty using 0
+catch err
+  set res to err.message
+end
+show res
+`
+	formatted, err := Format("grab04.grab", source)
+	if err != nil {
+		t.Fatalf("Format() error = %v", err)
+	}
+	if formatted != wantFormatted {
+		t.Fatalf("Format() =\n%s\nwant:\n%s", formatted, wantFormatted)
+	}
+	// Verify idempotency: formatting again returns identical output.
+	formattedAgain, err := Format("grab04.grab", formatted)
+	if err != nil {
+		t.Fatalf("Format(formatted) error = %v", err)
+	}
+	if formattedAgain != wantFormatted {
+		t.Fatalf("Format() not idempotent:\n%s", formattedAgain)
+	}
+}

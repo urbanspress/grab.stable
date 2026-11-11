@@ -426,3 +426,90 @@ func TestServe_CLI(t *testing.T) {
 		}
 	})
 }
+
+func TestCheckFormatAndFlags_CLI(t *testing.T) {
+	dir := t.TempDir()
+	grabFile := filepath.Join(dir, "sample.grab")
+	tmplFile := filepath.Join(dir, "sample.grab.html")
+	badTmpl := filepath.Join(dir, "bad.grab.html")
+
+	if err := os.WriteFile(grabFile, []byte("use   text\nset   price to 19.95\nset   badge to \"$\" joined with (text.from using price)\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(tmplFile, []byte("<span>{badge}</span>\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(badTmpl, []byte("<span>{missing}</span>\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	cases := []struct {
+		name       string
+		args       []string
+		wantCode   int
+		wantOut    string
+		wantErrSub string
+	}{
+		{
+			name:     "check valid script only",
+			args:     []string{"check", grabFile},
+			wantCode: 0,
+		},
+		{
+			name:     "check valid script and template",
+			args:     []string{"check", grabFile, tmplFile},
+			wantCode: 0,
+		},
+		{
+			name:       "check rejects unbound template variable",
+			args:       []string{"check", grabFile, badTmpl},
+			wantCode:   1,
+			wantErrSub: "unbound template variable",
+		},
+		{
+			name:       "check without file",
+			args:       []string{"check"},
+			wantCode:   2,
+			wantErrSub: "usage:",
+		},
+		{
+			name:     "format prints canonical source to stdout",
+			args:     []string{"format", grabFile},
+			wantCode: 0,
+			wantOut:  "use text\nset price to 19.95\nset badge to \"$\" joined with (text.from using price)\n",
+		},
+		{
+			name:     "format --write updates file in place",
+			args:     []string{"format", "--write", grabFile},
+			wantCode: 0,
+		},
+		{
+			name:       "format without file",
+			args:       []string{"format"},
+			wantCode:   2,
+			wantErrSub: "usage:",
+		},
+		{
+			name:       "run rejects invalid diagnostics mode",
+			args:       []string{"run", "--diagnostics=unknown", grabFile},
+			wantCode:   2,
+			wantErrSub: "usage:",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var stdout, stderr bytes.Buffer
+			code := run(tc.args, &stdout, &stderr)
+			if code != tc.wantCode {
+				t.Fatalf("exit code = %d, want %d (stderr: %q)", code, tc.wantCode, stderr.String())
+			}
+			if tc.wantOut != "" && stdout.String() != tc.wantOut {
+				t.Fatalf("stdout = %q, want %q", stdout.String(), tc.wantOut)
+			}
+			if tc.wantErrSub != "" && !strings.Contains(stderr.String(), tc.wantErrSub) {
+				t.Fatalf("stderr = %q, want containing %q", stderr.String(), tc.wantErrSub)
+			}
+		})
+	}
+}

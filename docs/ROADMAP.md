@@ -91,18 +91,24 @@ Approved and verified milestone outcome:
 
 ## GRAB 0.4 — Core standard library, error model, and permissions
 
-**Status:** Planned (Not Yet Approved for Implementation)
+**Status:** Complete — November 11, 2026 (`specifications/GRAB-STDLIB-SPEC-004.md`)
 **Source:** Blueprint v1.0 Sections 9–10; Blueprint v1.1 roadmap table
 
-Intended scope (requires owner approval before implementation):
+Delivered in the repository:
 
-- Core standard library modules: text, math, file I/O, dates/times, and
-  collections.
-- Structured error model (`try` / `catch` / `raise`) with stable internal error
-  codes, source locations, stack traces, and beginner/developer/production
-  diagnostic modes.
-- Capability-based filesystem permissions with default-deny for sensitive paths.
+- Core standard library modules (`use <module>`): `text` (including `text.from`
+  for formatting numbers/values as text), `math`, `files` (file I/O), `dates`
+  (dates/times), and `collections`.
+- Structured error model (`try` / `catch` / `raise`) with stable `GRAB-E...`
+  error codes, source locations, stack traces, and `beginner` / `developer` /
+  `production` diagnostic modes.
+- Capability-based filesystem permissions (`--allow-read`, `--allow-write`) with
+  default-deny and mandatory blocking of sensitive paths (`.git`, `.env`, `.ssh`,
+  private keys).
 - `grab check` and `grab format` CLI subcommands.
+- Expanded conformance suite in `tests/grab04_conformance_test.go` covering all
+  GRAB 0.4 language constructs, standard library modules, error codes, and
+  capability permissions.
 
 ---
 
