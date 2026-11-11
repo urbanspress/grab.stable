@@ -43,14 +43,21 @@ The following questions remain open; this register does not decide them:
 6. **Module and browser security boundary:** How should server-only and browser-safe modules be identified, and what serialization, escaping and authorization contracts are required?
 7. **Frontend strategy:** What specific React/TypeScript interoperability use case is intended, if any? Is a GRAB browser compiler wanted, and what target and compatibility obligations would it carry?
 8. **Rendering model:** Is incremental server rendering with selective client interactivity needed? If so, what rendering, hydration and component model should it use?
-9. **HTML templates:** The owner approved a separate future `.grab.html` template milestone on November 10, 2026. That milestone must define the precise interpolation syntax, template lookup and reuse rules, value-binding contract, context-aware escaping and output behavior before implementation.
+9. **HTML templates:** The owner approved a separate future `.grab.html` template milestone on November 10, 2026, and approved its full specification (`specifications/GRAB-LOCALHOST-SPEC-002.md`) on November 11, 2026.
 
 A future proposal must resolve the relevant questions and receive owner approval before these deferred details become architectural commitments or implementation work.
 
 ## Future roadmap proposals and approved future milestones
 
-### HTML template files — approved future milestone
+### HTML template files and localhost preview (GRAB 0.2) — approved milestone target
 
-**Status: APPROVED FUTURE MILESTONE; NOT PART OF GRAB 0.1.** On November 10, 2026, the project owner approved a separate milestone for reusable HTML templates, with `.grab.html` as the preferred direction. Program logic remains in `.grab` files, and a `.grab.html` template is intended to be reusable by multiple `.grab` programs. The template model will interpolate GRAB values and provide context-aware HTML escaping. An explicit form such as `{show variable}` is a design example, not a frozen syntax decision. The `show block` / `show html` approach is not the preferred direction.
+**Status: APPROVED FOR IMPLEMENTATION (`specifications/GRAB-LOCALHOST-SPEC-002.md`, approved November 11, 2026).** On November 10, 2026, the project owner approved a separate milestone for reusable HTML templates and a minimal localhost browser preview (`GRAB 0.2`), with `.grab.html` as the preferred direction. Program logic remains in `.grab` files, and a `.grab.html` template is reusable by multiple `.grab` programs.
 
-This approval establishes the milestone and its goals only. The milestone must specify and validate the exact interpolation grammar, template lookup and reuse rules, how values are bound from `.grab` programs, context handling and escaping rules, output behavior, and diagnostics before implementation begins. It does not approve a browser compiler, React/TypeScript interoperability, or server rendering. HTML templates remain outside GRAB 0.1.
+On November 11, 2026, the project owner approved the GRAB 0.2 specification in `specifications/GRAB-LOCALHOST-SPEC-002.md`:
+- **Interpolation grammar (`ADR-019a` approved):** `{<identifier>}` (such as `{title}`) with `{{` and `}}` for literal braces; no `show` keyword, expressions, or control flow inside `.grab.html`.
+- **Lookup and reuse (`ADR-019b` approved):** `grab serve [--addr 127.0.0.1:8080] <file.grab> [template.grab.html]`, defaulting to `<basename>.grab.html` in the same directory and rejecting path traversal outside the workspace.
+- **Value binding (`ADR-019c` approved):** `.grab` executes first; its final variable environment is passed as a read-only snapshot to the template; unbound template variables fail pre-render verification with a source-located diagnostic; bound values format via GRAB 0.1 canonical display before escaping.
+- **Context-aware HTML escaping (`ADR-019d` approved):** Mandatory escaping in HTML element text, quoted attributes, and quoted URL attributes (`http:`, `https:`, `mailto:`, and relative URLs only); default-deny rejection of interpolations in `<script>`, `<style>`, comments, tag/attribute names, `on*` event attributes, and unquoted attributes.
+- **Localhost server security and lifecycle (`ADR-019e` approved):** Loopback-only binding (`127.0.0.1` / `localhost` / `::1`), `GET /` and `HEAD /` only, per-request isolated execution frames (`ADR-011`), mandatory security headers (`X-Content-Type-Options`, `X-Frame-Options`, `Content-Security-Policy`), bounded request timeouts, and graceful `SIGINT`/`SIGTERM` shutdown.
+
+This approval authorizes GRAB 0.2 implementation only. It does not approve a production server, browser compiler, React/TypeScript interoperability, or general client-side UI framework.

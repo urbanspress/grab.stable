@@ -2,10 +2,12 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 // writeTemp creates a temporary .grab file with the given source and returns its path.
@@ -304,4 +306,123 @@ func TestRun_CLI(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestServe_CLI(t *testing.T) {
+	dir := t.TempDir()
+	validGrab := filepath.Join(dir, "page.grab")
+	validTmpl := filepath.Join(dir, "page.grab.html")
+	badTmpl := filepath.Join(dir, "bad.grab.html")
+	unboundTmpl := filepath.Join(dir, "unbound.grab.html")
+
+	if err := os.WriteFile(validGrab, []byte("set title to \"Hello GRAB 0.2\"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(validTmpl, []byte("<h1>{title}</h1>\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(badTmpl, []byte("<button onclick=\"{title}\">Bad</button>\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(unboundTmpl, []byte("<h1>{missing}</h1>\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	errorCases := []struct {
+		name       string
+		args       []string
+		wantCode   int
+		wantErrSub string
+	}{
+		{
+			name:       "serve without arguments",
+			args:       []string{"serve"},
+			wantCode:   2,
+			wantErrSub: "usage:",
+		},
+		{
+			name:       "serve with too many files",
+			args:       []string{"serve", validGrab, validTmpl, "extra.grab.html"},
+			wantCode:   2,
+			wantErrSub: "usage:",
+		},
+		{
+			name:       "serve with unknown flag",
+			args:       []string{"serve", "--port", "8080", validGrab},
+			wantCode:   2,
+			wantErrSub: "usage:",
+		},
+		{
+			name:       "serve with empty addr flag",
+			args:       []string{"serve", "--addr=", validGrab},
+			wantCode:   2,
+			wantErrSub: "usage:",
+		},
+		{
+			name:       "serve rejects wildcard 0.0.0.0 address",
+			args:       []string{"serve", "--addr", "0.0.0.0:8080", validGrab},
+			wantCode:   1,
+			wantErrSub: "non-loopback address",
+		},
+		{
+			name:       "serve rejects missing companion template",
+			args:       []string{"serve", filepath.Join(dir, "no_such.grab")},
+			wantCode:   1,
+			wantErrSub: "grab:",
+		},
+		{
+			name:       "serve preflight rejects disallowed context",
+			args:       []string{"serve", validGrab, badTmpl},
+			wantCode:   1,
+			wantErrSub: "disallowed interpolation context",
+		},
+		{
+			name:       "serve preflight rejects unbound template variable",
+			args:       []string{"serve", validGrab, unboundTmpl},
+			wantCode:   1,
+			wantErrSub: "unbound template variable",
+		},
+	}
+
+	for _, tc := range errorCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var stdout, stderr bytes.Buffer
+			code := run(tc.args, &stdout, &stderr)
+			if code != tc.wantCode {
+				t.Errorf("exit code = %d, want %d (stderr: %q)", code, tc.wantCode, stderr.String())
+			}
+			if !strings.Contains(stderr.String(), tc.wantErrSub) {
+				t.Errorf("stderr = %q, want containing %q", stderr.String(), tc.wantErrSub)
+			}
+		})
+	}
+
+	t.Run("serve binds loopback and exits 0 on context cancel", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		var stdout, stderr bytes.Buffer
+		ready := make(chan string, 1)
+		codeCh := make(chan int, 1)
+
+		go func() {
+			codeCh <- runContext(ctx, []string{"serve", "--addr", "127.0.0.1:0", validGrab}, &stdout, &stderr, ready)
+		}()
+
+		select {
+		case <-ready:
+			cancel()
+		case code := <-codeCh:
+			t.Fatalf("serve exited early with code %d: %s", code, stderr.String())
+		case <-time.After(5 * time.Second):
+			t.Fatal("timed out waiting for serve ready")
+		}
+
+		if code := <-codeCh; code != 0 {
+			t.Errorf("exit code = %d, want 0 (stderr: %q)", code, stderr.String())
+		}
+		if !strings.Contains(stdout.String(), "grab: serving") {
+			t.Errorf("stdout = %q, want startup message", stdout.String())
+		}
+	})
 }

@@ -43,8 +43,16 @@ func (e *Error) Error() string {
 // Runtime output from successful earlier show statements is retained if a
 // later execution error occurs.
 func Run(program *ast.Program, output io.Writer) error {
+	_, err := RunWithEnvironment(program, output)
+	return err
+}
+
+// RunWithEnvironment validates names in the complete program, executes all
+// statements in source order, and returns a read-only snapshot of the final
+// variable bindings.
+func RunWithEnvironment(program *ast.Program, output io.Writer) (map[string]grabrt.Value, error) {
 	if err := resolve(program); err != nil {
-		return err
+		return nil, err
 	}
 	environment := make(map[string]grabrt.Value)
 	for _, statement := range program.Statements {
@@ -52,23 +60,34 @@ func Run(program *ast.Program, output io.Writer) error {
 		case *ast.SetStatement:
 			value, err := evaluate(node.Value, environment)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			environment[node.Name] = value
 		case *ast.ShowStatement:
 			value, err := evaluate(node.Value, environment)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			if _, err := io.WriteString(output, value.Display()+"\n"); err != nil {
-				return err
+				return nil, err
 			}
 		}
 	}
-	return nil
+	return environment, nil
+}
+
+// Validate performs pre-execution name resolution without executing statements
+// and returns the set of variable names bound by the program.
+func Validate(program *ast.Program) (map[string]struct{}, error) {
+	return resolveBindings(program)
 }
 
 func resolve(program *ast.Program) error {
+	_, err := resolveBindings(program)
+	return err
+}
+
+func resolveBindings(program *ast.Program) (map[string]struct{}, error) {
 	bound := make(map[string]struct{})
 	for _, statement := range program.Statements {
 		var expression ast.Expression
@@ -80,13 +99,13 @@ func resolve(program *ast.Program) error {
 			expression = node.Value
 		}
 		if err := resolveExpression(expression, bound); err != nil {
-			return err
+			return nil, err
 		}
 		if binding != "" {
 			bound[binding] = struct{}{}
 		}
 	}
-	return nil
+	return bound, nil
 }
 
 func resolveExpression(expression ast.Expression, bound map[string]struct{}) error {

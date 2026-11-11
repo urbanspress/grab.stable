@@ -44,3 +44,11 @@ Similarly, CLI wording and exact exit codes remain implementation contracts.
 The suite exposed and now guards two lexer fixes: raw U+000D inside text is
 rejected before execution, and unterminated-text diagnostics identify only the
 opening quote rather than extending through subsequent content/newline.
+
+## GRAB 0.2 localhost and HTML template conformance
+
+`localhost_conformance_test.go` verifies `specifications/GRAB-LOCALHOST-SPEC-002.md`:
+- `.grab.html` `{<identifier>}` interpolation and `{{` / `}}` literal braces;
+- context-aware HTML escaping across element text, quoted attributes, and quoted URL attributes (`href`, `src`, `action`, `formaction`);
+- preflight and render-time diagnostics (`invalid template encoding`, `malformed template interpolation`, `disallowed interpolation context`, `unbound template variable`, and `unsafe URL scheme`);
+- checked-in example templates (`examples/hello.grab.html`, `examples/product.grab.html`).
