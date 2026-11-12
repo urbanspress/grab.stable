@@ -24,35 +24,35 @@ func writeTemp(t *testing.T, source string) string {
 func TestRun_CLI(t *testing.T) {
 	cases := []struct {
 		name       string
-		args       []string        // arguments after the binary name
-		sourceFile string          // non-empty: write this source to a temp file and append the path
-		wantCode   int             // expected exit code
-		wantOut    string          // expected stdout (exact)
-		wantErrSub string          // expected substring in stderr (empty → no check)
+		args       []string // arguments after the binary name
+		sourceFile string   // non-empty: write this source to a temp file and append the path
+		wantCode   int      // expected exit code
+		wantOut    string   // expected stdout (exact)
+		wantErrSub string   // expected substring in stderr (empty → no check)
 	}{
 		// ── Usage errors ──────────────────────────────────────────────────────
 		{
-			name:     "no arguments",
-			args:     []string{},
-			wantCode: 2,
+			name:       "no arguments",
+			args:       []string{},
+			wantCode:   2,
 			wantErrSub: "usage:",
 		},
 		{
-			name:     "wrong subcommand",
-			args:     []string{"execute"},
-			wantCode: 2,
+			name:       "wrong subcommand",
+			args:       []string{"execute"},
+			wantCode:   2,
 			wantErrSub: "usage:",
 		},
 		{
-			name:     "too many arguments",
-			args:     []string{"run", "a.grab", "extra"},
-			wantCode: 2,
+			name:       "too many arguments",
+			args:       []string{"run", "a.grab", "extra"},
+			wantCode:   2,
 			wantErrSub: "usage:",
 		},
 		{
-			name:     "run without file",
-			args:     []string{"run"},
-			wantCode: 2,
+			name:       "run without file",
+			args:       []string{"run"},
+			wantCode:   2,
 			wantErrSub: "usage:",
 		},
 

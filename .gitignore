@@ -28,3 +28,7 @@ Thumbs.db
 # Local database example data
 /examples/catalog.db
 /examples/catalog.db-journal
+
+# Pinned browser fixture dependencies and compiled output
+/tests/fixtures/typed-client/node_modules/
+/tests/fixtures/typed-client/dist/

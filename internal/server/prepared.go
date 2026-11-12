@@ -142,6 +142,13 @@ func Load(grabPath, templatePath string, opts interpreter.Options, output io.Wri
 		}
 	}()
 	app := &PreparedApp{code: p, files: c.files}
+	if opts.APIContractPath != "" {
+		st, e := os.Stat(opts.APIContractPath)
+		if e != nil {
+			return nil, e
+		}
+		app.files[opts.APIContractPath] = st.ModTime()
+	}
 	if opts.PlatformPath != "" {
 		st, e := os.Stat(opts.PlatformPath)
 		if e != nil {
@@ -178,6 +185,7 @@ func Load(grabPath, templatePath string, opts interpreter.Options, output io.Wri
 		files[p] = t
 	}
 	app.files = files
+	p.StartWorkers()
 	success = true
 	return app, nil
 }
@@ -201,6 +209,7 @@ func (p *PreparedApp) release() {
 	}
 }
 func (p *PreparedApp) retire() {
+	p.code.StopWorkers()
 	p.refsMu.Lock()
 	p.retired = true
 	closeNow := p.refs == 0
@@ -222,6 +231,13 @@ func (p *PreparedApp) execute(ctx context.Context, route *interpreter.Route, req
 	r, e := interpreter.DecodeResponse(v)
 	if e != nil {
 		e = &interpreter.Error{Kind: interpreter.InvalidServerResponse, Span: route.Definition.Span, Err: e}
+	}
+	if route != nil {
+		if o, ok := p.code.ContractOperation(route); ok {
+			if e != nil || p.code.ValidateWireResponse(o, r.Status, r.Body) != nil {
+				return interpreter.Response{}, fmt.Errorf("GRAB-E315: invalid contracted response")
+			}
+		}
 	}
 	return r, e
 }

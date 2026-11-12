@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "files": {
+    "README": "073edfd67daacd0770a2f3eb752f83e6c4912abd096c59b852f260e288caf24d",
+    "client.ts": "67a0d98ce93e4283c0e8ca8ec2de03e00c47dda3d25f15be9aa99ed6eb8aa54d",
+    "contract.json": "2a27761a51745a3eab961812810c0d4302aa9e871e5f8088ad58f03a0e76aac2",
+    "react.ts": "fdd1e7ce441f4c75d489d312fcbf12b18fb08cd9bd47c64e515f1f5a42b9430a",
+    "types.ts": "280d18a2fc62d07c8c389de9b819a935b43cd6caf3bd65e95dd0cda496f78243",
+    "validators.ts": "b894ed81e268ef2199b83fc6e1804376c788e38d39df3dfbbe10aa0b59ea9aa7"
+  }
+}

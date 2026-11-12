@@ -1,0 +1,1 @@
+{"name":"grab-typed-client-fixture","private":true,"type":"module","scripts":{"test":"tsc -p tsconfig.json && node dist/fixture.js"},"devDependencies":{"typescript":"5.9.3","react":"19.2.0","react-test-renderer":"19.2.0","@types/react":"19.2.2","@types/react-test-renderer":"19.1.0","@types/node":"22.18.0"}}

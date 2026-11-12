@@ -1,0 +1,11 @@
+GRAB reference package v1.0.0
+
+This provider-neutral, data-only package exercises the Connector SDK. Its
+source link identifies the HTTP protocol; the fixture API is documented here.
+No Stripe, Lulu, or other commercial provider support is claimed.
+
+The local fake-provider harness implements GET /messages/{id} and POST /messages.
+POST requires a stable Idempotency-Key and Bearer credential; repeat keys return
+the original result and conflicting bodies return 409. Different credentials
+have separate key spaces. The notification webhook uses grab-hmac-sha256-v1.
+Run Go SDK tests; no package scripts or downloads execute at application startup.

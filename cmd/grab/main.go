@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"grab/internal/contracts"
 	"grab/internal/data"
 	"grab/internal/interpreter"
 	"grab/internal/parser"
@@ -45,7 +46,20 @@ func runContext(ctx context.Context, arguments []string, stdout, stderr io.Write
 	}
 
 	switch arguments[0] {
+	case "events":
+		return eventMaintenance(ctx, arguments[1:], false, stdout, stderr)
+	case "connect":
+		return connectorMaintenance(arguments[1:], stdout, stderr)
+	case "generate":
+		return generateClient(arguments[1:], stdout, stderr)
 	case "run", "migrate":
+		if arguments[0] == "migrate" {
+			for _, arg := range arguments[1:] {
+				if strings.SplitN(arg, "=", 2)[0] == "--events-store" {
+					return eventMaintenance(ctx, arguments[1:], true, stdout, stderr)
+				}
+			}
+		}
 		cfg, positional, ok := parseCommonFlags(arguments[1:], false)
 		if !ok || len(positional) != 1 {
 			fmt.Fprintln(stderr, usageText)
@@ -136,6 +150,21 @@ func runContext(ctx context.Context, arguments []string, stdout, stderr io.Write
 			fmt.Fprintln(stderr, interpreter.FormatDiagnostic(source, e, cfg.diagMode))
 			return 1
 		}
+		if cfg.opts.APIContractPath != "" {
+			cfg.opts.APIContract, err = contracts.Load(cfg.opts.APIContractPath)
+			if err != nil {
+				fmt.Fprintln(stderr, err)
+				return 1
+			}
+		}
+		if _, e := interpreter.ValidateIntegrations(program, cfg.opts.PlatformConfig); e != nil {
+			fmt.Fprintln(stderr, e)
+			return 1
+		}
+		if e := interpreter.ValidateContracts(program, cfg.opts.APIContract); e != nil {
+			fmt.Fprintln(stderr, e)
+			return 1
+		}
 		if err := server.CheckRouteTemplates(program, filePath); err != nil {
 			fmt.Fprintln(stderr, interpreter.FormatDiagnostic(source, err, cfg.diagMode))
 			return 1
@@ -216,6 +245,15 @@ func parseCommonFlags(args []string, allowAddr bool) (commonFlagConfig, []string
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
 		flagName := strings.SplitN(arg, "=", 2)[0]
+		if flagName == "--api-contract" {
+			val, next, ok := consumeFlagValue(args, i, flagName)
+			if !ok || cfg.opts.APIContractPath != "" {
+				return cfg, nil, false
+			}
+			cfg.opts.APIContractPath = val
+			i = next
+			continue
+		}
 		if flagName == "--platform-config" {
 			val, next, ok := consumeFlagValue(args, i, flagName)
 			if !ok || cfg.platformConfig != "" {

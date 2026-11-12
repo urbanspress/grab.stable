@@ -11,10 +11,12 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"unicode/utf8"
 
 	"grab/internal/ast"
 	"grab/internal/cache"
+	"grab/internal/contracts"
 	"grab/internal/data"
 	"grab/internal/lexer"
 	grabrt "grab/internal/runtime"
@@ -120,14 +122,30 @@ func (r *Route) Match(path string) (grabrt.Value, bool) {
 // PreparedProgram holds validated code and an immutable startup environment.
 // Values are immutable, so each request only needs a fresh binding map.
 type PreparedProgram struct {
-	program   *ast.Program
-	functions map[string]*ast.FunctionDef
-	routes    []*Route
-	base      map[string]grabrt.Value
-	opts      Options
+	workerCancel context.CancelFunc
+	workerWG     sync.WaitGroup
+	webhookKeys  map[string][][]byte
+	program      *ast.Program
+	functions    map[string]*ast.FunctionDef
+	routes       []*Route
+	base         map[string]grabrt.Value
+	opts         Options
 }
 
 func Prepare(program *ast.Program, opts Options, output io.Writer) (*PreparedProgram, error) {
+	if opts.APIContractPath != "" {
+		var e error
+		opts.APIContract, e = contracts.Load(opts.APIContractPath)
+		if e != nil {
+			return nil, e
+		}
+	}
+	if e := ValidateContracts(program, opts.APIContract); e != nil {
+		return nil, e
+	}
+	if e := prepareIntegrations(program, &opts); e != nil {
+		return nil, e
+	}
 	f, _, routes, err := validateProgram(program)
 	if err != nil {
 		return nil, err
@@ -164,10 +182,18 @@ func Prepare(program *ast.Program, opts Options, output io.Writer) (*PreparedPro
 		}
 		p.base = env.snapshot()
 	}
+	if e := p.prepareEvents(preparationContext); e != nil {
+		p.Close()
+		return nil, e
+	}
 	return p, nil
 }
 
 func (p *PreparedProgram) Close() error {
+	if p.workerCancel != nil {
+		p.workerCancel()
+		p.workerWG.Wait()
+	}
 	return errors.Join(p.opts.CacheManager.Close(), p.opts.DataManager.Close())
 }
 
@@ -189,6 +215,17 @@ func (p *PreparedProgram) Execute(ctx context.Context, route *Route, req grabrt.
 	}
 	c := newExecContext(ctx, output, p.functions, p.opts)
 	defer c.data.Close()
+	if route != nil {
+		if o, ok := p.opts.APIContract.Route(route.Definition.Method, route.Definition.Path); ok {
+			input, e := p.opts.APIContract.Input(o, req)
+			if e != nil {
+				return grabrt.Value{}, nil, apiError(route.Definition.Span, contracts.ErrContract)
+			}
+			c.apiOperation = &o
+			c.apiRequest = req
+			c.apiInput = input
+		}
+	}
 	v, _, err := c.execBlock(body, env)
 	return v, env.snapshot(), err
 }
@@ -405,4 +442,27 @@ func serverParseJSON(_ *execContext, s lexer.Span, a []grabrt.Value) (grabrt.Val
 		return grabrt.Value{}, invalidResponse(s, "bad request payload: invalid or empty JSON")
 	}
 	return v, nil
+}
+
+func (p *PreparedProgram) ContractOperation(r *Route) (contracts.Operation, bool) {
+	return p.opts.APIContract.Route(r.Definition.Method, r.Definition.Path)
+}
+func (p *PreparedProgram) ValidateWireResponse(o contracts.Operation, status int, b []byte) error {
+	for _, s := range o.Success {
+		if s.Status == status {
+			_, e := p.opts.APIContract.Decode(s.Schema, b)
+			return e
+		}
+	}
+	for _, s := range o.Errors {
+		if s == status {
+			_, e := p.opts.APIContract.Decode(contracts.ErrorSchema(), b)
+			return e
+		}
+	}
+	return contracts.ErrContract
+}
+
+func (p *PreparedProgram) APIInput(o contracts.Operation, req grabrt.Value) (grabrt.Value, error) {
+	return p.opts.APIContract.Input(o, req)
 }

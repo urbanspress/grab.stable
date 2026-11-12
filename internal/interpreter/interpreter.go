@@ -13,7 +13,9 @@ import (
 
 	"grab/internal/ast"
 	"grab/internal/cache"
+	"grab/internal/contracts"
 	"grab/internal/data"
+	"grab/internal/events"
 	"grab/internal/lexer"
 	"grab/internal/platform"
 	grabrt "grab/internal/runtime"
@@ -253,16 +255,19 @@ func (e *Error) Error() string {
 
 // Options configures runtime capabilities and safety bounds for execution.
 type Options struct {
-	PlatformPath   string
-	PlatformLoader func() (*platform.Config, *platform.Grants, error)
-	PlatformConfig *platform.Config
-	PlatformGrants *platform.Grants
-	CacheManager   *cache.Manager
-	Context        context.Context
-	DataGrants     *data.Grants
-	DataManager    *data.Manager
-	Permissions    Permissions
-	DialContext    func(ctx context.Context, network, addr string) (net.Conn, error)
+	Integrations    *integrationRuntime
+	APIContractPath string
+	APIContract     *contracts.Document
+	PlatformPath    string
+	PlatformLoader  func() (*platform.Config, *platform.Grants, error)
+	PlatformConfig  *platform.Config
+	PlatformGrants  *platform.Grants
+	CacheManager    *cache.Manager
+	Context         context.Context
+	DataGrants      *data.Grants
+	DataManager     *data.Manager
+	Permissions     Permissions
+	DialContext     func(ctx context.Context, network, addr string) (net.Conn, error)
 	// TemplateLoader renders server.html through the host's confined template
 	// cache. A nil callback makes server.html unavailable outside the server.
 	TemplateLoader func(path string, data map[string]grabrt.Value) (string, error)
@@ -293,6 +298,12 @@ func RunWithEnvironment(program *ast.Program, output io.Writer) (map[string]grab
 // top-level statements with the supplied runtime options, and returns a
 // read-only snapshot of the final top-level variable bindings.
 func RunWithEnvironmentAndOptions(program *ast.Program, output io.Writer, opts Options) (map[string]grabrt.Value, error) {
+	if e := prepareIntegrations(program, &opts); e != nil {
+		return nil, e
+	}
+	if e := ValidateContracts(program, opts.APIContract); e != nil {
+		return nil, e
+	}
 	functions, _, _, err := validateProgram(program)
 	if err != nil {
 		return nil, err
@@ -327,6 +338,8 @@ func newExecContext(parent context.Context, output io.Writer, functions map[stri
 	}
 	return &execContext{
 		cacheManager:   opts.CacheManager,
+		integrations:   opts.Integrations,
+		contracts:      opts.APIContract,
 		data:           opts.DataManager.Scope(),
 		dataManager:    opts.DataManager,
 		ctx:            parent,
@@ -603,6 +616,11 @@ func resolveCall(module, name string, nameSpan, callSpan lexer.Span, args []ast.
 		if !stdFn.acceptsArity(len(args)) {
 			return &Error{Kind: FunctionArityMismatch, Name: qname, Span: callSpan}
 		}
+		if module == "api" {
+			if e := validateAPICall(name, args, callSpan); e != nil {
+				return e
+			}
+		}
 		if module == "cache" {
 			if e := validateCacheCall(name, args, callSpan); e != nil {
 				return e
@@ -753,6 +771,15 @@ func (s *scope) cloneSnapshot() *scope {
 }
 
 type execContext struct {
+	integrations   *integrationRuntime
+	eventWork      *events.Work
+	eventValue     grabrt.Value
+	eventCompleted bool
+	eventDatabase  string
+	contracts      *contracts.Document
+	apiOperation   *contracts.Operation
+	apiRequest     grabrt.Value
+	apiInput       grabrt.Value
 	cacheManager   *cache.Manager
 	data           *data.Scope
 	dataManager    *data.Manager
@@ -1046,7 +1073,8 @@ func (ctx *execContext) execDoTogether(node *ast.DoTogetherStatement, env *scope
 		taskEnv := env.cloneSnapshot()
 		var buf bytes.Buffer
 		childCtx := &execContext{
-			cacheManager:   ctx.cacheManager,
+			cacheManager: ctx.cacheManager,
+			contracts:    ctx.contracts, apiOperation: ctx.apiOperation, apiRequest: ctx.apiRequest, apiInput: ctx.apiInput,
 			data:           ctx.dataManager.Scope(),
 			dataManager:    ctx.dataManager,
 			ctx:            taskCtx,
@@ -1154,6 +1182,9 @@ func isSiblingCanceledError(err error, beforeStop bool) bool {
 }
 
 func (ctx *execContext) invokeCall(module, name string, span lexer.Span, argExprs []ast.Expression, callerEnv *scope) (grabrt.Value, error) {
+	if ctx.eventWork != nil && (module == "http" || module == "connect" || module == "data" && (name == "commit" || name == "rollback" || name == "close" || name == "begin" || name == "migrate")) {
+		return grabrt.Value{}, workerDenied(span)
+	}
 	if module == "data" {
 		if e := validateDataCall(name, argExprs, span); e != nil {
 			return grabrt.Value{}, e

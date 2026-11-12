@@ -85,7 +85,34 @@ func (c *noRetryConn) BeginTx(ctx context.Context, o driver.TxOptions) (driver.T
 	} else if err = ctx.Err(); err == nil {
 		tx, err = c.Conn.Begin()
 	}
-	return tx, c.outcome(err)
+	if err != nil {
+		return nil, c.outcome(err)
+	}
+	return &noRetryTx{Tx: tx, conn: c}, nil
+}
+
+// A failed COMMIT can leave a physical connection inside its old transaction
+// (notably SQLite BUSY). Never return that connection to a later operation.
+// Rollback is cleanup only: the reported commit result remains uncertain.
+type noRetryTx struct {
+	driver.Tx
+	conn *noRetryConn
+}
+
+func (t *noRetryTx) Commit() error {
+	e := t.Tx.Commit()
+	if e != nil {
+		_ = t.Tx.Rollback()
+		t.conn.invalid.Store(true)
+	}
+	return t.conn.outcome(e)
+}
+func (t *noRetryTx) Rollback() error {
+	e := t.Tx.Rollback()
+	if e != nil {
+		t.conn.invalid.Store(true)
+	}
+	return t.conn.outcome(e)
 }
 func (c *noRetryConn) Ping(ctx context.Context) error {
 	if p, ok := c.Conn.(driver.Pinger); ok {

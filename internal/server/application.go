@@ -22,6 +22,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"grab/internal/contracts"
 	"grab/internal/interpreter"
 	grabrt "grab/internal/runtime"
 )
@@ -382,6 +383,7 @@ func (a *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	headers := http.Header{}
 	var body []byte
 	var requestBody []byte
+	contracted := false
 	fail := func(n int, message string) {
 		status = n
 		headers.Set("Content-Type", "text/plain; charset=utf-8")
@@ -391,6 +393,10 @@ func (a *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if recover() != nil {
 			entry.ErrorCode = "GRAB-E301"
 			fail(500, "grab: internal server error; request_id="+id)
+		}
+		if contracted && status >= 400 && !strings.HasPrefix(headers.Get("Content-Type"), "application/json") {
+			headers.Set("Content-Type", "application/json; charset=utf-8")
+			body = contracts.ErrorBody("GRAB-E315", http.StatusText(status), id)
 		}
 		entry.Error = redact(entry.Error, r, requestBody, body)
 		for k, v := range headers {
@@ -446,6 +452,28 @@ func (a *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	defer p.release()
+	if hook, ok := p.code.Webhook(r.URL.Path); ok {
+		if r.Method != "POST" {
+			headers.Set("Allow", "POST")
+			fail(405, "method not allowed")
+			return
+		}
+		if !a.acquire(r.Context()) {
+			fail(503, "service unavailable")
+			return
+		}
+		defer func() { <-a.slots }()
+		raw, e := io.ReadAll(http.MaxBytesReader(w, r.Body, 1<<20))
+		if e != nil {
+			fail(413, "payload too large")
+			return
+		}
+		ctx, cancel := context.WithTimeout(r.Context(), a.cfg.RequestTimeout)
+		defer cancel()
+		status, body = p.code.AcceptWebhook(ctx, hook, r.Header, raw)
+		headers.Set("Content-Type", "text/plain; charset=utf-8")
+		return
+	}
 	var route *interpreter.Route
 	params := grabrt.Record(nil)
 	allowed := map[string]bool{}
@@ -491,6 +519,7 @@ func (a *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if route != nil {
+		_, contracted = p.code.ContractOperation(route)
 		entry.Route = route.Definition.Path
 	} else {
 		entry.Route = "/"
@@ -524,9 +553,26 @@ func (a *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	queryValue := mapStrings(r.URL.Query(), false)
+	if contracted {
+		values, e := url.ParseQuery(r.URL.RawQuery)
+		if e != nil {
+			fail(400, "invalid query")
+			return
+		}
+		var es []grabrt.Entry
+		for key, vs := range values {
+			var list []grabrt.Value
+			for _, v := range vs {
+				list = append(list, grabrt.Text(v))
+			}
+			es = append(es, grabrt.Entry{Name: key, Value: grabrt.List(list)})
+		}
+		queryValue = grabrt.Map(es)
+	}
 	req := grabrt.Record([]grabrt.Entry{
 		{Name: "method", Value: grabrt.Text(r.Method)}, {Name: "path", Value: grabrt.Text(r.URL.Path)}, {Name: "params", Value: params},
-		{Name: "query", Value: mapStrings(r.URL.Query(), false)}, {Name: "headers", Value: mapStrings(r.Header, true)},
+		{Name: "query", Value: queryValue}, {Name: "headers", Value: mapStrings(r.Header, true)},
 		{Name: "body", Value: grabrt.Text(string(raw))}, {Name: "client_ip", Value: grabrt.Text(ip)}, {Name: "scheme", Value: grabrt.Text(scheme)},
 		{Name: "form", Value: mapStrings(form, false)},
 		{Name: "host", Value: grabrt.Text(host)}, {Name: "request_id", Value: grabrt.Text(id)},
@@ -534,6 +580,37 @@ func (a *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), a.cfg.RequestTimeout)
 	defer cancel()
 	var console bytes.Buffer
+
+	if contracted {
+		apiFail := func(n int, message string) {
+			fail(n, message)
+			headers.Set("Content-Type", "application/json; charset=utf-8")
+			body = contracts.ErrorBody("GRAB-E315", message, id)
+		}
+		if len(raw) > 1<<20 {
+			apiFail(413, "payload too large")
+			return
+		}
+		if len(raw) > 0 {
+			media, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
+			if err != nil || media != "application/json" {
+				apiFail(400, "expected JSON content type")
+				return
+			}
+		}
+		if r.Method != "GET" && r.Method != "HEAD" && r.Header.Get("Cookie") != "" {
+			origin := r.Header.Values("Origin")
+			if len(origin) != 1 || origin[0] != scheme+"://"+host || r.Header.Get("X-CSRF-Token") == "" {
+				apiFail(403, "mutation origin and CSRF token required")
+				return
+			}
+		}
+		o, _ := p.code.ContractOperation(route)
+		if _, err := p.code.APIInput(o, req); err != nil {
+			apiFail(400, "invalid API input")
+			return
+		}
+	}
 	res, e := p.execute(ctx, route, req, &console)
 	for _, value := range res.Headers.Values("Set-Cookie") {
 		if value != "" {
@@ -549,6 +626,12 @@ func (a *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if e != nil {
+		if contracted {
+			fail(500, "API response failed")
+			headers.Set("Content-Type", "application/json; charset=utf-8")
+			body = contracts.ErrorBody("GRAB-E315", "API response failed", id)
+			return
+		}
 		entry.ErrorCode, _, _, _ = interpreter.ExtractErrorMeta(e)
 		entry.Error = interpreter.FormatDiagnostic("", e, interpreter.ModeDeveloper)
 		n := 500

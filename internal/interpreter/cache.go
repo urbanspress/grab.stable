@@ -196,3 +196,47 @@ func stdCacheLimit(c *execContext, s lexer.Span, a []rt.Value) (rt.Value, error)
 	}
 	return rt.Record([]rt.Entry{{Name: "allowed", Value: rt.Boolean(r.Allowed)}, {Name: "count", Value: rt.IntegerFromInt64(r.Count)}, {Name: "remaining", Value: rt.IntegerFromInt64(r.Remaining)}, {Name: "retry_after_ms", Value: rt.IntegerFromInt64(r.RetryAfterMS)}}), nil
 }
+
+// walkCalls visits static references, including unreachable code.
+func walkCalls(p *ast.Program, visit func(string, string, []ast.Expression, lexer.Span) error) error {
+	var walk func(reflect.Value) error
+	walk = func(v reflect.Value) error {
+		if !v.IsValid() {
+			return nil
+		}
+		if v.Kind() == reflect.Interface || v.Kind() == reflect.Pointer {
+			if !v.IsNil() {
+				return walk(v.Elem())
+			}
+			return nil
+		}
+		if v.CanInterface() {
+			switch n := v.Interface().(type) {
+			case ast.CallExpr:
+				if e := visit(n.Module, n.Name, n.Arguments, n.Span); e != nil {
+					return e
+				}
+			case ast.CallStatement:
+				if e := visit(n.Module, n.Name, n.Arguments, n.Span); e != nil {
+					return e
+				}
+			}
+		}
+		switch v.Kind() {
+		case reflect.Struct:
+			for i := 0; i < v.NumField(); i++ {
+				if e := walk(v.Field(i)); e != nil {
+					return e
+				}
+			}
+		case reflect.Slice:
+			for i := 0; i < v.Len(); i++ {
+				if e := walk(v.Index(i)); e != nil {
+					return e
+				}
+			}
+		}
+		return nil
+	}
+	return walk(reflect.ValueOf(p))
+}

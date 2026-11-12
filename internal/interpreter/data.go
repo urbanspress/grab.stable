@@ -55,6 +55,9 @@ func transactionArg(v rt.Value) (*data.Transaction, bool) {
 	return p, ok && p != nil
 }
 func stdDataOpen(c *execContext, span lexer.Span, args []rt.Value) (rt.Value, error) {
+	if c.eventWork != nil && args[0].TextValue() != c.eventDatabase {
+		return rt.Value{}, workerDenied(span)
+	}
 	if args[0].Kind() != rt.TextKind {
 		return rt.Value{}, dataTypeError(span)
 	}

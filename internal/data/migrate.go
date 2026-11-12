@@ -24,6 +24,9 @@ func internalExec(ctx context.Context, executor sqlExecutor, source string, args
 // Migrate holds an engine migration lock and uses only the already validated
 // literal manifest. MariaDB dirty entries are durable before nontransactional DDL.
 func (s *Scope) Migrate(ctx context.Context, p *Pool, versions []MigrationVersion) (rt.Value, error) {
+	return s.migrate(ctx, p, versions, "grab_schema_migrations")
+}
+func (s *Scope) migrate(ctx context.Context, p *Pool, versions []MigrationVersion, ledgerName string) (rt.Value, error) {
 	if e := s.valid(p); e != nil {
 		return rt.Value{}, e
 	}
@@ -45,7 +48,7 @@ func (s *Scope) Migrate(ctx context.Context, p *Pool, versions []MigrationVersio
 		p.policy.Ledger.Store(true)
 		defer func() { p.policy.Ledger.Store(false); p.policy.Maintenance.Store(false) }()
 	}
-	var executor sqlExecutor = conn
+	var executor sqlExecutor = migrationExecutor{conn, ledgerName}
 	var tx *sql.Tx
 	if p.def.Driver != "mariadb" {
 		tx, e = conn.BeginTx(op, &sql.TxOptions{Isolation: sql.LevelSerializable})
@@ -53,7 +56,7 @@ func (s *Scope) Migrate(ctx context.Context, p *Pool, versions []MigrationVersio
 			return rt.Value{}, safeError(op, e)
 		}
 		defer tx.Rollback()
-		executor = tx
+		executor = migrationExecutor{tx, ledgerName}
 		if p.def.Driver == "postgres" {
 			if _, e = internalExec(op, tx, "SELECT pg_advisory_xact_lock(71832197007)"); e != nil {
 				return rt.Value{}, fail(Migration, "migration lock unavailable")

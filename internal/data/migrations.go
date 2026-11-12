@@ -63,7 +63,7 @@ func MigrationManifest(v rt.Value, dialect string) ([]MigrationVersion, error) {
 // the initial migration API. The engine policy must still authorize all effects.
 func migrationDDL(s SQL) bool {
 	for _, name := range s.Identifiers {
-		if strings.EqualFold(name, "grab_schema_migrations") {
+		if strings.HasPrefix(strings.ToLower(name), "grab_events_") || strings.EqualFold(name, "grab_schema_migrations") {
 			return false
 		}
 	}

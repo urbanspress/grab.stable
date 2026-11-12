@@ -22,11 +22,11 @@ import (
 )
 
 const (
-	maxJSONDepth          = 64
-	defaultHTTPTimeoutMS  = 10000
-	maxHTTPTimeoutMS      = 60000
-	maxHTTPRetries        = 3
-	maxHTTPRedirects      = 5
+	maxJSONDepth         = 64
+	defaultHTTPTimeoutMS = 10000
+	maxHTTPTimeoutMS     = 60000
+	maxHTTPRetries       = 3
+	maxHTTPRedirects     = 5
 )
 
 var sensitiveRedirectHeaders = []string{

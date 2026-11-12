@@ -1,0 +1,7 @@
+Generated GRAB wire version 1; contract 0f3be35187945037ffaec923e0b19987f14e8901ae09d2dfe1b10bf2b21bdfac.
+Use GrabClient.call with validated exact string integers/decimals. Never convert prices to Number.
+Default credentials are same-origin. Tokens are supplied per call. Mutations never retry automatically.
+Cookie-authenticated mutations require Origin verification and an application-issued CSRF token checked by the application.
+Cross-origin deployment requires an explicit base URL and an exact server origin allowlist; wildcard credentialed CORS is prohibited.
+React output requires React as a peer dependency. GET hooks cancel stale requests and effects; mutations are explicit functions.
+Generation performs no dependency installation. See tests/fixtures/typed-client/package-lock.json for the tested dependency versions.

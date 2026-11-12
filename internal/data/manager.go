@@ -38,19 +38,22 @@ type Pool struct {
 	active     int
 }
 type Statement struct {
-	pool     *Pool
-	sql      *sql.Stmt
-	scanned  SQL
-	contract Contract
-	write    bool
+	hostTransaction *Transaction
+	pool            *Pool
+	sql             *sql.Stmt
+	scanned         SQL
+	contract        Contract
+	write           bool
 }
 
 func (p *Pool) Driver() string { return p.def.Driver }
 
 type Scope struct {
-	manager *Manager
-	tx      *Transaction
-	closed  bool
+	hostOwned      bool
+	hostStatements []*Statement
+	manager        *Manager
+	tx             *Transaction
+	closed         bool
 }
 type Transaction struct {
 	scope                            *Scope
@@ -72,6 +75,10 @@ func (s *Scope) Close() {
 	if s.tx != nil {
 		_ = s.Rollback(s.tx)
 	}
+	for _, st := range s.hostStatements {
+		_ = st.sql.Close()
+	}
+	s.hostStatements = nil
 	s.closed = true
 }
 func (s *Scope) ActiveTransaction() *Transaction { return s.tx }
@@ -242,7 +249,7 @@ func (s *Scope) Prepare(ctx context.Context, p *Pool, source string, contract Co
 	if e := s.valid(p); e != nil {
 		return nil, e
 	}
-	if s.tx != nil && s.tx.pool == p {
+	if s.tx != nil && s.tx.pool == p && !s.hostOwned {
 		return nil, fail(Ownership, "prepare statements before beginning a transaction")
 	}
 	sqlText, e := ScanSQL(source, p.def.Driver)
@@ -265,17 +272,30 @@ func (s *Scope) Prepare(ctx context.Context, p *Pool, source string, contract Co
 	if p.def.Limits.MaxStatements != nil {
 		max = *p.def.Limits.MaxStatements
 	}
-	if len(p.statements) >= max {
+	if len(p.statements)+len(s.hostStatements) >= max {
 		return nil, fail(Limit, "prepared statement limit exceeded")
 	}
 	op, cancel := bounded(ctx, p)
 	defer cancel()
-	stmt, e := p.db.PrepareContext(op, sqlText.Text)
+	var stmt *sql.Stmt
+	if s.hostOwned && s.tx != nil {
+		if e = s.transaction(s.tx, p); e != nil {
+			return nil, e
+		}
+		stmt, e = s.tx.tx.PrepareContext(op, sqlText.Text)
+	} else {
+		stmt, e = p.db.PrepareContext(op, sqlText.Text)
+	}
 	if e != nil {
 		return nil, safeError(op, e)
 	}
 	st := &Statement{pool: p, sql: stmt, scanned: sqlText, contract: contract, write: write}
-	p.statements = append(p.statements, st)
+	if s.hostOwned && s.tx != nil {
+		st.hostTransaction = s.tx
+		s.hostStatements = append(s.hostStatements, st)
+	} else {
+		p.statements = append(p.statements, st)
+	}
 	return st, nil
 }
 
@@ -445,7 +465,10 @@ func (s *Scope) Query(ctx context.Context, st *Statement, params rt.Value, t *Tr
 	op, cancel := bounded(ctx, p)
 	defer cancel()
 	stmt := st.sql
-	if t != nil {
+	if st.hostTransaction != nil && st.hostTransaction != t {
+		return result, fail(Ownership, "host statement belongs to another transaction")
+	}
+	if t != nil && st.hostTransaction == nil {
 		stmt = t.tx.StmtContext(op, st.sql)
 		defer stmt.Close()
 	}

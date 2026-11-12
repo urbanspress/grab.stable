@@ -59,7 +59,13 @@ type Cache struct {
 	AllowedCIDRs []string `json:"allowed_cidrs"`
 }
 
-type Config struct{ caches map[string]Cache }
+type Config struct {
+	caches     map[string]Cache
+	root       string
+	connectors map[string]Connector
+	events     map[string]EventStore
+	webhooks   map[string]Webhook
+}
 
 func (c *Config) HasCache(alias string) bool {
 	if c == nil {
@@ -71,7 +77,11 @@ func (c *Config) HasCache(alias string) bool {
 
 // StrictJSON rejects duplicates at every depth, null configuration values,
 // trailing input and excessive nesting before decoding the closed schema.
-func StrictJSON(raw []byte, target any) error {
+func StrictJSON(raw []byte, target any) error { return strictJSON(raw, target, false) }
+
+// StrictValueJSON additionally permits JSON null for typed wire values.
+func StrictValueJSON(raw []byte, target any) error { return strictJSON(raw, target, true) }
+func strictJSON(raw []byte, target any, allowNull bool) error {
 	if len(raw) == 0 || len(raw) > 1<<20 {
 		return ErrInvalid
 	}
@@ -83,7 +93,7 @@ func StrictJSON(raw []byte, target any) error {
 			return ErrInvalid
 		}
 		t, e := d.Token()
-		if e != nil || t == nil {
+		if e != nil || t == nil && !allowNull {
 			return ErrInvalid
 		}
 		if delim, ok := t.(json.Delim); ok {
@@ -152,10 +162,13 @@ func Parse(raw []byte, manifestPath string) (*Config, error) {
 	}
 	// Until an adapter is implemented its declarations must fail closed, never
 	// be accepted as working configuration.
-	if len(in.Connectors)+len(in.Webhooks)+len(in.Channels)+len(in.Events)+len(in.Workers)+len(in.Telemetry) != 0 {
+	if len(in.Channels)+len(in.Workers)+len(in.Telemetry) != 0 {
 		return nil, ErrInvalid
 	}
-	c := &Config{caches: map[string]Cache{}}
+	c := &Config{caches: map[string]Cache{}, root: filepath.Dir(manifestPath)}
+	if e := c.parseIntegrations(in.Connectors, in.Events, in.Webhooks); e != nil {
+		return nil, e
+	}
 	spaces := map[string]bool{}
 	for alias, rawDef := range in.Caches {
 		def := Cache{MaxKeys: 10000, MaxBytes: 16 << 20, PoolSize: 8, TimeoutMS: 1000}
@@ -206,13 +219,24 @@ func Parse(raw []byte, manifestPath string) (*Config, error) {
 type Grants struct {
 	config *Config
 	cache  map[string]map[string]bool
+	other  map[string]map[string]bool
 }
 
 func (c *Config) Grant(flags map[string][]string) (*Grants, error) {
-	g := &Grants{config: c, cache: map[string]map[string]bool{}}
+	g := &Grants{config: c, cache: map[string]map[string]bool{}, other: map[string]map[string]bool{"connector": {}, "events": {}}}
 	for subsystem, values := range flags {
 		for _, v := range values {
 			alias, mode, ok := strings.Cut(v, ":")
+			if subsystem == "connector" || subsystem == "events" {
+				if !ok || !Identifier(alias) || !Identifier(mode) || c == nil {
+					return nil, ErrDenied
+				}
+				if subsystem == "connector" && !c.HasConnector(alias) || subsystem == "events" && (!c.HasEvents(alias) || (mode != "accept" && mode != "work")) {
+					return nil, ErrDenied
+				}
+				g.other[subsystem][v] = true
+				continue
+			}
 			if subsystem != "cache" || !ok || !Identifier(alias) || (mode != "read" && mode != "read-write" && mode != "limit") || c == nil {
 				return nil, ErrDenied
 			}

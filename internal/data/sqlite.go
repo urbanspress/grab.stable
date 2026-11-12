@@ -171,9 +171,14 @@ func ValidateStatement(s SQL) (write bool, err error) {
 	default:
 		return bad()
 	}
+	for _, identifier := range append(append([]string(nil), s.Tokens...), s.Identifiers...) {
+		if strings.HasPrefix(strings.ToLower(identifier), "grab_events_") {
+			return bad()
+		}
+	}
 	if write {
 		for _, identifier := range append(append([]string(nil), s.Tokens...), s.Identifiers...) {
-			if strings.EqualFold(identifier, "grab_schema_migrations") {
+			if strings.HasPrefix(strings.ToLower(identifier), "grab_events_") || strings.EqualFold(identifier, "grab_schema_migrations") {
 				return bad()
 			}
 		}
