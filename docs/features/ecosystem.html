@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GRAB Ecosystem Showcase — Griss, GrabLab, Grex, Groxy AI &amp; Gashboard</title>
+<style>
+  :root {
+    --page-bg: #f8fafc;
+    --surface: #ffffff;
+    --surface-muted: #f1f5f9;
+    --border: #e2e8f0;
+    --text-main: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    --accent: #0284c7;
+    --accent-soft: #e0f2fe;
+    --green: #15803d;
+    --green-soft: #dcfce7;
+    --amber: #b45309;
+    --amber-soft: #fef3c7;
+    --purple: #6d28d9;
+    --purple-soft: #ede9fe;
+    --slate-soft: #e2e8f0;
+    --term-bg: #0b1120;
+    --term-fg: #e2e8f0;
+    --radius: 14px;
+    --shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--page-bg);
+    color: var(--text-main);
+    line-height: 1.65;
+  }
+
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+
+  .topbar-inner {
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 14px 24px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--text-main);
+  }
+
+  .brand-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: var(--term-bg);
+    color: #38bdf8;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  .milestone-nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+  }
+
+  .nav-pill {
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+
+  .nav-pill:hover { background: var(--surface-muted); text-decoration: none; }
+  .nav-pill.active { background: var(--term-bg); color: #ffffff; border-color: var(--term-bg); }
+  .nav-pill.future { border-style: dashed; color: var(--text-muted); }
+
+  .container {
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 36px 24px 64px;
+  }
+
+  .hero {
+    background: linear-gradient(135deg, #0b1120 0%, #1e1b4b 55%, #0c4a6e 100%);
+    color: #f8fafc;
+    border-radius: 18px;
+    padding: clamp(26px, 4vw, 48px);
+    box-shadow: var(--shadow);
+    margin-bottom: 28px;
+  }
+
+  .hero-badge {
+    display: inline-block;
+    background: rgba(251, 191, 36, 0.18);
+    color: #fde68a;
+    border: 1px solid rgba(253, 230, 138, 0.4);
+    font-size: 12.5px;
+    font-weight: 700;
+    padding: 5px 12px;
+    border-radius: 999px;
+    margin-bottom: 14px;
+  }
+
+  .hero h1 {
+    margin: 0 0 12px;
+    font-size: clamp(28px, 4.2vw, 44px);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+  }
+
+  .hero p {
+    margin: 0 0 10px;
+    color: #cbd5e1;
+    max-width: 860px;
+    font-size: 16px;
+  }
+
+  .hero a { color: #7dd3fc; font-weight: 600; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 26px;
+    box-shadow: var(--shadow);
+    margin-bottom: 24px;
+  }
+
+  .card h2 {
+    margin: 0 0 8px;
+    font-size: 22px;
+    letter-spacing: -0.01em;
+  }
+
+  .section-sub {
+    margin: 0 0 18px;
+    color: var(--text-secondary);
+    font-size: 15px;
+  }
+
+  .badge {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+  }
+
+  .badge-green { background: var(--green-soft); color: var(--green); }
+  .badge-amber { background: var(--amber-soft); color: var(--amber); }
+  .badge-blue { background: var(--accent-soft); color: var(--accent); }
+  .badge-purple { background: var(--purple-soft); color: var(--purple); }
+  .badge-slate { background: var(--slate-soft); color: var(--text-secondary); }
+
+  /* Architecture Map */
+  .arch-board {
+    background: var(--surface-muted);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .arch-lane-label {
+    font-size: 11.5px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .flow-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .flow-node {
+    flex: 1 1 200px;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 15px 16px;
+    text-align: left;
+  }
+
+  .flow-node.desktop { border-color: #6d28d9; background: #f5f3ff; }
+  .flow-node.proxy { border-color: #0284c7; background: #f0f9ff; }
+  .flow-node.griss { border-color: #15803d; background: #f0fdf4; }
+  .flow-node.apps { border-color: #0f766e; background: #f0fdfa; }
+  .flow-node.data { border-color: #b45309; background: #fffbeb; }
+
+  .flow-step {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+
+  .flow-title {
+    font-size: 16px;
+    font-weight: 800;
+    margin: 0 0 6px;
+    color: var(--text-main);
+  }
+
+  .flow-desc {
+    margin: 0;
+    font-size: 13.5px;
+    color: var(--text-secondary);
+  }
+
+  .flow-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text-muted);
+    padding: 0 2px;
+  }
+
+  .tunnel-connector {
+    text-align: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--purple);
+    background: var(--purple-soft);
+    border: 1px dashed #a78bfa;
+    border-radius: 10px;
+    padding: 8px 14px;
+  }
+
+  @media (max-width: 900px) {
+    .flow-arrow { width: 100%; transform: rotate(90deg); padding: 2px 0; }
+  }
+
+  /* Product Grid */
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+
+  @media (min-width: 860px) {
+    .grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .product-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .card-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .product-tag {
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .product-card h3 {
+    margin: 0;
+    font-size: 22px;
+    letter-spacing: -0.01em;
+  }
+
+  .product-lead {
+    margin: 0;
+    font-size: 15px;
+    color: var(--text-secondary);
+  }
+
+  .role-box {
+    background: var(--surface-muted);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 13.8px;
+    color: var(--text-secondary);
+  }
+
+  .role-box strong {
+    color: var(--text-main);
+  }
+
+  .role-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .cap-list {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  .cap-list li { margin-bottom: 5px; }
+
+  code.inline, p code, li code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    background: var(--surface-muted);
+    color: var(--accent);
+    padding: 2px 6px;
+    border-radius: 5px;
+    font-size: 0.9em;
+  }
+
+  .boundaries {
+    background: var(--amber-soft);
+    border: 1px solid #fcd34d;
+    border-radius: var(--radius);
+    padding: 22px 24px;
+    color: #78350f;
+  }
+
+  .boundaries h2 {
+    margin: 0 0 10px;
+    font-size: 19px;
+    color: #78350f;
+  }
+
+  .boundaries ul {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 14.5px;
+  }
+
+  .boundaries li { margin-bottom: 6px; }
+
+  footer {
+    margin-top: 28px;
+    padding: 18px 22px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    font-size: 13.5px;
+    color: var(--text-secondary);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 10px;
+  }
+</style>
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="index.html">
+        <span class="brand-mark">G</span>
+        <span>GRAB Ecosystem Showcase</span>
+      </a>
+      <nav class="milestone-nav" aria-label="Ecosystem and milestone links">
+        <a class="nav-pill" href="index.html">All Milestones Hub</a>
+        <a class="nav-pill" href="grab_07_features.html">GRAB 0.7 Data</a>
+        <a class="nav-pill" href="grab_08_features.html">GRAB 0.8 (In Review)</a>
+        <a class="nav-pill" href="deployment_architecture.html">Deployment Architecture</a>
+        <a class="nav-pill active" href="ecosystem.html">Ecosystem (Post-1.0)</a>
+        <a class="nav-pill" href="../ROADMAP.md">ROADMAP.md</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <section class="hero">
+      <span class="hero-badge">Planned Ecosystem Architecture (Post-1.0) · Specification &amp; Implementation Pending Approval</span>
+      <h1>One cohesive stack.<br>Zero bloat, zero public control-panel login.</h1>
+      <p>
+        Built on the deterministic GRAB language and hardened server engine, the GRAB Ecosystem unites
+        <strong>Griss</strong> (our snappy multi-worker server), <strong>GrabLab</strong> (our savvy CMS),
+        <strong>Grex &amp; Grex JS</strong> (visual page builder and reactive UI runtime),
+        <strong>Groxy AI</strong> (local MCP design and CMS agent), and
+        <strong>Gashboard + Grabtaculous</strong> (our discreet desktop VPS manager and 1-click app marketplace).
+      </p>
+      <p>
+        Roadmap details live in <a href="../ROADMAP.md">docs/ROADMAP.md</a> and hosting rules live in
+        <a href="deployment_architecture.html">Deployment Architecture</a>.
+      </p>
+    </section>
+
+    <!-- Visual Architecture Map -->
+    <section class="card" aria-labelledby="map-heading">
+      <h2 id="map-heading">Planned Ecosystem Architecture (Post-1.0)</h2>
+      <p class="section-sub">
+        How the desktop management plane, edge SSL proxy, <strong>Griss</strong> worker tier, application layer, and private data stores fit together cleanly:
+      </p>
+
+      <div class="arch-board" role="region" aria-label="GRAB Ecosystem Architecture Map">
+        <div>
+          <div class="arch-lane-label">1. Off-Server Control Plane (Your Desktop)</div>
+          <div class="flow-row">
+            <div class="flow-node desktop">
+              <div class="flow-step">Desktop VPS Manager</div>
+              <div class="flow-title">Gashboard</div>
+              <p class="flow-desc">Lives on your computer—never exposes a public web login page on your server. Provisions containers, DBs, Redis, and Caddy/Nginx SSL.</p>
+            </div>
+            <div class="flow-arrow" aria-hidden="true">+</div>
+            <div class="flow-node desktop">
+              <div class="flow-step">1-Click Marketplace</div>
+              <div class="flow-title">Grabtaculous</div>
+              <p class="flow-desc">Built into Gashboard to deploy GrabLab + Grex and popular companion self-hosted apps (analytics, automation, object storage, webmail) in seconds.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="tunnel-connector">
+          Encrypted SSH / Private Management Tunnel &darr; Provisions isolated containers &amp; edge TLS without leaving a public panel port open
+        </div>
+
+        <div>
+          <div class="arch-lane-label">2. Live Visitor Request Flow (Server / Hardened Containers)</div>
+          <div class="flow-row">
+            <div class="flow-node proxy">
+              <div class="flow-step">Edge SSL &amp; Shield</div>
+              <div class="flow-title">Nginx / Caddy</div>
+              <p class="flow-desc">Handles automatic Let's Encrypt / ZeroSSL HTTPS and static media, then passes the "rock" cleanly to private ports <code>127.0.0.1:8765&ndash;8772</code>.</p>
+            </div>
+            <div class="flow-arrow" aria-hidden="true">&rarr;</div>
+            <div class="flow-node griss">
+              <div class="flow-step">Snappy App Server</div>
+              <div class="flow-title">Griss</div>
+              <p class="flow-desc">Persistent multi-worker GRAB server inside a hardened non-root container. Runs compiled RAM generations with zero cold starts and <code>/_ready</code> rolling reloads.</p>
+            </div>
+            <div class="flow-arrow" aria-hidden="true">&rarr;</div>
+            <div class="flow-node apps">
+              <div class="flow-step">CMS · Builder · AI</div>
+              <div class="flow-title">GrabLab + Grex &amp; Grex JS + Groxy AI</div>
+              <p class="flow-desc">GrabLab manages content &amp; permalinks; Grex + Grex JS render bloat-free visual pages; Groxy AI scaffolds and validates designs locally via <code>grab mcp</code>.</p>
+            </div>
+            <div class="flow-arrow" aria-hidden="true">&rarr;</div>
+            <div class="flow-node data">
+              <div class="flow-step">Private Stores</div>
+              <div class="flow-title">Postgres / MariaDB / SQLite + Redis</div>
+              <p class="flow-desc">Accessed over private internal networks through Griss's warm pools, prepared SQL contracts, and Redis cache/rate-limit stores.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Product Cards -->
+    <section class="grid" aria-label="GRAB Ecosystem Products">
+
+      <!-- Griss -->
+      <article class="product-card" id="griss">
+        <div class="card-top">
+          <span class="product-tag">Application Server Runtime</span>
+          <span class="badge badge-blue">Builds on 0.6/0.7 · 0.8 &amp; Post-1.0</span>
+        </div>
+        <h3>Griss — Snappy Multi-Worker Server</h3>
+        <p class="product-lead">
+          The persistent GRAB application server that Nginx or Caddy passes the "rock" to on private loopback ports
+          (<code>127.0.0.1:8765&ndash;8772</code>), delivering Swoole/Go-class speed with zero cold starts.
+        </p>
+        <div class="role-list">
+          <div class="role-box"><strong>For Non-Coders / Owners:</strong> Pages respond instantly instead of booting a heavy script on every visitor click, handling traffic spikes without crashing.</div>
+          <div class="role-box"><strong>For Designers:</strong> Live previews and published sites feel crisp with fast page transitions and clean edge caching.</div>
+          <div class="role-box"><strong>For Developers:</strong> Compiles routes/templates once in RAM (<code>PreparedApp</code>), reuses warm DB/Redis pools, and coordinates zero-downtime reloads via <code>/_ready</code>.</div>
+        </div>
+      </article>
+
+      <!-- GrabLab -->
+      <article class="product-card" id="grablab">
+        <div class="card-top">
+          <span class="product-tag">Flagship CMS</span>
+          <span class="badge badge-slate">Planned Ecosystem (Post-1.0)</span>
+        </div>
+        <h3>GrabLab — The Savvy CMS</h3>
+        <p class="product-lead">
+          A modern Content Management System built directly on the stable GRAB 1.0 platform (<code>ADR-010</code>), giving teams full publishing power without WordPress legacy baggage.
+        </p>
+        <div class="role-list">
+          <div class="role-box"><strong>For Non-Coders / Owners:</strong> Manage posts, pages, media, custom content types, roles, and clean URLs (including automatic 301 redirect history when a slug changes) from one organized place.</div>
+          <div class="role-box"><strong>For Designers:</strong> Clean theme/template hooks and structured content fields mean designs never fight mystery shortcodes.</div>
+          <div class="role-box"><strong>For Developers:</strong> Strict capability boundaries, deterministic GRAB data contracts, extensible plugins, and WordPress-style pretty permalinks (<code>/:slug</code>) out of the box.</div>
+        </div>
+      </article>
+
+      <!-- Grex & Grex JS -->
+      <article class="product-card" id="grex">
+        <div class="card-top">
+          <span class="product-tag">Page Builder &amp; Reactive UI</span>
+          <span class="badge badge-slate">Planned Ecosystem (Post-1.0)</span>
+        </div>
+        <h3>Grex &amp; Grex JS — Visual Builder &amp; Engine</h3>
+        <p class="product-lead">
+          A responsive-first visual page builder (<strong>Grex</strong>) paired with a lightweight reactive frontend engine
+          (<strong>Grex JS</strong>)—built to outperform Bricks, Elementor, and Divi with zero wrapper-div bloat.
+        </p>
+        <ul class="cap-list">
+          <li><strong>Native Responsive-First Elements:</strong> Flex/Grid containers, typography, media, forms, nav, tabs/accordions, and dynamic query loops.</li>
+          <li><strong>Global Style &amp; Class Manager:</strong> Centralized design tokens and reusable Bricks-style classes with Desktop/Tablet/Mobile breakpoint overrides.</li>
+          <li><strong>Conditional Theme Builder &amp; Dynamic Data Picker:</strong> Headers, footers, archives, and 404s bound visually to GrabLab &amp; GRAB data with live preview and rollback.</li>
+        </ul>
+        <div class="role-list">
+          <div class="role-box"><strong>For Non-Coders, Designers &amp; Developers:</strong> Drag-and-drop speed for owners, pixel-accurate classes/breakpoints for designers, and clean semantic HTML + fast <strong>Grex JS</strong> interactivity for developers.</div>
+        </div>
+      </article>
+
+      <!-- Groxy AI -->
+      <article class="product-card" id="groxy">
+        <div class="card-top">
+          <span class="product-tag">Autonomous MCP Agent</span>
+          <span class="badge badge-slate">Planned Ecosystem (Post-1.0)</span>
+        </div>
+        <h3>Groxy AI — Autonomous Design &amp; CMS Expert</h3>
+        <p class="product-lead">
+          An autonomous site designer and GrabLab expert agent powered by <code>grab mcp</code>,
+          <code>GRAB-DESIGN-SYSTEM.md</code>, and cost-free local models via Ollama + OpenCode.
+        </p>
+        <div class="role-list">
+          <div class="role-box"><strong>For Non-Coders / Owners:</strong> Describe a landing page, catalog, or content type in plain English and let Groxy AI build and verify it with zero recurring AI API bills.</div>
+          <div class="role-box"><strong>For Designers:</strong> Follows spacing, typography, and accessibility guardrails in <code>GRAB-DESIGN-SYSTEM.md</code> using native Grex components instead of messy inline CSS hacks.</div>
+          <div class="role-box"><strong>For Developers:</strong> Inspects schemas, scaffolds routes/templates, and checks every generated file through <code>grab mcp</code> and <code>grab check</code> before saving.</div>
+        </div>
+      </article>
+
+      <!-- Gashboard -->
+      <article class="product-card" id="gashboard">
+        <div class="card-top">
+          <span class="product-tag">Desktop VPS Control Panel</span>
+          <span class="badge badge-slate">Planned Ecosystem (Post-1.0)</span>
+        </div>
+        <h3>Gashboard — Discreet Desktop Control Panel</h3>
+        <p class="product-lead">
+          A discreet desktop-based VPS control panel that eliminates public web-panel login attack surfaces by managing your server remotely over encrypted connections.
+        </p>
+        <div class="role-list">
+          <div class="role-box"><strong>For Non-Coders / Owners:</strong> Point-and-click VPS management—add custom domains with automatic edge SSL (Caddy or Nginx + Certbot), spin up databases, and check server health without memorizing Linux commands.</div>
+          <div class="role-box"><strong>For Designers:</strong> Launch staging vs. production sites and custom domains safely in a couple of clicks.</div>
+          <div class="role-box"><strong>For Developers:</strong> Zero public admin panel port exposed on the VPS; provisions isolated non-root containers, Redis, PostgreSQL/MariaDB, and unprivileged <strong>Griss</strong> workers (<code>127.0.0.1:8765&ndash;8772</code>).</div>
+        </div>
+      </article>
+
+      <!-- Grabtaculous -->
+      <article class="product-card" id="grabtaculous">
+        <div class="card-top">
+          <span class="product-tag">1-Click App Marketplace</span>
+          <span class="badge badge-slate">Planned Ecosystem (Post-1.0)</span>
+        </div>
+        <h3>Grabtaculous — 1-Click Self-Hosted Installer</h3>
+        <p class="product-lead">
+          A Softaculous-style one-click app marketplace built right into <strong>Gashboard</strong> so you can deploy a full stack onto any VPS in seconds.
+        </p>
+        <div class="role-list">
+          <div class="role-box"><strong>For Non-Coders / Owners:</strong> Install <strong>GrabLab + Grex</strong> alongside self-hosted analytics, workflow automation, object storage, and webmail without wrestling with Docker files.</div>
+          <div class="role-box"><strong>For Designers:</strong> Spin up complete client starter sites with pre-wired forms, media storage, and SSL ready immediately.</div>
+          <div class="role-box"><strong>For Developers:</strong> Curated, pinned, non-root container templates with repeatable networking, secrets isolation, and clean upgrade paths.</div>
+        </div>
+      </article>
+
+    </section>
+
+    <!-- Boundaries -->
+    <section class="boundaries">
+      <h2>Planned Ecosystem Status &amp; Approval Boundaries</h2>
+      <ul>
+        <li><strong>Planned Ecosystem Architecture (Post-1.0):</strong> <strong>GrabLab</strong>, <strong>Grex &amp; Grex JS</strong>, <strong>Groxy AI</strong>, <strong>Gashboard</strong>, and <strong>Grabtaculous</strong> are all <strong>Planned (Not Yet Approved for Implementation)</strong> and require separate owner approval after GRAB 1.0.</li>
+        <li><strong>What exists today vs. next in line:</strong> Single-worker <code>grab serve</code> and SQLite/MariaDB/PostgreSQL database access are live today (<strong>GRAB 0.6 &amp; 0.7</strong>); multi-worker scaling (<code>--workers</code>) and Redis caching belong to <strong>GRAB 0.8</strong> (<a href="../../specifications/GRAB-SCALE-SPEC-008.md">GRAB-SCALE-SPEC-008.md</a>, currently in review).</li>
+      </ul>
+    </section>
+
+    <footer>
+      <span>GRAB Ecosystem Showcase · Planned Post-1.0 Architecture</span>
+      <span><a href="index.html">All Milestones Hub</a> · <a href="deployment_architecture.html">Deployment Architecture</a> · <a href="../ROADMAP.md">ROADMAP.md</a></span>
+    </footer>
+
+  </main>
+
+</body>
+</html>

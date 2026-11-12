@@ -15,6 +15,7 @@ import (
 	"grab/internal/data"
 	"grab/internal/interpreter"
 	"grab/internal/parser"
+	"grab/internal/platform"
 	"grab/internal/server"
 	"grab/internal/template"
 )
@@ -23,6 +24,7 @@ const usageText = "usage: grab run [--db-config <manifest.json>] [--allow-db <al
 	"       grab migrate --db-config <manifest.json> --allow-db <alias:migrate> <migrations.grab>\n" +
 	"       grab serve [--addr 127.0.0.1:8080] [--allow-public] [--trusted-proxy <ip[,cidr...]>] [--static <[prefix=]dir>] [--reload] [--max-concurrency 64] [--max-queue 128] [--queue-timeout 1s] [--request-timeout 10s] [--max-body-bytes 1048576] [--shutdown-timeout 10s] [--log-format text|json] [--diagnostics beginner|developer|production] [--allow-read <dir>] [--allow-write <dir>] [--allow-net <host[,host...]>] <file.grab> [template.grab.html]\n" +
 	"       database flags for serve: --db-config <manifest.json> --allow-db <alias:read|read-write>\n" +
+	"       platform flags for run/serve/check: --platform-config <grab.platform.json> --allow-cache <alias:read|read-write|limit>\n" +
 	"       grab check [--diagnostics beginner|developer|production] <file.grab> [template.grab.html]\n" +
 	"       grab format [--write] <file.grab>"
 
@@ -50,6 +52,10 @@ func runContext(ctx context.Context, arguments []string, stdout, stderr io.Write
 			return 2
 		}
 		filePath := positional[0]
+		if e := configurePlatform(&cfg); e != nil {
+			fmt.Fprintln(stderr, e)
+			return 1
+		}
 		if e := configureDatabase(&cfg, false); e != nil {
 			fmt.Fprintln(stderr, e)
 			return 1
@@ -79,6 +85,10 @@ func runContext(ctx context.Context, arguments []string, stdout, stderr io.Write
 			return 2
 		}
 		grabFile := positional[0]
+		if e := configurePlatform(&cfg); e != nil {
+			fmt.Fprintln(stderr, e)
+			return 1
+		}
 		if e := configureDatabase(&cfg, true); e != nil {
 			fmt.Fprintln(stderr, e)
 			return 1
@@ -102,6 +112,10 @@ func runContext(ctx context.Context, arguments []string, stdout, stderr io.Write
 			return 2
 		}
 		filePath := positional[0]
+		if e := configurePlatform(&cfg); e != nil {
+			fmt.Fprintln(stderr, e)
+			return 1
+		}
 		sourceBytes, err := os.ReadFile(filePath)
 		if err != nil {
 			fmt.Fprintf(stderr, "grab: %v\n", err)
@@ -116,6 +130,10 @@ func runContext(ctx context.Context, arguments []string, stdout, stderr io.Write
 		bound, err := interpreter.Validate(program)
 		if err != nil {
 			fmt.Fprintln(stderr, interpreter.FormatDiagnostic(source, err, cfg.diagMode))
+			return 1
+		}
+		if e := interpreter.ValidatePlatform(program, cfg.opts.PlatformConfig); e != nil {
+			fmt.Fprintln(stderr, interpreter.FormatDiagnostic(source, e, cfg.diagMode))
 			return 1
 		}
 		if err := server.CheckRouteTemplates(program, filePath); err != nil {
@@ -176,24 +194,47 @@ func runContext(ctx context.Context, arguments []string, stdout, stderr io.Write
 }
 
 type commonFlagConfig struct {
-	dbConfig string
-	dbAllow  []string
-	addr     string
-	diagMode interpreter.DiagnosticMode
-	opts     interpreter.Options
-	server   server.Config
+	platformConfig string
+	platformAllow  map[string][]string
+	dbConfig       string
+	dbAllow        []string
+	addr           string
+	diagMode       interpreter.DiagnosticMode
+	opts           interpreter.Options
+	server         server.Config
 }
 
 func parseCommonFlags(args []string, allowAddr bool) (commonFlagConfig, []string, bool) {
 	cfg := commonFlagConfig{
-		addr:     server.DefaultAddr,
-		diagMode: interpreter.ModeDeveloper,
-		server:   server.DefaultConfig(),
+		platformAllow: map[string][]string{},
+		addr:          server.DefaultAddr,
+		diagMode:      interpreter.ModeDeveloper,
+		server:        server.DefaultConfig(),
 	}
 	var positional []string
 
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
+		flagName := strings.SplitN(arg, "=", 2)[0]
+		if flagName == "--platform-config" {
+			val, next, ok := consumeFlagValue(args, i, flagName)
+			if !ok || cfg.platformConfig != "" {
+				return cfg, nil, false
+			}
+			cfg.platformConfig = val
+			i = next
+			continue
+		}
+		if strings.Contains("|--allow-cache|--allow-connector|--allow-events|--allow-channel|--allow-telemetry|", "|"+flagName+"|") {
+			val, next, ok := consumeFlagValue(args, i, flagName)
+			if !ok {
+				return cfg, nil, false
+			}
+			subsystem := strings.TrimPrefix(flagName, "--allow-")
+			cfg.platformAllow[subsystem] = append(cfg.platformAllow[subsystem], val)
+			i = next
+			continue
+		}
 		if arg == "--db-config" || strings.HasPrefix(arg, "--db-config=") {
 			val, next, ok := consumeFlagValue(args, i, "--db-config")
 			if !ok || cfg.dbConfig != "" {
@@ -345,6 +386,48 @@ func configureDatabase(cfg *commonFlagConfig, serverMode bool) error {
 	}
 	cfg.opts.DataGrants, e = c.Grant(cfg.dbAllow, serverMode)
 	return e
+}
+
+func configurePlatform(cfg *commonFlagConfig) error {
+	if cfg.platformConfig == "" {
+		if len(cfg.platformAllow) != 0 {
+			return platform.ErrDenied
+		}
+		return nil
+	}
+	path, e := filepath.Abs(cfg.platformConfig)
+	if e != nil {
+		return platform.ErrInvalid
+	}
+	flags := make(map[string][]string, len(cfg.platformAllow))
+	for name, values := range cfg.platformAllow {
+		flags[name] = append([]string(nil), values...)
+	}
+	cfg.opts.PlatformPath = path
+	cfg.opts.PlatformLoader = func() (*platform.Config, *platform.Grants, error) { return loadPlatform(path, flags) }
+	cfg.opts.PlatformConfig, cfg.opts.PlatformGrants, e = cfg.opts.PlatformLoader()
+	return e
+}
+
+func loadPlatform(path string, flags map[string][]string) (*platform.Config, *platform.Grants, error) {
+	f, e := os.Open(path)
+	if e != nil {
+		return nil, nil, platform.ErrInvalid
+	}
+	defer f.Close()
+	raw, e := io.ReadAll(io.LimitReader(f, (1<<20)+1))
+	if e != nil {
+		return nil, nil, platform.ErrInvalid
+	}
+	c, e := platform.Parse(raw, path)
+	if e != nil {
+		return nil, nil, e
+	}
+	g, e := c.Grant(flags)
+	if e != nil {
+		return nil, nil, e
+	}
+	return c, g, nil
 }
 
 func parseFormatArgs(args []string) (bool, []string, bool) {

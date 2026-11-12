@@ -660,7 +660,15 @@ func (parser *Parser) parseCallableTarget() (string, lexer.Span, string, lexer.S
 		return "", lexer.Span{}, "", lexer.Span{}, err
 	}
 	if parser.match(lexer.TokenDot) {
-		second, err := parser.consume(lexer.TokenIdentifier)
+		var second lexer.Token
+		var err error
+		// Specification 008's cache.set uses an existing statement keyword
+		// contextually after this exact module qualifier only.
+		if first.Lexeme == "cache" && parser.check(lexer.TokenSet) {
+			second = parser.advance()
+		} else {
+			second, err = parser.consume(lexer.TokenIdentifier)
+		}
 		if err != nil {
 			return "", lexer.Span{}, "", lexer.Span{}, err
 		}
@@ -1329,7 +1337,7 @@ func (parser *Parser) tokenAt(offset int) lexer.Token {
 
 func (parser *Parser) isImplicitQualifiedCall() bool {
 	return parser.tokenAt(1).Kind == lexer.TokenDot &&
-		parser.tokenAt(2).Kind == lexer.TokenIdentifier &&
+		(parser.tokenAt(2).Kind == lexer.TokenIdentifier || parser.currentToken().Lexeme == "cache" && parser.tokenAt(2).Kind == lexer.TokenSet) &&
 		parser.tokenAt(3).Kind == lexer.TokenUsing
 }
 

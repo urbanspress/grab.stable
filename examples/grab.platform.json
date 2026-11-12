@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "caches": {
+    "catalog": {
+      "driver": "memory",
+      "namespace": "catalog-demo",
+      "max_keys": 10000,
+      "max_bytes": 16777216
+    }
+  }
+}

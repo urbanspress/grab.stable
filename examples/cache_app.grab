@@ -1,0 +1,24 @@
+use cache
+use server
+use math
+use text
+
+set store to cache.open using "catalog"
+call cache.set using store, "price", 12345678901234567890.00100, 60000
+
+route "GET" "/catalog"
+  try
+    set admission to cache.limit using store, "shared-demo", 3, 10000
+    if not admission.allowed
+      set retry to math.ceil using (admission.retry_after_ms divided by 1000)
+      give back server.response using record {status: 429, headers: {"Content-Type": "text/plain", "Retry-After": (text.from using retry)}, body: "Please try again later."}
+    end
+    set cached to cache.get using store, "price"
+    if cached.found
+      give back server.json using 200, record {price: (text.from using cached.value), source: "cache"}
+    end
+    give back server.text using 503, "The demonstration price has expired. Restart the example."
+  catch problem
+    give back server.text using 503, "The temporary store is unavailable."
+  end
+end

@@ -2,6 +2,7 @@ package interpreter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -13,6 +14,7 @@ import (
 	"unicode/utf8"
 
 	"grab/internal/ast"
+	"grab/internal/cache"
 	"grab/internal/data"
 	"grab/internal/lexer"
 	grabrt "grab/internal/runtime"
@@ -130,6 +132,18 @@ func Prepare(program *ast.Program, opts Options, output io.Writer) (*PreparedPro
 	if err != nil {
 		return nil, err
 	}
+	if err := ValidatePlatform(program, opts.PlatformConfig); err != nil {
+		return nil, err
+	}
+	opts.CacheManager = cache.NewManager(opts.PlatformGrants, nil)
+	preparationContext := opts.Context
+	if preparationContext == nil {
+		preparationContext = context.Background()
+	}
+	if e := validatePlatform(program, opts.PlatformConfig, func(alias string) error { _, e := opts.CacheManager.Open(preparationContext, alias); return e }); e != nil {
+		_ = opts.CacheManager.Close()
+		return nil, e
+	}
 	if output == nil {
 		output = io.Discard
 	}
@@ -144,6 +158,7 @@ func Prepare(program *ast.Program, opts Options, output io.Writer) (*PreparedPro
 		c := newExecContext(startupContext, output, f, opts)
 		defer c.data.Close()
 		if _, _, err = c.execBlock(program.Statements, env); err != nil {
+			_ = opts.CacheManager.Close()
 			_ = opts.DataManager.Close()
 			return nil, err
 		}
@@ -152,7 +167,9 @@ func Prepare(program *ast.Program, opts Options, output io.Writer) (*PreparedPro
 	return p, nil
 }
 
-func (p *PreparedProgram) Close() error { return p.opts.DataManager.Close() }
+func (p *PreparedProgram) Close() error {
+	return errors.Join(p.opts.CacheManager.Close(), p.opts.DataManager.Close())
+}
 
 func (p *PreparedProgram) Routes() []*Route { return append([]*Route(nil), p.routes...) }
 func (p *PreparedProgram) Execute(ctx context.Context, route *Route, req grabrt.Value, output io.Writer) (grabrt.Value, map[string]grabrt.Value, error) {

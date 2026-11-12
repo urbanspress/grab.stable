@@ -111,6 +111,13 @@ func checkTemplates(program *ast.Program, c *templateCache) error {
 }
 
 func Load(grabPath, templatePath string, opts interpreter.Options, output io.Writer) (*PreparedApp, error) {
+	if opts.PlatformLoader != nil {
+		var e error
+		opts.PlatformConfig, opts.PlatformGrants, e = opts.PlatformLoader()
+		if e != nil {
+			return nil, e
+		}
+	}
 	program, err := readProgram(grabPath)
 	if err != nil {
 		return nil, err
@@ -135,6 +142,13 @@ func Load(grabPath, templatePath string, opts interpreter.Options, output io.Wri
 		}
 	}()
 	app := &PreparedApp{code: p, files: c.files}
+	if opts.PlatformPath != "" {
+		st, e := os.Stat(opts.PlatformPath)
+		if e != nil {
+			return nil, e
+		}
+		app.files[opts.PlatformPath] = st.ModTime()
+	}
 	if len(p.Routes()) == 0 {
 		_, tp, e := ResolveFiles(grabPath, templatePath)
 		if e != nil {

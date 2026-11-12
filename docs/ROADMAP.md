@@ -139,7 +139,7 @@ Delivered in the repository:
 
 ---
 
-## GRAB 0.6 — Persistent application server (GRAB Server)
+## GRAB 0.6 — Persistent application server (GRAB Server / future **Griss** runtime)
 
 **Status:** Complete — November 11, 2026 (`specifications/GRAB-SERVER-SPEC-006.md`)
 **Approval date:** November 11, 2026 (owner explicitly authorized completing the specification in the Codex takeover request)
@@ -147,7 +147,7 @@ Delivered in the repository:
 
 Delivered in the repository:
 
-- Persistent multi-route `grab serve` runtime (`PreparedApp`) that lexes, parses,
+- Persistent multi-route `grab serve` runtime (`PreparedApp`, the core server foundation that powers the ecosystem's **Griss** application server) that lexes, parses,
   and validates programs and static `.grab.html` templates once per application
   load/reload (`ADR-011`, `ADR-012`), preserving 100% GRAB 0.2 single-file compatibility.
 - Multi-route syntax (`route "<METHOD>" "<path>" [using <req>] ... end`) and
@@ -201,19 +201,37 @@ design. Real SQLite, MariaDB 11.8, and PostgreSQL 18 adapter tests have been run
 
 ---
 
-## GRAB 0.8 — Connector SDK, webhooks, WebSockets, and server scaling
+## GRAB 0.8 — Integrations, client adapters, and server scaling
 
-**Status:** Planned (Not Yet Approved for Implementation)
-**Source:** Blueprint v1.0 Sections 6, 8, 9; Blueprint v1.1 roadmap table
+**Status:** Approved target; specification approved; implementation in progress
+**Drafted specification:** [`GRAB-SCALE-SPEC-008.md`](../specifications/GRAB-SCALE-SPEC-008.md) (Draft 1 — November 12, 2026)
+**Visual guide:** [`GRAB 0.8 guide`](features/grab_08_features.html)
+**Source:** Blueprint v1.0 Sections 6, 8, 9, 12, 13; narrowly scoped Blueprint v1.1 Sections 8, 10, 12 (`ADR-014`)
 
-Intended scope (requires owner approval before implementation):
+The owner approved specification 008 and its design on November 12, 2026, with
+OpenAI Codex retaining ownership. The platform/cache slice is implemented locally
+and undergoing acceptance; the full milestone is not complete. See
+[`CACHE.md`](CACHE.md) for actual behavior, tests and remaining gates.
 
-- Connector SDK for external API providers, plus a secure webhook engine with
-  signature verification, deduplication, and durable inbox/outbox retries.
-- Optional parallel track for typed API contracts and React/TypeScript client
-  adapters (`ADR-014`).
-- Advanced server capabilities: WebSockets, multi-process worker scaling, rate
-  limiting, metrics/tracing observability, and fault/load testing.
+Approved scope (items beyond platform/cache are still unimplemented):
+
+- Strict `--platform-config grab.platform.json` host manifest and repeatable default-deny
+  capability grants (`--allow-cache`, `--allow-connector`, `--allow-events`,
+  `--allow-channel`, `--allow-telemetry`).
+- Redis caching and atomic fixed-window rate limiting (`use cache`), plus an explicit
+  `memory` driver for local testing (`ADR-025b`).
+- Typed JSON contracts (`--api-contract grab.api.json`, `use api`) and offline
+  deterministic React/TypeScript client generation (`grab generate client ... --react`,
+  narrow `ADR-014` update / `ADR-025c`).
+- Vendored, lockfile-verified Connector SDK (`use connect`, `grab.connect.lock`),
+  verify-first webhooks, and durable inbox/outbox retries (`use events`,
+  `grab events inspect|retry|resolve`).
+- Authorized WebSocket channels (`use sockets`) with memory or standalone Redis
+  pub/sub transport, explicit Origin allowlists, and bounded queues.
+- Supervised multi-process worker scaling (`grab serve --workers N --worker-base-port P`
+  on private loopback ports `127.0.0.1:8765–8772`, laying the multi-worker foundation
+  for **Griss**), OpenMetrics/OTLP telemetry, and mandatory real-service, race, and
+  30-minute sustained fault/load release gates.
 
 ---
 
@@ -248,6 +266,10 @@ Intended scope (requires owner approval before implementation):
   isolation, and resource budgets (`ADR-009`, `ADR-017`).
 - Complete CLI and package ecosystem (`grab new`, `grab test`, `grab build`,
   `grab deploy`, `grab.json`, `grab.lock`).
+- Native **GRAB MCP Server (`grab mcp`)** foundation so external and local AI
+  agents can inspect schemas, validate `.grab` and `.grab.html` files via
+  `grab check`, and safely scaffold routes and templates within explicit
+  capability boundaries.
 - Reproducible full-stack benchmark suite and production deployment
   documentation.
 
@@ -258,14 +280,65 @@ Intended scope (requires owner approval before implementation):
 **Status:** Planned (Not Yet Approved for Implementation)
 **Source:** Blueprint v1.0 Sections 1, 14; Blueprint v1.1 Post-1.0 row
 
-### Native GRAB UI / browser compiler
+### Native GRAB UI / reactive frontend (**Grex JS**)
 
-Research and design for a native GRAB UI framework, selective hydration, or
-browser compiler, evaluated only after a formal UI strategy and server/browser
-security boundary are approved (`ADR-014`, `ADR-017`, `ADR-018`).
+Research and design for **Grex JS** (the native reactive GRAB UI runtime, selective
+hydration, or browser compiler powering **Grex**), evaluated only after a formal
+UI strategy and server/browser security boundary are approved (`ADR-014`, `ADR-017`,
+`ADR-018`).
 
-### GrabPress — flagship CMS
+### Post-1.0 Ecosystem Milestones
 
-A full Content Management System built as an application *on top of* the stable
-GRAB 1.0 platform (`ADR-010`), featuring content types, pages/posts, media
-library, roles/permissions, themes/templates, plugins, and publishing workflows.
+Each ecosystem track below requires separate owner approval after GRAB 1.0 and
+remains unimplemented (`Status: Planned (Not Yet Approved for Implementation)`):
+
+- **Griss (Snappy Multi-Worker Application Server):** The persistent
+  multi-worker GRAB web application server runtime that Nginx or Caddy passes
+  the "rock" to on private loopback ports (`127.0.0.1:8765–8772`), eliminating
+  cold starts with compiled `PreparedApp` memory generations, warm database/Redis
+  pools, and `/_ready`-gated rolling worker reloads.
+- **GrabLab (Savvy Flagship CMS):** Built *on top of* the stable GRAB 1.0
+  platform (`ADR-010`), featuring dynamic WordPress-style pretty permalinks
+  (`/:slug`, custom permalink patterns, and automatic 301 redirect history),
+  content types, pages/posts, media management, roles/permissions,
+  themes/templates, plugins, and publishing workflows.
+- **Grex & Grex JS (Responsive-First Visual Page Builder & Reactive UI Engine):**
+  A visual page builder (**Grex**) powered by its reactive frontend engine
+  (**Grex JS**), outperforming Bricks, Elementor, and Divi with clean semantic
+  markup and zero wrapper-div bloat:
+  1. **Native Responsive-First Element Library:** Clean, semantic drag-and-drop
+     elements (Layout Containers/Grid/Flex, Typography, Media, Buttons, Forms,
+     Navigation, Tabs/Accordions, Dynamic Query Loops) editable through visual
+     settings panels with zero wrapper-div bloat.
+  2. **Global Style & Class Manager:** Centralized design tokens (colors,
+     typography scales, spacing, shadows) and reusable Bricks-style classes.
+  3. **Visual Responsive Breakpoints:** Desktop, Tablet, Mobile, and custom
+     breakpoint toggles with per-device style overrides.
+  4. **Template Library & Conditional Theme Builder:** Reusable section/page
+     templates plus conditional global parts (Headers, Footers, Single
+     Templates, Archives, 404s) with display rules (e.g., by route, content
+     type, or user state).
+  5. **Visual Dynamic Data Picker:** Point-and-click binding from element
+     settings directly to GRAB 0.7 database records, GRAB 0.5 APIs, and GRAB
+     0.8 cached data with automatic context-aware escaping.
+  6. **Live Multi-Device Preview & Draft/Publish Workflow:** Real-time preview
+     before publishing, revision history, and one-click rollback.
+  7. **AI Designer Guardrails (`GRAB-DESIGN-SYSTEM.md` + `grab mcp`):** Curated
+     spacing, typography, and accessibility rules paired with `grab mcp` tools
+     so **Groxy AI** composes world-class, validated pages out of native elements.
+- **Groxy AI (Autonomous Design & CMS Expert Agent):** Powered by `grab mcp`,
+  `GRAB-DESIGN-SYSTEM.md`, and cost-free local models (via Ollama + OpenCode)
+  so creators can scaffold **GrabLab** schemas, build **Grex** layouts, and
+  validate `.grab` / `.grab.html` pages automatically with zero recurring API fees.
+- **Gashboard & Grabtaculous (Discreet Desktop VPS Control Panel & 1-Click App Marketplace):**
+  - **Gashboard (Desktop-Based VPS Control Panel):** Eliminates public
+    web-panel login attack surfaces entirely by running as a local desktop
+    control panel that manages remote VPS Docker containers, databases
+    (PostgreSQL, MariaDB, SQLite), Redis instances, and automatic edge SSL
+    (via Caddy or Nginx + Certbot) over encrypted connections—keeping **Griss**
+    unprivileged on private worker ports (`127.0.0.1:8765–8772`).
+  - **Grabtaculous (1-Click App Marketplace):** Built-in Softaculous-style
+    one-click app marketplace inside **Gashboard** offering curated container
+    templates to deploy **GrabLab + Grex** alongside popular self-hosted
+    companion apps (such as analytics, automation, object storage, and webmail)
+    in seconds.

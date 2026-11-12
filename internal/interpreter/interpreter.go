@@ -12,8 +12,10 @@ import (
 	"sync"
 
 	"grab/internal/ast"
+	"grab/internal/cache"
 	"grab/internal/data"
 	"grab/internal/lexer"
+	"grab/internal/platform"
 	grabrt "grab/internal/runtime"
 )
 
@@ -206,13 +208,17 @@ func (e *Error) ErrorRecord() grabrt.Value {
 	if msg == "" {
 		msg = e.Error()
 	}
-	return grabrt.Record([]grabrt.Entry{
+	entries := []grabrt.Entry{
 		{Name: "code", Value: grabrt.Text(e.Code())},
 		{Name: "category", Value: grabrt.Text(e.Kind.String())},
 		{Name: "message", Value: grabrt.Text(msg)},
 		{Name: "line", Value: grabrt.IntegerFromInt64(int64(e.Span.Start.Line))},
 		{Name: "column", Value: grabrt.IntegerFromInt64(int64(e.Span.Start.Column))},
-	})
+	}
+	if errors.Is(e.Err, cache.ErrUncertain) {
+		entries = append(entries, grabrt.Entry{Name: "cause", Value: grabrt.Text("uncertain")})
+	}
+	return grabrt.Record(entries)
 }
 
 func (e *Error) Error() string {
@@ -247,11 +253,16 @@ func (e *Error) Error() string {
 
 // Options configures runtime capabilities and safety bounds for execution.
 type Options struct {
-	Context     context.Context
-	DataGrants  *data.Grants
-	DataManager *data.Manager
-	Permissions Permissions
-	DialContext func(ctx context.Context, network, addr string) (net.Conn, error)
+	PlatformPath   string
+	PlatformLoader func() (*platform.Config, *platform.Grants, error)
+	PlatformConfig *platform.Config
+	PlatformGrants *platform.Grants
+	CacheManager   *cache.Manager
+	Context        context.Context
+	DataGrants     *data.Grants
+	DataManager    *data.Manager
+	Permissions    Permissions
+	DialContext    func(ctx context.Context, network, addr string) (net.Conn, error)
 	// TemplateLoader renders server.html through the host's confined template
 	// cache. A nil callback makes server.html unavailable outside the server.
 	TemplateLoader func(path string, data map[string]grabrt.Value) (string, error)
@@ -286,6 +297,13 @@ func RunWithEnvironmentAndOptions(program *ast.Program, output io.Writer, opts O
 	if err != nil {
 		return nil, err
 	}
+	if err := ValidatePlatform(program, opts.PlatformConfig); err != nil {
+		return nil, err
+	}
+	if opts.CacheManager == nil {
+		opts.CacheManager = cache.NewManager(opts.PlatformGrants, nil)
+		defer opts.CacheManager.Close()
+	}
 	if opts.DataManager == nil {
 		opts.DataManager = data.NewManager(opts.DataGrants, false)
 		defer opts.DataManager.Close()
@@ -308,6 +326,7 @@ func newExecContext(parent context.Context, output io.Writer, functions map[stri
 		opts.DataManager = data.NewManager(opts.DataGrants, false)
 	}
 	return &execContext{
+		cacheManager:   opts.CacheManager,
 		data:           opts.DataManager.Scope(),
 		dataManager:    opts.DataManager,
 		ctx:            parent,
@@ -584,6 +603,11 @@ func resolveCall(module, name string, nameSpan, callSpan lexer.Span, args []ast.
 		if !stdFn.acceptsArity(len(args)) {
 			return &Error{Kind: FunctionArityMismatch, Name: qname, Span: callSpan}
 		}
+		if module == "cache" {
+			if e := validateCacheCall(name, args, callSpan); e != nil {
+				return e
+			}
+		}
 		if module == "data" {
 			if e := validateDataCall(name, args, callSpan); e != nil {
 				return e
@@ -729,6 +753,7 @@ func (s *scope) cloneSnapshot() *scope {
 }
 
 type execContext struct {
+	cacheManager   *cache.Manager
 	data           *data.Scope
 	dataManager    *data.Manager
 	ctx            context.Context
@@ -992,6 +1017,11 @@ func (ctx *execContext) execBlock(statements []ast.Statement, env *scope) (grabr
 }
 
 func (ctx *execContext) execDoTogether(node *ast.DoTogetherStatement, env *scope) error {
+	for _, v := range env.cloneSnapshot().values {
+		if containsCacheHandle(v) {
+			return cacheError(node.Span, cache.ErrValue)
+		}
+	}
 	if ctx.data != nil && ctx.data.ActiveTransaction() != nil {
 		return databaseError(node.Span, &data.Error{Code: data.Ownership, Message: "transactions cannot be shared with task groups"})
 	}
@@ -1016,6 +1046,7 @@ func (ctx *execContext) execDoTogether(node *ast.DoTogetherStatement, env *scope
 		taskEnv := env.cloneSnapshot()
 		var buf bytes.Buffer
 		childCtx := &execContext{
+			cacheManager:   ctx.cacheManager,
 			data:           ctx.dataManager.Scope(),
 			dataManager:    ctx.dataManager,
 			ctx:            taskCtx,
@@ -1093,6 +1124,11 @@ func (ctx *execContext) execDoTogether(node *ast.DoTogetherStatement, env *scope
 	}
 
 	// Commit outputs and variable bindings in deterministic top-to-bottom source order.
+	for _, res := range results {
+		if containsCacheHandle(res.val) {
+			return cacheError(node.Span, cache.ErrValue)
+		}
+	}
 	for i, task := range node.Tasks {
 		if results[i].out != "" {
 			if _, err := io.WriteString(ctx.output, results[i].out); err != nil {

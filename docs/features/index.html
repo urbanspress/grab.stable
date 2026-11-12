@@ -116,6 +116,11 @@
     border-color: var(--term-bg);
   }
 
+  .nav-pill.future {
+    border-style: dashed;
+    color: var(--text-muted);
+  }
+
   .container {
     max-width: 1160px;
     margin: 0 auto;
@@ -324,6 +329,9 @@
         <a class="nav-pill" href="grab_05_features.html">GRAB 0.5 Guide</a>
         <a class="nav-pill" href="grab_06_features.html">GRAB 0.6 Guide</a>
         <a class="nav-pill" href="grab_07_features.html">GRAB 0.7 Guide &rarr;</a>
+        <a class="nav-pill future" href="grab_08_features.html">GRAB 0.8 (In Progress)</a>
+        <a class="nav-pill" href="deployment_architecture.html">Deployment Architecture</a>
+        <a class="nav-pill future" href="ecosystem.html">Ecosystem (Post-1.0)</a>
         <a class="nav-pill" href="../ROADMAP.md">ROADMAP.md</a>
       </nav>
     </div>
@@ -527,9 +535,9 @@
         </tr>
         <tr>
           <td><strong>GRAB 0.8</strong></td>
-          <td>Connector SDK, webhooks, WebSockets, and server scaling</td>
-          <td><span class="badge badge-slate">Planned (Not Yet Approved)</span></td>
-          <td style="color: var(--text-muted);"><code class="inline">grab_08_features.html</code> (Pending)</td>
+          <td>Integrations, typed React/TS client adapters, Redis caching/rate limiting, webhooks, WebSockets, and multi-worker scaling (<code class="inline">GRAB-SCALE-SPEC-008.md</code>)</td>
+          <td><span class="badge badge-amber">Design approved; platform/cache implementation in progress</span></td>
+          <td><a href="grab_08_features.html"><code class="inline">grab_08_features.html</code> (Proposal) &rarr;</a></td>
         </tr>
         <tr>
           <td><strong>GRAB 0.9</strong></td>
@@ -545,6 +553,46 @@
         </tr>
       </tbody>
     </table>
+
+    <section class="card" id="deployment-architecture" style="margin-top: 28px;">
+      <div>
+        <div class="card-top">
+          <span class="version-label">Architecture &amp; Hosting</span>
+          <span class="badge badge-green">ADR-005 &amp; ADR-017</span>
+        </div>
+        <h3>Deployment &amp; Hosting Architecture</h3>
+        <p>See how GRAB moves from simple local development (<code class="inline">127.0.0.1:8080</code> on Windows) to the production gold standard: <strong>Nginx Reverse Proxy &rarr; Hardened Non-Root Container &rarr; GRAB Private Worker Ports (<code class="inline">127.0.0.1:8765–8772</code>) + Redis &amp; PostgreSQL/MariaDB</strong>.</p>
+        <ul class="feature-bullets">
+          <li>Visual traffic-flow diagram and 3-way comparison against legacy PHP-FPM/FastCGI setups.</li>
+          <li>Plain-English breakdown of zero-cold-start speed, warm connection pools, <code class="inline">/_ready</code> rolling reloads, and <code class="inline">--trusted-proxy</code> security.</li>
+          <li>Clear boundary between live GRAB 0.6/0.7 flags, proposed GRAB 0.8 multi-worker scaling, and planned GRAB 1.0 / GrabLab <code class="inline">docker-compose.yml</code> deployment.</li>
+        </ul>
+      </div>
+      <div class="card-actions">
+        <span>Reference: <a href="../DEPLOYMENT.md">docs/DEPLOYMENT.md</a></span>
+        <a class="btn-primary" href="deployment_architecture.html">Open Deployment Architecture Guide &rarr;</a>
+      </div>
+    </section>
+
+    <section class="card" id="ecosystem-showcase" style="margin-top: 20px;">
+      <div>
+        <div class="card-top">
+          <span class="version-label">Post-1.0 Ecosystem Showcase</span>
+          <span class="badge badge-slate">Planned (Not Yet Approved)</span>
+        </div>
+        <h3>GRAB Ecosystem — Griss, GrabLab, Grex &amp; Grex JS, Groxy AI, Gashboard &amp; Grabtaculous</h3>
+        <p>Explore the planned Post-1.0 product suite built around the GRAB language and hardened server architecture: <strong>Gashboard</strong> (discreet desktop VPS control panel) + <strong>Grabtaculous</strong> (1-click marketplace) provisioning <strong>Griss</strong> (snappy multi-worker server), <strong>GrabLab</strong> (savvy CMS), <strong>Grex &amp; Grex JS</strong> (zero-bloat visual builder and reactive UI engine), and <strong>Groxy AI</strong> (autonomous local MCP designer).</p>
+        <ul class="feature-bullets">
+          <li>Visual architecture map showing off-server <strong>Gashboard</strong> orchestration, edge SSL, private <strong>Griss</strong> workers, and internal data stores.</li>
+          <li>Plain-English benefit breakdowns for non-coders, designers, and developers across all six ecosystem pillars.</li>
+          <li>Clearly marked as <strong>Planned Ecosystem Architecture (Post-1.0)</strong> requiring separate approval after GRAB 1.0.</li>
+        </ul>
+      </div>
+      <div class="card-actions">
+        <span>Roadmap: <a href="../ROADMAP.md">docs/ROADMAP.md</a></span>
+        <a class="btn-primary" href="ecosystem.html">Open Ecosystem Showcase &rarr;</a>
+      </div>
+    </section>
 
     <div class="footer-note">
       <strong>Documentation Standard:</strong> Every new GRAB milestone adds or updates a self-contained visual guide under <code class="inline">docs/features/grab_&lt;version&gt;_features.html</code> and updates this hub page so builders and stakeholders can see new capabilities in plain English.
