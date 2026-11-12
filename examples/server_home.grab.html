@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{title}</title>
+</head>
+<body>
+  <h1>{title}</h1>
+  <p>A persistent GRAB app. Your connection address: {visitor_ip}</p>
+  <p><a href="/api/products/A-17">View product JSON</a></p>
+  <form method="post" action="/greet">
+    <label>Your name <input name="name" required></label>
+    <button type="submit">Say hello</button>
+  </form>
+</body>
+</html>

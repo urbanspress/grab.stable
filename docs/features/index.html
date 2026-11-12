@@ -321,7 +321,8 @@
       <nav class="milestone-nav" aria-label="Milestone links">
         <a class="nav-pill active" href="index.html">All Milestones Hub</a>
         <a class="nav-pill" href="grab_04_features.html">GRAB 0.4 Guide</a>
-        <a class="nav-pill" href="grab_05_features.html">GRAB 0.5 Visual Guide &rarr;</a>
+        <a class="nav-pill" href="grab_05_features.html">GRAB 0.5 Guide</a>
+        <a class="nav-pill" href="grab_06_features.html">GRAB 0.6 Guide &rarr;</a>
         <a class="nav-pill" href="../ROADMAP.md">ROADMAP.md</a>
       </nav>
     </div>
@@ -338,7 +339,7 @@
       </p>
     </section>
 
-    <h2 class="section-title">Released &amp; Active Milestones (GRAB 0.1 – 0.5)</h2>
+    <h2 class="section-title">Released &amp; Active Milestones (GRAB 0.1 – 0.6)</h2>
     <p class="section-sub">Each version builds cleanly on the last while keeping existing <code class="inline">.grab</code> programs compatible.</p>
 
     <section class="grid">
@@ -428,7 +429,7 @@
       </article>
 
       <!-- GRAB 0.5 -->
-      <article class="card highlight" id="grab-05">
+      <article class="card" id="grab-05">
         <div>
           <div class="card-top">
             <span class="version-label">GRAB 0.5</span>
@@ -448,10 +449,31 @@
         </div>
       </article>
 
+      <!-- GRAB 0.6 -->
+      <article class="card highlight" id="grab-06">
+        <div>
+          <div class="card-top">
+            <span class="version-label">GRAB 0.6</span>
+            <span class="badge badge-green">Complete</span>
+          </div>
+          <h3>Persistent Multi-Route App Server (GRAB Server)</h3>
+          <p>Turns GRAB into an always-on web application server with natural <code class="inline">route</code> handlers, <code class="inline">use server</code> responses, load-once <code class="inline">PreparedApp</code> startup, and production safety behind Nginx.</p>
+          <ul class="feature-bullets">
+            <li>Natural <code class="inline">route "GET" "/products/{id}" using req</code> routing and <code class="inline">server.html</code> / <code class="inline">server.json</code> / <code class="inline">server.redirect</code> helpers.</li>
+            <li>Immutable load-once app startup with fresh per-request isolation (zero cross-visitor data leaks) and bounded concurrency queues.</li>
+            <li>Safe loopback default, <code class="inline">--allow-public</code> &amp; <code class="inline">--trusted-proxy</code> Nginx integration, opt-in <code class="inline">--static</code> file serving, <code class="inline">/_health</code> &amp; <code class="inline">/_ready</code> probes, and atomic reload.</li>
+          </ul>
+        </div>
+        <div class="card-actions">
+          <span>Approved Spec: <a href="../../specifications/GRAB-SERVER-SPEC-006.md">GRAB-SERVER-SPEC-006.md</a></span>
+          <a class="btn-primary" href="grab_06_features.html">Open GRAB 0.6 Guide &rarr;</a>
+        </div>
+      </article>
+
     </section>
 
-    <h2 class="section-title" id="grab-06">Planned Roadmap Milestones (GRAB 0.6 – 1.0)</h2>
-    <p class="section-sub">Intended future sequence in <a href="../ROADMAP.md">docs/ROADMAP.md</a>. Future guides (<code class="inline">grab_06_features.html</code>, etc.) will be added as each milestone is drafted and approved.</p>
+    <h2 class="section-title" id="planned-milestones">Roadmap Status (GRAB 0.6 – 1.0)</h2>
+    <p class="section-sub">Intended future sequence in <a href="../ROADMAP.md">docs/ROADMAP.md</a>. Visual guides are added as each milestone is drafted and approved.</p>
 
     <table class="planned-table">
       <thead>
@@ -472,8 +494,8 @@
         <tr>
           <td><strong>GRAB 0.6</strong></td>
           <td>Persistent multi-route application server (<code class="inline">GRAB Server</code>)</td>
-          <td><span class="badge badge-slate">Planned (Not Yet Approved)</span></td>
-          <td style="color: var(--text-muted);"><code class="inline">grab_06_features.html</code> (Pending)</td>
+          <td><span class="badge badge-green">Complete</span></td>
+          <td><a href="grab_06_features.html"><code class="inline">grab_06_features.html</code> &rarr;</a></td>
         </tr>
         <tr>
           <td><strong>GRAB 0.7</strong></td>

@@ -6,8 +6,10 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
 	"grab/internal/interpreter"
 	"grab/internal/parser"
@@ -16,7 +18,7 @@ import (
 )
 
 const usageText = "usage: grab run [--diagnostics beginner|developer|production] [--allow-read <dir>] [--allow-write <dir>] [--allow-net <host[,host...]>] <file.grab>\n" +
-	"       grab serve [--addr 127.0.0.1:8080] [--diagnostics beginner|developer|production] [--allow-read <dir>] [--allow-write <dir>] [--allow-net <host[,host...]>] <file.grab> [template.grab.html]\n" +
+	"       grab serve [--addr 127.0.0.1:8080] [--allow-public] [--trusted-proxy <ip[,cidr...]>] [--static <[prefix=]dir>] [--reload] [--max-concurrency 64] [--max-queue 128] [--queue-timeout 1s] [--request-timeout 10s] [--max-body-bytes 1048576] [--shutdown-timeout 10s] [--log-format text|json] [--diagnostics beginner|developer|production] [--allow-read <dir>] [--allow-write <dir>] [--allow-net <host[,host...]>] <file.grab> [template.grab.html]\n" +
 	"       grab check [--diagnostics beginner|developer|production] <file.grab> [template.grab.html]\n" +
 	"       grab format [--write] <file.grab>"
 
@@ -72,8 +74,10 @@ func runContext(ctx context.Context, arguments []string, stdout, stderr io.Write
 		if len(positional) == 2 {
 			tmplFile = positional[1]
 		}
-		if err := server.ServeWithOptions(ctx, cfg.addr, grabFile, tmplFile, cfg.opts, stdout, ready); err != nil {
-			fmt.Fprintf(stderr, "grab: %v\n", err)
+		cfg.server.Diagnostics = cfg.diagMode
+		if err := server.ServeWithConfig(ctx, cfg.addr, grabFile, tmplFile, cfg.opts, cfg.server, stdout, ready); err != nil {
+			source, _ := os.ReadFile(grabFile)
+			fmt.Fprintln(stderr, interpreter.FormatDiagnostic(string(source), err, cfg.diagMode))
 			return 1
 		}
 		return 0
@@ -98,6 +102,10 @@ func runContext(ctx context.Context, arguments []string, stdout, stderr io.Write
 		}
 		bound, err := interpreter.Validate(program)
 		if err != nil {
+			fmt.Fprintln(stderr, interpreter.FormatDiagnostic(source, err, cfg.diagMode))
+			return 1
+		}
+		if err := server.CheckRouteTemplates(program, filePath); err != nil {
 			fmt.Fprintln(stderr, interpreter.FormatDiagnostic(source, err, cfg.diagMode))
 			return 1
 		}
@@ -158,17 +166,62 @@ type commonFlagConfig struct {
 	addr     string
 	diagMode interpreter.DiagnosticMode
 	opts     interpreter.Options
+	server   server.Config
 }
 
 func parseCommonFlags(args []string, allowAddr bool) (commonFlagConfig, []string, bool) {
 	cfg := commonFlagConfig{
 		addr:     server.DefaultAddr,
 		diagMode: interpreter.ModeDeveloper,
+		server:   server.DefaultConfig(),
 	}
 	var positional []string
 
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
+		if allowAddr {
+			if arg == "--allow-public" {
+				cfg.server.AllowPublic = true
+				continue
+			}
+			if arg == "--reload" {
+				cfg.server.Reload = true
+				continue
+			}
+			name := strings.SplitN(arg, "=", 2)[0]
+			if strings.Contains("|--trusted-proxy|--static|--log-format|--max-concurrency|--max-queue|--queue-timeout|--request-timeout|--max-body-bytes|--shutdown-timeout|", "|"+name+"|") {
+				val, next, ok := consumeFlagValue(args, i, name)
+				if !ok {
+					return cfg, nil, false
+				}
+				i = next
+				var err error
+				switch name {
+				case "--trusted-proxy":
+					cfg.server.TrustedProxy = val
+				case "--static":
+					cfg.server.Static = val
+				case "--log-format":
+					cfg.server.LogFormat = val
+				case "--max-concurrency":
+					cfg.server.MaxConcurrency, err = strconv.Atoi(val)
+				case "--max-queue":
+					cfg.server.MaxQueue, err = strconv.Atoi(val)
+				case "--max-body-bytes":
+					cfg.server.MaxBodyBytes, err = strconv.ParseInt(val, 10, 64)
+				case "--queue-timeout":
+					cfg.server.QueueTimeout, err = time.ParseDuration(val)
+				case "--request-timeout":
+					cfg.server.RequestTimeout, err = time.ParseDuration(val)
+				case "--shutdown-timeout":
+					cfg.server.ShutdownTimeout, err = time.ParseDuration(val)
+				}
+				if err != nil {
+					return cfg, nil, false
+				}
+				continue
+			}
+		}
 		if allowAddr && (arg == "--addr" || strings.HasPrefix(arg, "--addr=")) {
 			val, nextIdx, ok := consumeFlagValue(args, i, "--addr")
 			if !ok {
@@ -226,6 +279,9 @@ func parseCommonFlags(args []string, allowAddr bool) (commonFlagConfig, []string
 			return cfg, nil, false
 		}
 		positional = append(positional, arg)
+	}
+	if allowAddr && (cfg.server.Validate() != nil || server.ValidateAddr(cfg.addr, true) != nil) {
+		return cfg, nil, false
 	}
 	return cfg, positional, true
 }

@@ -135,6 +135,10 @@ func beginnerHint(code string, err error) string {
 		return "'give back' can only be used inside a 'make ... end' function."
 	case "GRAB-E208":
 		return "Each task in a 'do together ... end' block must set a distinct variable name (up to 16 tasks per block)."
+	case "GRAB-E209":
+		return "Use a unique route with an uppercase HTTP method, a /path with distinct {parameters}, and a safe existing .grab.html template."
+	case "GRAB-E312":
+		return "Return text or a server response with a valid status and safe headers; check request JSON before using it."
 	case "GRAB-E301":
 		return "Check that the values have compatible types (for example, use 'text.from using <number>' before 'joined with')."
 	case "GRAB-E302":

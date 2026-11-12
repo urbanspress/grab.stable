@@ -90,6 +90,8 @@ func (parser *Parser) parseProgram() (*ast.Program, error) {
 			statement, err = parser.parseUseDecl()
 		} else if parser.check(lexer.TokenMake) {
 			statement, err = parser.parseFunctionDef()
+		} else if parser.check(lexer.TokenRoute) {
+			statement, err = parser.parseRouteDef()
 		} else {
 			statement, err = parser.parseStatement()
 		}
@@ -167,6 +169,62 @@ func (parser *Parser) parseFunctionDef() (ast.Statement, error) {
 		Body:       body,
 		Span:       lexer.Span{Start: start, End: endTok.Span.End},
 	}, nil
+}
+
+// parseRouteDef parses a top-level GRAB 0.6 route declaration:
+// `route "<METHOD>" "<path>" [using <req>] NEWLINE { statement NEWLINE } end`.
+// Method and path semantics are validated later (GRAB-E209); the parser only
+// enforces the syntactic shape.
+func (parser *Parser) parseRouteDef() (ast.Statement, error) {
+	start := parser.advance().Span.Start // 'route'
+	methodTok, err := parser.consume(lexer.TokenTextLiteral)
+	if err != nil {
+		return nil, err
+	}
+	method, err := strconv.Unquote(methodTok.Lexeme)
+	if err != nil {
+		return nil, &ParseError{Kind: ParseUnexpectedToken, Span: methodTok.Span, Got: methodTok.Kind}
+	}
+	pathTok, err := parser.consume(lexer.TokenTextLiteral)
+	if err != nil {
+		return nil, err
+	}
+	path, err := strconv.Unquote(pathTok.Lexeme)
+	if err != nil {
+		return nil, &ParseError{Kind: ParseUnexpectedToken, Span: pathTok.Span, Got: pathTok.Kind}
+	}
+
+	route := &ast.RouteDef{
+		Method:       method,
+		MethodLexeme: methodTok.Lexeme,
+		MethodSpan:   methodTok.Span,
+		Path:         path,
+		PathLexeme:   pathTok.Lexeme,
+		PathSpan:     pathTok.Span,
+	}
+	if parser.match(lexer.TokenUsing) {
+		reqTok, err := parser.consume(lexer.TokenIdentifier)
+		if err != nil {
+			return nil, err
+		}
+		route.RequestName = reqTok.Lexeme
+		route.RequestSpan = reqTok.Span
+	}
+
+	if _, err := parser.consume(lexer.TokenNewline); err != nil {
+		return nil, err
+	}
+	body, err := parser.parseBlockBody(lexer.TokenEnd)
+	if err != nil {
+		return nil, err
+	}
+	endTok, err := parser.consume(lexer.TokenEnd)
+	if err != nil {
+		return nil, err
+	}
+	route.Body = body
+	route.Span = lexer.Span{Start: start, End: endTok.Span.End}
+	return route, nil
 }
 
 func (parser *Parser) parseBlockBody(terminators ...lexer.TokenKind) ([]ast.Statement, error) {

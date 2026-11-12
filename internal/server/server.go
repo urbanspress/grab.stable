@@ -1,18 +1,16 @@
 package server
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net"
-	"net/http"
+
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
+	"grab/internal/ast"
 	"grab/internal/interpreter"
 	"grab/internal/parser"
 	"grab/internal/template"
@@ -138,6 +136,21 @@ func isWithinDir(target, rootDir string) bool {
 // lexical, syntax, name-resolution, HTML context, and template variable
 // binding checks) without starting a server or executing side effects.
 func Preflight(grabPath, templatePath string) (string, string, error) {
+	programCheck, err := readProgram(grabPath)
+	if err != nil {
+		return "", "", err
+	}
+	if _, err := interpreter.Validate(programCheck); err != nil {
+		return "", "", err
+	}
+	for _, s := range programCheck.Statements {
+		if _, ok := s.(*ast.RouteDef); ok {
+			if err := CheckRouteTemplates(programCheck, grabPath); err != nil {
+				return "", "", err
+			}
+			return grabPath, "", nil
+		}
+	}
 	resolvedGrab, resolvedTmpl, err := ResolveFiles(grabPath, templatePath)
 	if err != nil {
 		return "", "", err
@@ -213,156 +226,4 @@ func RenderFilesWithOptions(grabPath, templatePath string, opts interpreter.Opti
 	}
 
 	return template.Render(tmpl, env)
-}
-
-// NewHandler creates the HTTP handler for grab serve with mandatory security
-// headers, GET/HEAD '/' routing, per-request isolated execution, and a 5-second
-// execution timeout.
-func NewHandler(grabPath, templatePath string, consoleOut io.Writer) http.Handler {
-	return NewHandlerWithOptions(grabPath, templatePath, interpreter.Options{}, consoleOut)
-}
-
-// NewHandlerWithOptions creates the HTTP handler for grab serve with the
-// supplied interpreter capability options.
-func NewHandlerWithOptions(grabPath, templatePath string, opts interpreter.Options, consoleOut io.Writer) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		setSecurityHeaders(w.Header())
-
-		if r.URL.Path != "/" {
-			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-			w.WriteHeader(http.StatusNotFound)
-			_, _ = io.WriteString(w, "404 page not found\n")
-			return
-		}
-
-		if r.Method != http.MethodGet && r.Method != http.MethodHead {
-			w.Header().Set("Allow", "GET, HEAD")
-			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			_, _ = io.WriteString(w, "405 method not allowed\n")
-			return
-		}
-
-		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-		defer cancel()
-
-		type renderResult struct {
-			html string
-			err  error
-		}
-		done := make(chan renderResult, 1)
-		go func() {
-			html, err := RenderFilesWithOptions(grabPath, templatePath, opts, consoleOut)
-			done <- renderResult{html: html, err: err}
-		}()
-
-		select {
-		case <-ctx.Done():
-			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-			w.WriteHeader(http.StatusInternalServerError)
-			_, _ = io.WriteString(w, "grab: request execution timed out\n")
-		case res := <-done:
-			if res.err != nil {
-				w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-				w.WriteHeader(http.StatusInternalServerError)
-				_, _ = fmt.Fprintf(w, "grab: %v\n", res.err)
-				return
-			}
-			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			w.WriteHeader(http.StatusOK)
-			if r.Method == http.MethodGet {
-				_, _ = io.WriteString(w, res.html)
-			}
-		}
-	})
-}
-
-func setSecurityHeaders(h http.Header) {
-	h.Set("X-Content-Type-Options", "nosniff")
-	h.Set("X-Frame-Options", "DENY")
-	h.Set("Content-Security-Policy", "default-src 'self'; script-src 'none'; object-src 'none'")
-	h.Set("Cache-Control", "no-store")
-}
-
-// Serve validates loopback binding, runs startup preflight on the .grab and
-// .grab.html files, binds the TCP listener, announces the URL to stdout, and
-// serves HTTP requests until ctx is cancelled.
-func Serve(ctx context.Context, addr, grabPath, templatePath string, stdout io.Writer, ready chan<- string) error {
-	return ServeWithOptions(ctx, addr, grabPath, templatePath, interpreter.Options{}, stdout, ready)
-}
-
-// ServeWithOptions validates loopback binding, runs startup preflight on the
-// .grab and .grab.html files, and serves HTTP requests with the supplied
-// interpreter capability options until ctx is cancelled.
-func ServeWithOptions(ctx context.Context, addr, grabPath, templatePath string, opts interpreter.Options, stdout io.Writer, ready chan<- string) error {
-	if addr == "" {
-		addr = DefaultAddr
-	}
-	if err := ValidateLoopbackAddr(addr); err != nil {
-		return err
-	}
-	resolvedGrab, resolvedTmpl, err := Preflight(grabPath, templatePath)
-	if err != nil {
-		return err
-	}
-
-	listener, err := net.Listen("tcp", addr)
-	if err != nil {
-		return err
-	}
-	return serveWithListener(ctx, listener, resolvedGrab, resolvedTmpl, opts, stdout, ready)
-}
-
-// ServeListener validates loopback address and startup preflight, then runs the
-// HTTP server on the supplied net.Listener until ctx is cancelled.
-func ServeListener(ctx context.Context, listener net.Listener, grabPath, templatePath string, stdout io.Writer, ready chan<- string) error {
-	if err := ValidateLoopbackAddr(listener.Addr().String()); err != nil {
-		return err
-	}
-	resolvedGrab, resolvedTmpl, err := Preflight(grabPath, templatePath)
-	if err != nil {
-		return err
-	}
-	return serveWithListener(ctx, listener, resolvedGrab, resolvedTmpl, interpreter.Options{}, stdout, ready)
-}
-
-func serveWithListener(ctx context.Context, listener net.Listener, resolvedGrab, resolvedTmpl string, opts interpreter.Options, stdout io.Writer, ready chan<- string) error {
-	defer listener.Close()
-
-	boundAddr := listener.Addr().String()
-	if stdout != nil {
-		_, _ = fmt.Fprintf(stdout, "grab: serving %s with %s at http://%s/\n", resolvedGrab, resolvedTmpl, boundAddr)
-	}
-	if ready != nil {
-		ready <- boundAddr
-		close(ready)
-	}
-
-	srv := &http.Server{
-		Handler:           NewHandlerWithOptions(resolvedGrab, resolvedTmpl, opts, stdout),
-		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       5 * time.Second,
-		WriteTimeout:      10 * time.Second,
-		IdleTimeout:       30 * time.Second,
-		MaxHeaderBytes:    65536,
-	}
-
-	errCh := make(chan error, 1)
-	go func() {
-		if err := srv.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			errCh <- err
-			return
-		}
-		errCh <- nil
-	}()
-
-	select {
-	case <-ctx.Done():
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		_ = srv.Shutdown(shutdownCtx)
-		return <-errCh
-	case err := <-errCh:
-		return err
-	}
 }

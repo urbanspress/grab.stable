@@ -48,6 +48,8 @@ const (
 	RequestTimeout
 	PermissionDenied
 	NetworkPermissionDenied
+	InvalidRouteDefinition
+	InvalidServerResponse
 )
 
 // String returns the stable specification category name for the interpreter error.
@@ -93,6 +95,10 @@ func (kind ErrorKind) String() string {
 		return "permission denied"
 	case NetworkPermissionDenied:
 		return "network permission denied"
+	case InvalidRouteDefinition:
+		return "invalid route definition"
+	case InvalidServerResponse:
+		return "invalid server response"
 	default:
 		return "unknown interpreter error"
 	}
@@ -139,6 +145,10 @@ func (kind ErrorKind) Code() string {
 		return "GRAB-E401"
 	case NetworkPermissionDenied:
 		return "GRAB-E402"
+	case InvalidRouteDefinition:
+		return "GRAB-E209"
+	case InvalidServerResponse:
+		return "GRAB-E312"
 	default:
 		return "GRAB-E301"
 	}
@@ -205,7 +215,7 @@ func (e *Error) Error() string {
 			return fmt.Sprintf("%s: %s at line %d, column %d", e.Kind, e.Message, e.Span.Start.Line, e.Span.Start.Column)
 		}
 		return fmt.Sprintf("%s at line %d, column %d", e.Kind, e.Span.Start.Line, e.Span.Start.Column)
-	case StandardLibraryError, NetworkError, RequestTimeout, NetworkPermissionDenied, InvalidTaskGroup:
+	case StandardLibraryError, NetworkError, RequestTimeout, NetworkPermissionDenied, InvalidTaskGroup, InvalidRouteDefinition, InvalidServerResponse:
 		if e.Err != nil {
 			return fmt.Sprintf("%s (%v) at line %d, column %d", e.Kind, e.Err, e.Span.Start.Line, e.Span.Start.Column)
 		}
@@ -222,6 +232,9 @@ func (e *Error) Error() string {
 type Options struct {
 	Permissions Permissions
 	DialContext func(ctx context.Context, network, addr string) (net.Conn, error)
+	// TemplateLoader renders server.html through the host's confined template
+	// cache. A nil callback makes server.html unavailable outside the server.
+	TemplateLoader func(path string, data map[string]grabrt.Value) (string, error)
 }
 
 // Run validates names and functions in the complete program before executing statements.
@@ -249,18 +262,11 @@ func RunWithEnvironment(program *ast.Program, output io.Writer) (map[string]grab
 // top-level statements with the supplied runtime options, and returns a
 // read-only snapshot of the final top-level variable bindings.
 func RunWithEnvironmentAndOptions(program *ast.Program, output io.Writer, opts Options) (map[string]grabrt.Value, error) {
-	functions, _, err := validateProgram(program)
+	functions, _, _, err := validateProgram(program)
 	if err != nil {
 		return nil, err
 	}
-	ctx := &execContext{
-		output:       output,
-		functions:    functions,
-		permissions:  opts.Permissions,
-		dialContext:  opts.DialContext,
-		maxLoopSteps: DefaultMaxLoopSteps,
-		maxCallDepth: DefaultMaxCallDepth,
-	}
+	ctx := newExecContext(context.Background(), output, functions, opts)
 	globalScope := newScope(nil)
 	if _, _, err := ctx.execBlock(program.Statements, globalScope); err != nil {
 		return nil, err
@@ -268,11 +274,25 @@ func RunWithEnvironmentAndOptions(program *ast.Program, output io.Writer, opts O
 	return globalScope.snapshot(), nil
 }
 
+func newExecContext(parent context.Context, output io.Writer, functions map[string]*ast.FunctionDef, opts Options) *execContext {
+	return &execContext{
+		ctx:            parent,
+		requestCtx:     parent,
+		output:         output,
+		functions:      functions,
+		permissions:    opts.Permissions,
+		dialContext:    opts.DialContext,
+		templateLoader: opts.TemplateLoader,
+		maxLoopSteps:   DefaultMaxLoopSteps,
+		maxCallDepth:   DefaultMaxCallDepth,
+	}
+}
+
 // Validate performs pre-execution validation and name resolution without
 // executing statements, returning the set of top-level variable names bound by
 // the program.
 func Validate(program *ast.Program) (map[string]struct{}, error) {
-	_, bound, err := validateProgram(program)
+	_, bound, _, err := validateProgram(program)
 	return bound, err
 }
 
@@ -280,9 +300,10 @@ type validationEnv struct {
 	functions  map[string]*ast.FunctionDef
 	modules    map[string]struct{}
 	inFunction bool
+	inRoute    bool
 }
 
-func validateProgram(program *ast.Program) (map[string]*ast.FunctionDef, map[string]struct{}, error) {
+func validateProgram(program *ast.Program) (map[string]*ast.FunctionDef, map[string]struct{}, []*Route, error) {
 	functions := make(map[string]*ast.FunctionDef)
 	modules := make(map[string]struct{})
 
@@ -290,26 +311,26 @@ func validateProgram(program *ast.Program) (map[string]*ast.FunctionDef, map[str
 		switch node := statement.(type) {
 		case *ast.UseDecl:
 			if !isValidStdlibModule(node.Module) {
-				return nil, nil, &Error{Kind: UnknownFunction, Name: node.Module, Span: node.ModuleSpan}
+				return nil, nil, nil, &Error{Kind: UnknownFunction, Name: node.Module, Span: node.ModuleSpan}
 			}
 			if _, exists := modules[node.Module]; exists {
-				return nil, nil, &Error{Kind: DuplicateDefinition, Name: node.Module, Span: node.ModuleSpan}
+				return nil, nil, nil, &Error{Kind: DuplicateDefinition, Name: node.Module, Span: node.ModuleSpan}
 			}
 			if _, exists := functions[node.Module]; exists {
-				return nil, nil, &Error{Kind: DuplicateDefinition, Name: node.Module, Span: node.ModuleSpan}
+				return nil, nil, nil, &Error{Kind: DuplicateDefinition, Name: node.Module, Span: node.ModuleSpan}
 			}
 			modules[node.Module] = struct{}{}
 		case *ast.FunctionDef:
 			if _, exists := functions[node.Name]; exists {
-				return nil, nil, &Error{Kind: DuplicateDefinition, Name: node.Name, Span: node.NameSpan}
+				return nil, nil, nil, &Error{Kind: DuplicateDefinition, Name: node.Name, Span: node.NameSpan}
 			}
 			if _, exists := modules[node.Name]; exists {
-				return nil, nil, &Error{Kind: DuplicateDefinition, Name: node.Name, Span: node.NameSpan}
+				return nil, nil, nil, &Error{Kind: DuplicateDefinition, Name: node.Name, Span: node.NameSpan}
 			}
 			seenParams := make(map[string]struct{}, len(node.Parameters))
 			for _, param := range node.Parameters {
 				if _, exists := seenParams[param.Name]; exists {
-					return nil, nil, &Error{Kind: DuplicateDefinition, Name: param.Name, Span: param.Span}
+					return nil, nil, nil, &Error{Kind: DuplicateDefinition, Name: param.Name, Span: param.Span}
 				}
 				seenParams[param.Name] = struct{}{}
 			}
@@ -320,29 +341,55 @@ func validateProgram(program *ast.Program) (map[string]*ast.FunctionDef, map[str
 	topBound := make(map[string]struct{})
 	topEnv := validationEnv{functions: functions, modules: modules, inFunction: false}
 	fnEnv := validationEnv{functions: functions, modules: modules, inFunction: true}
+	var routeDefs []*ast.RouteDef
 
 	for _, statement := range program.Statements {
 		if _, ok := statement.(*ast.UseDecl); ok {
 			continue
 		}
+		if route, ok := statement.(*ast.RouteDef); ok {
+			routeDefs = append(routeDefs, route)
+			continue
+		}
 		if fn, ok := statement.(*ast.FunctionDef); ok {
 			if _, exists := topBound[fn.Name]; exists {
-				return nil, nil, &Error{Kind: DuplicateDefinition, Name: fn.Name, Span: fn.NameSpan}
+				return nil, nil, nil, &Error{Kind: DuplicateDefinition, Name: fn.Name, Span: fn.NameSpan}
 			}
 			fnScope := make(map[string]struct{}, len(fn.Parameters))
 			for _, param := range fn.Parameters {
 				fnScope[param.Name] = struct{}{}
 			}
 			if err := resolveStatements(fn.Body, fnScope, fnEnv); err != nil {
-				return nil, nil, err
+				return nil, nil, nil, err
 			}
 			continue
 		}
 		if err := resolveStatement(statement, topBound, topEnv); err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 	}
-	return functions, topBound, nil
+
+	routes, err := compileRoutes(routeDefs)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	routeEnv := validationEnv{functions: functions, modules: modules, inRoute: true}
+	for _, route := range routeDefs {
+		routeScope := cloneBound(topBound)
+		if route.RequestName != "" {
+			if _, exists := functions[route.RequestName]; exists {
+				return nil, nil, nil, &Error{Kind: DuplicateDefinition, Name: route.RequestName, Span: route.RequestSpan}
+			}
+			if _, exists := modules[route.RequestName]; exists {
+				return nil, nil, nil, &Error{Kind: DuplicateDefinition, Name: route.RequestName, Span: route.RequestSpan}
+			}
+			routeScope[route.RequestName] = struct{}{}
+		}
+		if err := resolveStatements(route.Body, routeScope, routeEnv); err != nil {
+			return nil, nil, nil, err
+		}
+	}
+	return functions, topBound, routes, nil
 }
 
 func resolveStatements(statements []ast.Statement, bound map[string]struct{}, venv validationEnv) error {
@@ -476,7 +523,7 @@ func resolveStatement(statement ast.Statement, bound map[string]struct{}, venv v
 		}
 		return nil
 	case *ast.GiveBackStatement:
-		if !venv.inFunction {
+		if !venv.inFunction && !venv.inRoute {
 			return &Error{Kind: InvalidGiveBack, Span: node.Span}
 		}
 		if node.Value != nil {
@@ -643,16 +690,18 @@ func (s *scope) cloneSnapshot() *scope {
 }
 
 type execContext struct {
-	ctx          context.Context
-	output       io.Writer
-	functions    map[string]*ast.FunctionDef
-	permissions  Permissions
-	dialContext  func(ctx context.Context, network, addr string) (net.Conn, error)
-	loopSteps    int
-	maxLoopSteps int
-	callDepth    int
-	maxCallDepth int
-	callStack    []StackFrame
+	ctx            context.Context
+	requestCtx     context.Context
+	output         io.Writer
+	functions      map[string]*ast.FunctionDef
+	permissions    Permissions
+	dialContext    func(ctx context.Context, network, addr string) (net.Conn, error)
+	templateLoader func(path string, data map[string]grabrt.Value) (string, error)
+	loopSteps      int
+	maxLoopSteps   int
+	callDepth      int
+	maxCallDepth   int
+	callStack      []StackFrame
 }
 
 func (ctx *execContext) context() context.Context {
@@ -681,14 +730,26 @@ func (ctx *execContext) stepLoop(span lexer.Span) error {
 	if ctx.loopSteps > ctx.maxLoopSteps {
 		return ctx.attachStack(&Error{Kind: ExecutionLimitExceeded, Span: span})
 	}
+	// GRAB 0.6: honor request deadlines and cancellation inside loops so a
+	// timed-out server request stops consuming CPU promptly.
+	if ctx.ctx != nil {
+		if err := ctx.ctx.Err(); err != nil {
+			return ctx.attachStack(&Error{Kind: RequestTimeout, Span: span, Err: err})
+		}
+	}
 	return nil
 }
 
 func (ctx *execContext) execBlock(statements []ast.Statement, env *scope) (grabrt.Value, bool, error) {
 	for _, statement := range statements {
+		if ctx.requestCtx != nil && ctx.requestCtx.Err() != nil {
+			err := ctx.requestCtx.Err()
+			return grabrt.Value{}, false, ctx.attachStack(&Error{Kind: RequestTimeout, Span: statement.SourceSpan(), Err: err})
+		}
 		switch node := statement.(type) {
-		case *ast.UseDecl, *ast.FunctionDef:
-			// Already registered during pre-execution validation.
+		case *ast.UseDecl, *ast.FunctionDef, *ast.RouteDef:
+			// Already registered during pre-execution validation; route
+			// handlers execute only when GRAB Server dispatches a request.
 			continue
 		case *ast.SetStatement:
 			val, err := ctx.evaluate(node.Value, env)
@@ -904,19 +965,30 @@ func (ctx *execContext) execDoTogether(node *ast.DoTogetherStatement, env *scope
 		taskEnv := env.cloneSnapshot()
 		var buf bytes.Buffer
 		childCtx := &execContext{
-			ctx:          taskCtx,
-			output:       &buf,
-			functions:    ctx.functions,
-			permissions:  ctx.permissions,
-			dialContext:  ctx.dialContext,
-			maxLoopSteps: ctx.maxLoopSteps,
-			maxCallDepth: ctx.maxCallDepth,
-			callDepth:    ctx.callDepth,
-			callStack:    append([]StackFrame(nil), ctx.callStack...),
+			ctx:            taskCtx,
+			requestCtx:     ctx.requestCtx,
+			output:         &buf,
+			functions:      ctx.functions,
+			permissions:    ctx.permissions,
+			dialContext:    ctx.dialContext,
+			templateLoader: ctx.templateLoader,
+			maxLoopSteps:   ctx.maxLoopSteps,
+			maxCallDepth:   ctx.maxCallDepth,
+			callDepth:      ctx.callDepth,
+			callStack:      append([]StackFrame(nil), ctx.callStack...),
 		}
 
 		go func(idx int, t *ast.TaskStatement, c *execContext, tEnv *scope, outBuf *bytes.Buffer) {
 			defer wg.Done()
+			defer func() {
+				if recover() != nil {
+					mu.Lock()
+					results[idx] = taskResult{err: &Error{Kind: StandardLibraryError, Span: t.Span, Err: fmt.Errorf("internal task failure")}, beforeStop: !cancelledBySibling}
+					cancelledBySibling = true
+					mu.Unlock()
+					cancelOnce.Do(cancel)
+				}
+			}()
 			var val grabrt.Value
 			var err error
 			if t.Call != nil {

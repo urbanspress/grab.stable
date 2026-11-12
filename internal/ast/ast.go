@@ -69,6 +69,24 @@ type FunctionDef struct {
 func (statement *FunctionDef) SourceSpan() lexer.Span { return statement.Span }
 func (*FunctionDef) statementNode()                   {}
 
+// RouteDef declares a top-level HTTP route handler for GRAB Server (GRAB 0.6):
+// `route "<METHOD>" "<path>" [using <req>] ... end`.
+type RouteDef struct {
+	Method       string
+	MethodLexeme string
+	MethodSpan   lexer.Span
+	Path         string
+	PathLexeme   string
+	PathSpan     lexer.Span
+	RequestName  string
+	RequestSpan  lexer.Span
+	Body         []Statement
+	Span         lexer.Span
+}
+
+func (statement *RouteDef) SourceSpan() lexer.Span { return statement.Span }
+func (*RouteDef) statementNode()                   {}
+
 // IfBranch is a conditional branch ('if' or 'otherwise if') in an IfStatement.
 type IfBranch struct {
 	Condition Expression

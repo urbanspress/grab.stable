@@ -141,19 +141,32 @@ Delivered in the repository:
 
 ## GRAB 0.6 — Persistent application server (GRAB Server)
 
-**Status:** Planned (Not Yet Approved for Implementation)
+**Status:** Complete — November 11, 2026 (`specifications/GRAB-SERVER-SPEC-006.md`)
+**Approval date:** November 11, 2026 (owner explicitly authorized completing the specification in the Codex takeover request)
 **Source:** Blueprint v1.0 Section 6; Blueprint v1.1 roadmap table
 
-Intended scope (requires owner approval before implementation):
+Delivered in the repository:
 
-- Persistent multi-route `grab serve` runtime that loads and validates programs
-  once per application load (`ADR-011`, `ADR-012`).
-- Strict per-request execution isolation, configurable request/body/time limits,
-  and backpressure controls.
-- Application supervisor with health checks, structured request logging, and
-  graceful reload/shutdown.
-- Standalone mode and private loopback reverse-proxy mode behind Nginx
-  (`ADR-005`).
+- Persistent multi-route `grab serve` runtime (`PreparedApp`) that lexes, parses,
+  and validates programs and static `.grab.html` templates once per application
+  load/reload (`ADR-011`, `ADR-012`), preserving 100% GRAB 0.2 single-file compatibility.
+- Multi-route syntax (`route "<METHOD>" "<path>" [using <req>] ... end`) and
+  `use server` module (`server.html`, `server.json`, `server.text`, `server.redirect`,
+  `server.response`, `server.parse_json`) with static conflict detection (`GRAB-E209`).
+- Strict per-request execution isolation, defensive panic recovery, configurable
+  concurrency, queue backpressure (`503` load shedding), and request/body/time limits (`ADR-015`).
+- Application supervisor with `/_health` and `/_ready` endpoints, structured
+  logging with secret redaction, optional path-confined `--static` files, zero-downtime
+  atomic reload, and graceful `SIGINT`/`SIGTERM` shutdown.
+- Standalone mode (`127.0.0.1:8080` default, `--allow-public` opt-in) and private
+  loopback reverse-proxy mode behind Nginx with explicit `--trusted-proxy` allowlists (`ADR-005`).
+- JSON and URL-encoded form body handling; escaped HTML, exact-number JSON,
+  custom responses, redirects, automatic HEAD, and sorted 405 Allow headers.
+- Table-driven unit coverage, HTTP-wire conformance in
+  `tests/grab06_conformance_test.go`, runnable `examples/server_app.grab`, and
+  repeatable handler/routing benchmarks in `internal/server/benchmark_test.go`.
+- Windows uses `--reload` for source/template watching; Unix also supports
+  SIGHUP. Reload validation retains the last working application on failure.
 
 ---
 

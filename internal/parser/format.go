@@ -114,6 +114,15 @@ func (f *sourceFormatter) formatStatement(stmt ast.Statement, indent int) {
 		f.formatStatements(node.Body, indent+1)
 		f.emitPriorComments(node.Span.End.Line, indent+1)
 		f.emitCodeLine(node.Span.End.Line, indent, "end")
+	case *ast.RouteDef:
+		header := "route " + node.MethodLexeme + " " + node.PathLexeme
+		if node.RequestName != "" {
+			header += " using " + node.RequestName
+		}
+		f.emitCodeLine(node.Span.Start.Line, indent, header)
+		f.formatStatements(node.Body, indent+1)
+		f.emitPriorComments(node.Span.End.Line, indent+1)
+		f.emitCodeLine(node.Span.End.Line, indent, "end")
 	case *ast.SetStatement:
 		f.emitCodeLine(node.Span.Start.Line, indent, "set "+node.Name+" to "+FormatExpression(node.Value))
 	case *ast.ShowStatement:

@@ -79,3 +79,18 @@ opening quote rather than extending through subsequent content/newline.
 - built-in `use http` module (`http.get`, `http.get_json`, `http.post`, `http.put`, `http.patch`, `http.delete`, `http.request`), automatic JSON body encoding, custom headers, bounded timeouts (`timeout_ms`), bounded retries (`retries`), `10 MiB` body limit, and sensitive header stripping on cross-host redirects;
 - capability-based default-deny network permissions (`--allow-net <host[,host...]>`), wildcard rejection, and SSRF protection (blocking loopback, private RFC 1918, link-local, and cloud-metadata `169.254.169.254` IP ranges with `GRAB-E402`);
 - structured concurrency (`do together ... end`), snapshot isolation, max 16 tasks (`GRAB-E208`), distinct target variable validation (`GRAB-E208`), top-to-bottom deterministic output and binding commit order, sibling cancellation, and deterministic error propagation inside `try`/`catch`.
+
+## GRAB 0.6 persistent application server conformance
+
+`grab06_conformance_test.go` exercises `specifications/GRAB-SERVER-SPEC-006.md`
+through the public server lifecycle and real HTTP serialization over `net.Pipe`.
+This avoids external network access and works in a sandbox. Coverage includes
+HTML escaping, parameter routes, HEAD, exact JSON requests/responses, caught
+payload errors, 404/405, probes, and shutdown. Package tests additionally cover
+lexer/parser/formatter behavior, response/header validation, startup-once and
+per-request isolation, trusted proxy spoofing, body/deadline/queue limits,
+redacted logs, static confinement/ETags, panic isolation, and atomic reloads.
+
+`internal/server/benchmark_test.go` contains repeatable text, JSON, HTML, and
+route matching benchmarks. Performance measurements depend on the machine;
+the harness does not establish a production capacity guarantee.

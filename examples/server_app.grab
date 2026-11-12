@@ -1,0 +1,32 @@
+use server
+use math
+
+set store_name to "Northbound Goods"
+set tax_rate to 0.08
+
+route "GET" "/" using req
+  give back server.html using "server_home.grab.html", record {title: store_name, visitor_ip: req.client_ip}
+end
+
+route "GET" "/api/products/{id}" using req
+  set price to 19.95
+  set total to math.round using (price times (1 plus tax_rate)), 2
+  give back server.json using 200, record {store: store_name, sku: req.params.id, price: price, price_with_tax: total}
+end
+
+route "POST" "/api/orders" using req
+  try
+    set order to server.parse_json using req
+    give back server.json using 201, record {accepted: yes, sku: order.sku, request_id: req.request_id}
+  catch err
+    give back server.json using 400, record {error: err.message, code: err.code}
+  end
+end
+
+route "POST" "/greet" using req
+  give back server.html using "server_home.grab.html", record {title: req.form at "name", visitor_ip: req.client_ip}
+end
+
+route "GET" "/start"
+  give back server.redirect using "/"
+end

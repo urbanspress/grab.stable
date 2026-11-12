@@ -67,6 +67,7 @@ const (
 	TokenDo
 	TokenTogether
 	TokenWait
+	TokenRoute
 )
 
 var tokenKindNames = [...]string{
@@ -133,6 +134,7 @@ var tokenKindNames = [...]string{
 	TokenDo:             "do",
 	TokenTogether:       "together",
 	TokenWait:           "wait",
+	TokenRoute:          "route",
 }
 
 // String returns a readable name for the token kind.

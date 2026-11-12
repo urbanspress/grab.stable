@@ -29,6 +29,7 @@ func (f stdlibFunc) acceptsArity(n int) bool {
 }
 
 var stdlibModules = map[string]map[string]stdlibFunc{
+	"server": serverFunctions,
 	"text": {
 		"from":        {arity: 1, fn: stdTextFrom},
 		"length":      {arity: 1, fn: stdTextLength},

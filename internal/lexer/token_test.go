@@ -70,6 +70,7 @@ func TestTokenKindString(t *testing.T) {
 		{kind: TokenDo, want: "do"},
 		{kind: TokenTogether, want: "together"},
 		{kind: TokenWait, want: "wait"},
+		{kind: TokenRoute, want: "route"},
 		{kind: TokenKind(255), want: "unknown"},
 	}
 
