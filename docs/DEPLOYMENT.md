@@ -4,9 +4,8 @@ This reference summarizes GRAB's standard local development and production hosti
 
 ## Status Boundaries
 
-- **Available now (GRAB 0.6 & 0.7):** Persistent `PreparedApp` server, loopback-only default (`127.0.0.1:8080`), private proxy listener (`--addr 127.0.0.1:8765`), explicit `--trusted-proxy` allowlists, `--allow-public` opt-in, opt-in `--static`, `/_health` and `/_ready` probes, `--log-format json`, `--diagnostics production`, graceful drain, and SQLite/MariaDB/PostgreSQL via `--db-config` and `--allow-db`.
-- **Specification in review (GRAB 0.8 — unimplemented):** Supervised multi-process workers (`--workers N --worker-base-port P`, e.g., `127.0.0.1:8765–8772`), `--platform-config grab.platform.json`, Redis caching/rate limiting (`use cache`), and rolling worker reloads.
-- **Planned (GRAB 1.0 & GrabLab — not yet approved):** Packaged `docker-compose.yml` production templates and `grab deploy`.
+- **Available now (GRAB 0.6 – 0.8):** Persistent `PreparedApp` server, loopback default (`127.0.0.1:8080`), private proxy listeners (`--addr 127.0.0.1:8765`), explicit `--trusted-proxy` allowlists, `--allow-public` opt-in, opt-in `--static`, `/_health` and `/_ready` probes, `--log-format json`, `--diagnostics production`, graceful drain, SQLite/MariaDB/PostgreSQL via `--db-config` and `--allow-db`, supervised multi-process workers (`--workers N --worker-base-port P`), strict `--platform-config`, Redis caching/rate limiting (`use cache`), authorized WebSocket channels (`use sockets`), and production Docker/Caddy stack in `deploy/`.
+- **Planned (GRAB 0.9 – 1.0 & GrabLab):** Profile-driven IR/bytecode VM (0.9), and GrabLab automated application packaging.
 
 ## Core Architectural Rules (`ADR-005` & `ADR-017`)
 
