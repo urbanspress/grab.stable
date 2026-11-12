@@ -1,0 +1,17 @@
+use server
+
+set site_title to "GRAB Application Platform"
+set release_version to "0.8"
+set site_tagline to "A fast, deterministic programming language and persistent application platform."
+
+route "GET" "/" using req
+  give back server.html using "landing.grab.html", record {title: site_title, version: release_version, tagline: site_tagline, client_ip: req.client_ip, request_id: req.request_id}
+end
+
+route "GET" "/api/info" using req
+  give back server.json using 200, record {application: site_title, version: release_version, status: "operational", client_ip: req.client_ip, request_id: req.request_id}
+end
+
+route "GET" "/health"
+  give back server.json using 200, record {status: "ok"}
+end

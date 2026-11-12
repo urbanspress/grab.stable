@@ -1,0 +1,25 @@
+# Caddy Configuration for GRAB Application Platform
+# Replace :80 with your domain name (e.g. app.example.com) for automatic HTTPS
+
+:80 {
+	# Enable modern compression (zstd and gzip)
+	encode zstd gzip
+
+	# Forward all requests to the GRAB persistent application server
+	reverse_proxy grab:8080 {
+		# Pass real client IP and scheme headers to GRAB
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+
+		# Health check probe against GRAB's built-in endpoint
+		health_uri /_health
+		health_interval 10s
+		health_timeout 2s
+	}
+
+	# Structured logging
+	log {
+		output stdout
+		format json
+	}
+}

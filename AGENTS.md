@@ -117,6 +117,7 @@ milestone remains acceptance-pending, particularly sustained fault/load evidence
 | `cmd/grab/` | CLI run/migrate/serve/check/format, typed client generation, connector locking and event maintenance; independent host grants and multi-process flags. |
 | `internal/contracts/`, `internal/connect/`, `internal/events/` | 0.8 typed contracts/client generation, verified connector adapters, signed webhooks and durable three-engine work/maintenance. |
 | `internal/realtime/`, `internal/telemetry/` | 0.8 bounded authorized WebSocket transport and opt-in private metrics/traces. |
+| `deploy/` | Production VPS deployment starter: Dockerfile, Caddyfile (automated TLS & HTTP/3), docker-compose.yml, and deployment guide. |
 | `docs/` | Project documentation, including `docs/ROADMAP.md` (GRAB 0.1 through 1.0 + Post-1.0). |
 | `docs/features/` | Self-contained HTML milestone feature guides (`index.html` hub, completed guides `grab_04_features.html`–`grab_07_features.html`, and implementation/acceptance-pending guide `grab_08_features.html`) explaining features, developer benefits, visitor/user benefits, and visual examples in plain English. |
 | `docs/adr/` | Architecture decision register (`ADR-DECISION-REGISTER.md`) and recorded design boundaries. |
