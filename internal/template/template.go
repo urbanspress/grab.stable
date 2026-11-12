@@ -630,6 +630,9 @@ func Render(tmpl *Template, env map[string]grabrt.Value) (string, error) {
 			continue
 		}
 		val := env[seg.name]
+		if val.ContainsResource() {
+			return "", fmt.Errorf("host resources cannot be rendered in templates")
+		}
 		raw := val.Display()
 		if seg.context == ContextURLAttr && seg.isLeadingURL {
 			if !isSafeURL(raw) {

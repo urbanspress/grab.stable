@@ -94,3 +94,17 @@ redacted logs, static confinement/ETags, panic isolation, and atomic reloads.
 `internal/server/benchmark_test.go` contains repeatable text, JSON, HTML, and
 route matching benchmarks. Performance measurements depend on the machine;
 the harness does not establish a production capacity guarantee.
+
+## GRAB 0.7 database conformance
+
+`grab07_conformance_test.go` covers the public `use data` API: literal checks,
+prepared values/injection safety, exact money, default-deny capabilities,
+automatic rollback, missing transaction arguments, and opaque resources.
+`internal/data` adds table-driven scanners/contracts/configuration tests, native
+SQLite authorizer and confined-file tests, budgets, cancellation, crash recovery,
+and real SQLite/MariaDB/PostgreSQL type/transaction/migration suites.
+`internal/server/data_test.go` checks the runnable catalog over HTTP, resource
+generations across reload, failed replacement, and generic errors. CLI tests
+cover database flags, maintenance execution, and check/format without DB I/O.
+See [setup and acceptance evidence](../docs/DATA-TESTING.md). Remote tests may
+skip offline, but must actually pass with real services for milestone acceptance.

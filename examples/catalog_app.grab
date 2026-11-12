@@ -1,0 +1,25 @@
+use data
+use server
+use collections
+use text
+set shop to data.open using "shop"
+set all_products to data.prepare using shop, "SELECT id, name, price FROM products ORDER BY id", record {params: record {}, columns: record {id: "integer", name: "text", price: record {type: "decimal", precision: 18, scale: 2, storage: "text"}}}
+set find_product to data.prepare using shop, "SELECT id, name, price FROM products WHERE id = :id", record {params: record {id: "integer"}, columns: record {id: "integer", name: "text", price: record {type: "decimal", precision: 18, scale: 2, storage: "text"}}}
+route "GET" "/" using request
+  set products to data.query using all_products, record {}
+  set count to collections.length using products
+  give back server.html using "catalog_home.grab.html", record {count: count}
+end
+route "GET" "/api/products" using request
+  set products to data.query using all_products, record {}
+  give back server.json using 200, products
+end
+route "GET" "/products/{id}" using request
+  set id to text.to_integer using request.params.id
+  set product to data.one using find_product, record {id: id}
+  if product is nothing
+    give back server.text using 404, "Product not found"
+  otherwise
+    give back server.html using "catalog_product.grab.html", product
+  end
+end

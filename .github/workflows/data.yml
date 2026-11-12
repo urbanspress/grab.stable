@@ -1,0 +1,44 @@
+name: GRAB Data conformance
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  adapters:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_PASSWORD: grab_disposable_test
+          POSTGRES_DB: grab_test
+        ports: ["55432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d grab_test"
+          --health-interval 5s --health-timeout 5s --health-retries 30
+      mariadb:
+        image: mariadb:11.8
+        env:
+          MARIADB_ROOT_PASSWORD: grab_disposable_test
+          MARIADB_DATABASE: grab_test
+          MARIADB_USER: grab
+          MARIADB_PASSWORD: grab_disposable_test
+        ports: ["53306:3306"]
+        options: >-
+          --health-cmd "healthcheck.sh --connect --innodb_initialized"
+          --health-interval 5s --health-timeout 5s --health-retries 30
+    env:
+      GRAB_TEST_DATABASES: "1"
+      GRAB_TEST_DB_PASSWORD: grab_disposable_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.x"
+          cache: true
+      - name: Create restricted PostgreSQL test account
+        run: >-
+          docker exec ${{ job.services.postgres.id }} psql -U postgres -d grab_test
+          -c "CREATE ROLE grab LOGIN PASSWORD 'grab_disposable_test'; GRANT USAGE, CREATE ON SCHEMA public TO grab;"
+      - run: go test -race -count=1 ./...
+      - run: go build ./...
+      - run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...

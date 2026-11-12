@@ -33,6 +33,7 @@ const (
 	ListKind
 	MapKind
 	RecordKind
+	ResourceKind
 )
 
 // Decimal stores an exact base-10 coefficient and the number of fractional
@@ -51,15 +52,37 @@ type Entry struct {
 // Value is an immutable GRAB value. Constructors copy mutable inputs and
 // accessors return copies where needed.
 type Value struct {
-	kind    Kind
-	boolean bool
-	text    string
-	integer big.Int
-	decimal Decimal
-	float   float64
-	bytes   []byte
-	values  []Value
-	entries []Entry
+	kind     Kind
+	boolean  bool
+	text     string
+	integer  big.Int
+	decimal  Decimal
+	float    float64
+	bytes    []byte
+	values   []Value
+	entries  []Entry
+	resource any
+}
+
+// Resource wraps an opaque host object. GRAB programs have no constructor or
+// access to its payload. Hosts must reject it at serialization boundaries.
+func Resource(payload any) Value       { return Value{kind: ResourceKind, resource: payload} }
+func (value Value) ResourceValue() any { return value.resource }
+func (value Value) ContainsResource() bool {
+	if value.kind == ResourceKind {
+		return true
+	}
+	for _, v := range value.values {
+		if v.ContainsResource() {
+			return true
+		}
+	}
+	for _, e := range value.entries {
+		if e.Value.ContainsResource() {
+			return true
+		}
+	}
+	return false
 }
 
 func Nothing() Value           { return Value{kind: NothingKind} }

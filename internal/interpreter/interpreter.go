@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"grab/internal/ast"
+	"grab/internal/data"
 	"grab/internal/lexer"
 	grabrt "grab/internal/runtime"
 )
@@ -50,10 +51,21 @@ const (
 	NetworkPermissionDenied
 	InvalidRouteDefinition
 	InvalidServerResponse
+	InvalidDatabaseDefinition
+	DatabaseOperation
+	DatabaseType
+	DatabaseOwnership
+	DatabaseMigration
+	DatabaseLimit
+	DatabaseUnknownCommit
+	DatabaseDenied
 )
 
 // String returns the stable specification category name for the interpreter error.
 func (kind ErrorKind) String() string {
+	if kind >= InvalidDatabaseDefinition && kind <= DatabaseDenied {
+		return "database error"
+	}
 	switch kind {
 	case UnboundVariable:
 		return "unbound variable reference"
@@ -106,6 +118,9 @@ func (kind ErrorKind) String() string {
 
 // Code returns the stable GRAB 0.4–0.5 error code for the interpreter error kind.
 func (kind ErrorKind) Code() string {
+	if kind >= InvalidDatabaseDefinition && kind <= DatabaseDenied {
+		return []string{data.Invalid, data.Operation, data.Type, data.Ownership, data.Migration, data.Limit, data.UnknownCommit, data.Denied}[kind-InvalidDatabaseDefinition]
+	}
 	switch kind {
 	case UnboundVariable:
 		return "GRAB-E201"
@@ -216,6 +231,8 @@ func (e *Error) Error() string {
 		}
 		return fmt.Sprintf("%s at line %d, column %d", e.Kind, e.Span.Start.Line, e.Span.Start.Column)
 	case StandardLibraryError, NetworkError, RequestTimeout, NetworkPermissionDenied, InvalidTaskGroup, InvalidRouteDefinition, InvalidServerResponse:
+		fallthrough
+	case InvalidDatabaseDefinition, DatabaseOperation, DatabaseType, DatabaseOwnership, DatabaseMigration, DatabaseLimit, DatabaseUnknownCommit, DatabaseDenied:
 		if e.Err != nil {
 			return fmt.Sprintf("%s (%v) at line %d, column %d", e.Kind, e.Err, e.Span.Start.Line, e.Span.Start.Column)
 		}
@@ -230,6 +247,9 @@ func (e *Error) Error() string {
 
 // Options configures runtime capabilities and safety bounds for execution.
 type Options struct {
+	Context     context.Context
+	DataGrants  *data.Grants
+	DataManager *data.Manager
 	Permissions Permissions
 	DialContext func(ctx context.Context, network, addr string) (net.Conn, error)
 	// TemplateLoader renders server.html through the host's confined template
@@ -266,7 +286,16 @@ func RunWithEnvironmentAndOptions(program *ast.Program, output io.Writer, opts O
 	if err != nil {
 		return nil, err
 	}
-	ctx := newExecContext(context.Background(), output, functions, opts)
+	if opts.DataManager == nil {
+		opts.DataManager = data.NewManager(opts.DataGrants, false)
+		defer opts.DataManager.Close()
+	}
+	parent := opts.Context
+	if parent == nil {
+		parent = context.Background()
+	}
+	ctx := newExecContext(parent, output, functions, opts)
+	defer ctx.data.Close()
 	globalScope := newScope(nil)
 	if _, _, err := ctx.execBlock(program.Statements, globalScope); err != nil {
 		return nil, err
@@ -275,7 +304,12 @@ func RunWithEnvironmentAndOptions(program *ast.Program, output io.Writer, opts O
 }
 
 func newExecContext(parent context.Context, output io.Writer, functions map[string]*ast.FunctionDef, opts Options) *execContext {
+	if opts.DataManager == nil {
+		opts.DataManager = data.NewManager(opts.DataGrants, false)
+	}
 	return &execContext{
+		data:           opts.DataManager.Scope(),
+		dataManager:    opts.DataManager,
 		ctx:            parent,
 		requestCtx:     parent,
 		output:         output,
@@ -550,6 +584,11 @@ func resolveCall(module, name string, nameSpan, callSpan lexer.Span, args []ast.
 		if !stdFn.acceptsArity(len(args)) {
 			return &Error{Kind: FunctionArityMismatch, Name: qname, Span: callSpan}
 		}
+		if module == "data" {
+			if e := validateDataCall(name, args, callSpan); e != nil {
+				return e
+			}
+		}
 	} else {
 		fn, ok := venv.functions[name]
 		if !ok {
@@ -690,6 +729,8 @@ func (s *scope) cloneSnapshot() *scope {
 }
 
 type execContext struct {
+	data           *data.Scope
+	dataManager    *data.Manager
 	ctx            context.Context
 	requestCtx     context.Context
 	output         io.Writer
@@ -741,6 +782,10 @@ func (ctx *execContext) stepLoop(span lexer.Span) error {
 }
 
 func (ctx *execContext) execBlock(statements []ast.Statement, env *scope) (grabrt.Value, bool, error) {
+	if ctx.data != nil {
+		previous := ctx.data.ActiveTransaction()
+		defer ctx.data.RollbackNew(previous)
+	}
 	for _, statement := range statements {
 		if ctx.requestCtx != nil && ctx.requestCtx.Err() != nil {
 			err := ctx.requestCtx.Err()
@@ -761,6 +806,9 @@ func (ctx *execContext) execBlock(statements []ast.Statement, env *scope) (grabr
 			val, err := ctx.evaluate(node.Value, env)
 			if err != nil {
 				return grabrt.Value{}, false, err
+			}
+			if val.ContainsResource() {
+				return grabrt.Value{}, false, &Error{Kind: TypeMismatch, Span: node.Span}
 			}
 			if _, err := io.WriteString(ctx.output, val.Display()+"\n"); err != nil {
 				return grabrt.Value{}, false, err
@@ -944,6 +992,9 @@ func (ctx *execContext) execBlock(statements []ast.Statement, env *scope) (grabr
 }
 
 func (ctx *execContext) execDoTogether(node *ast.DoTogetherStatement, env *scope) error {
+	if ctx.data != nil && ctx.data.ActiveTransaction() != nil {
+		return databaseError(node.Span, &data.Error{Code: data.Ownership, Message: "transactions cannot be shared with task groups"})
+	}
 	taskCtx, cancel := context.WithCancel(ctx.context())
 	defer cancel()
 
@@ -965,6 +1016,8 @@ func (ctx *execContext) execDoTogether(node *ast.DoTogetherStatement, env *scope
 		taskEnv := env.cloneSnapshot()
 		var buf bytes.Buffer
 		childCtx := &execContext{
+			data:           ctx.dataManager.Scope(),
+			dataManager:    ctx.dataManager,
 			ctx:            taskCtx,
 			requestCtx:     ctx.requestCtx,
 			output:         &buf,
@@ -980,6 +1033,7 @@ func (ctx *execContext) execDoTogether(node *ast.DoTogetherStatement, env *scope
 
 		go func(idx int, t *ast.TaskStatement, c *execContext, tEnv *scope, outBuf *bytes.Buffer) {
 			defer wg.Done()
+			defer c.data.Close()
 			defer func() {
 				if recover() != nil {
 					mu.Lock()
@@ -1064,6 +1118,11 @@ func isSiblingCanceledError(err error, beforeStop bool) bool {
 }
 
 func (ctx *execContext) invokeCall(module, name string, span lexer.Span, argExprs []ast.Expression, callerEnv *scope) (grabrt.Value, error) {
+	if module == "data" {
+		if e := validateDataCall(name, argExprs, span); e != nil {
+			return grabrt.Value{}, e
+		}
+	}
 	argVals := make([]grabrt.Value, len(argExprs))
 	for i, argExpr := range argExprs {
 		val, err := ctx.evaluate(argExpr, callerEnv)
@@ -1283,6 +1342,9 @@ func (ctx *execContext) evaluateBinary(node *ast.BinaryExpr, env *scope) (grabrt
 	right, err := ctx.evaluate(node.Right, env)
 	if err != nil {
 		return grabrt.Value{}, err
+	}
+	if left.ContainsResource() || right.ContainsResource() {
+		return grabrt.Value{}, &Error{Kind: TypeMismatch, Span: node.Span}
 	}
 
 	switch node.Op {

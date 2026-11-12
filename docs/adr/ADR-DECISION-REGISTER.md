@@ -98,3 +98,57 @@ Approved GRAB 0.6 architecture and server decisions in `specifications/GRAB-SERV
 - **Deployment modes and explicit trusted-proxy policy (`ADR-023c` approved, applying `ADR-005` and `ADR-009`):** Safe `127.0.0.1:8080` loopback default (supporting direct standalone use and private loopback Nginx reverse proxying without extra flags), explicit `--allow-public` opt-in for non-loopback listeners, explicit `--trusted-proxy` IP/CIDR allowlists so `X-Forwarded-*` headers are never blindly trusted, and opt-in path-confined `--static` file serving blocking sensitive paths and escaping symlinks.
 - **Backpressure, bounded limits, supervision & secret-safe logging (`ADR-023d` approved, applying `ADR-015`):** Bounded `--max-concurrency`, `--max-queue` / `--queue-timeout` shedding load cleanly with `503 Service Unavailable`, `--request-timeout`, `--max-body-bytes`, `/_health` and `/_ready` probes, defensive per-request panic isolation, atomic zero-downtime reload retaining last-known-good apps on error, graceful `SIGINT`/`SIGTERM` shutdown, and structured logging with mandatory header/body secret redaction.
 - **Server performance scorecard harness (`ADR-023e` approved, applying `ADR-016`):** Repeatable Go HTTP throughput and allocation benchmarks (`internal/server/benchmark_test.go`) measuring `PreparedApp` static, dynamic JSON, and templated HTML serving latency and allocations.
+
+### Database access (`GRAB Data`, GRAB 0.7) — approved and implemented
+
+**Status: Approved for implementation.** The owner explicitly approved
+specification 007 and its design on November 11, 2026. The following decisions
+are implemented; their normative details and acceptance tests are in
+`specifications/GRAB-DATA-SPEC-007.md`. The owner separately approved Go 1.26
+minimum and disposable real database containers. See `docs/DATA-TESTING.md`.
+
+- **ADR-024a — Driver order and module boundary (approved; refines ADR-006):**
+  SQLite first with the pure-Go modernc adapter, then MariaDB via go-sql-driver/mysql,
+  then PostgreSQL via pgx/stdlib, behind `internal/data` and database/sql. Same
+  GRAB API, explicit dialect SQL; no automatic dialect translation. All three real
+  adapter suites must pass before 0.7 is complete. Dependency/toolchain versions
+  require compatibility and security review before implementation.
+- **ADR-024b — Prepared module calls and portable results (approved):** Existing
+  `use data` / `using` grammar; `open`, `prepare`, `query`, `one`, `execute`,
+  `begin`, `commit`, `rollback`, `migrate`, `close`. Direct literal SQL and type
+  contracts, named value placeholders, mandatory driver/server preparation,
+  exact parameter keys, no concatenation, dynamic identifiers, multi-statements,
+  or unsafe execution escape hatch. Result rows are records; query results are
+  lists. New opaque host handles cannot be forged or serialized.
+- **ADR-024c — Lossless type contracts (approved):** Exact integer and decimal
+  adapters, bounded precision/scale validation, explicit nullable fields, strict
+  booleans, copied bytes, UTF-8 text, and timestamp text preserving fractional
+  precision with explicit UTC versus naive semantics. SQLite currency uses
+  TEXT-affinity columns, not NUMERIC/REAL; remote currency uses DECIMAL/NUMERIC.
+  Reject unsupported/coerced values rather than silently rounding. SQL arithmetic
+  and schema-side conversions remain explicit database semantics.
+- **ADR-024d — Database capabilities (approved; applies ADR-009):** Strict named
+  operator manifest selected with `--db-config`; repeated `--allow-db alias:mode`
+  with read/read-write/migrate grants, default deny (`GRAB-E403`). Grants bind
+  immutable destinations; file and HTTP grants confer no database access.
+  Confine SQLite files/sidecars and disable extension/attachment escapes; verify
+  remote TLS/destinations and least-privilege accounts. Host environment credentials
+  stay outside GRAB source/logs; no arbitrary DSNs or driver-option passthrough.
+- **ADR-024e — Pool and transaction lifecycle (approved; extends ADR-011/015):**
+  Bounded pool/statement/result/deadline budgets; per-execution transaction
+  ownership, rollback-only after errors, automatic rollback on scope exit,
+  no implicit commit or retry. Report ambiguous commit outcomes explicitly.
+  Host-owned server pools/statements span requests within a prepared generation;
+  reload/drain closes resources after old requests finish and disposes failed
+  candidate resources without disturbing the live generation.
+- **ADR-024f — Versioned maintenance migrations (approved):** Explicit
+  `data.migrate` in CLI `run` with migrate grant only, never server startup/reload
+  or routes. Literal ordered DDL manifests, exclusive locks, checksum/history
+  verification, transactional versions where supported. MariaDB implicit DDL
+  commits require persistent dirty-state recovery; no false rollback guarantee,
+  automatic down migration, or automatic repair. Durable job scheduling is deferred.
+
+ADR-024a–024f were approved with specification 007. The pinned adapters are
+modernc SQLite v1.62.0, go-sql-driver/mysql v1.10.1, and pgx v5.13.0. Disk SQLite
+uses a confined rollback-journal VFS on Windows/amd64 and Linux/amd64; unsupported
+disk platforms and SQL constructs fail closed. See `docs/DATA.md` for boundaries.

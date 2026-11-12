@@ -1,0 +1,4 @@
+use data
+set shop to data.open using "shop"
+set migration to data.migrate using shop, [record {version: 1, name: "create_products", steps: ["CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT NOT NULL, price TEXT NOT NULL)"]}]
+show migration

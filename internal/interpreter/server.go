@@ -13,6 +13,7 @@ import (
 	"unicode/utf8"
 
 	"grab/internal/ast"
+	"grab/internal/data"
 	"grab/internal/lexer"
 	grabrt "grab/internal/runtime"
 )
@@ -132,17 +133,26 @@ func Prepare(program *ast.Program, opts Options, output io.Writer) (*PreparedPro
 	if output == nil {
 		output = io.Discard
 	}
+	opts.DataManager = data.NewManager(opts.DataGrants, true)
 	p := &PreparedProgram{program: program, functions: f, routes: routes, opts: opts}
 	if len(routes) > 0 {
 		env := newScope(nil)
-		c := newExecContext(context.Background(), output, f, opts)
+		startupContext := opts.Context
+		if startupContext == nil {
+			startupContext = context.Background()
+		}
+		c := newExecContext(startupContext, output, f, opts)
+		defer c.data.Close()
 		if _, _, err = c.execBlock(program.Statements, env); err != nil {
+			_ = opts.DataManager.Close()
 			return nil, err
 		}
 		p.base = env.snapshot()
 	}
 	return p, nil
 }
+
+func (p *PreparedProgram) Close() error { return p.opts.DataManager.Close() }
 
 func (p *PreparedProgram) Routes() []*Route { return append([]*Route(nil), p.routes...) }
 func (p *PreparedProgram) Execute(ctx context.Context, route *Route, req grabrt.Value, output io.Writer) (grabrt.Value, map[string]grabrt.Value, error) {
@@ -161,6 +171,7 @@ func (p *PreparedProgram) Execute(ctx context.Context, route *Route, req grabrt.
 		}
 	}
 	c := newExecContext(ctx, output, p.functions, p.opts)
+	defer c.data.Close()
 	v, _, err := c.execBlock(body, env)
 	return v, env.snapshot(), err
 }

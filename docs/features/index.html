@@ -322,7 +322,8 @@
         <a class="nav-pill active" href="index.html">All Milestones Hub</a>
         <a class="nav-pill" href="grab_04_features.html">GRAB 0.4 Guide</a>
         <a class="nav-pill" href="grab_05_features.html">GRAB 0.5 Guide</a>
-        <a class="nav-pill" href="grab_06_features.html">GRAB 0.6 Guide &rarr;</a>
+        <a class="nav-pill" href="grab_06_features.html">GRAB 0.6 Guide</a>
+        <a class="nav-pill" href="grab_07_features.html">GRAB 0.7 Guide &rarr;</a>
         <a class="nav-pill" href="../ROADMAP.md">ROADMAP.md</a>
       </nav>
     </div>
@@ -339,7 +340,7 @@
       </p>
     </section>
 
-    <h2 class="section-title">Released &amp; Active Milestones (GRAB 0.1 – 0.6)</h2>
+    <h2 class="section-title">Released &amp; Active Milestones (GRAB 0.1 – 0.7)</h2>
     <p class="section-sub">Each version builds cleanly on the last while keeping existing <code class="inline">.grab</code> programs compatible.</p>
 
     <section class="grid">
@@ -450,7 +451,7 @@
       </article>
 
       <!-- GRAB 0.6 -->
-      <article class="card highlight" id="grab-06">
+      <article class="card" id="grab-06">
         <div>
           <div class="card-top">
             <span class="version-label">GRAB 0.6</span>
@@ -470,9 +471,30 @@
         </div>
       </article>
 
+      <!-- GRAB 0.7 -->
+      <article class="card highlight" id="grab-07">
+        <div>
+          <div class="card-top">
+            <span class="version-label">GRAB 0.7</span>
+            <span class="badge badge-green">Complete</span>
+          </div>
+          <h3>Database Access (GRAB Data)</h3>
+          <p>Adds persistent, default-deny database access via <code class="inline">use data</code> across SQLite, MariaDB, and PostgreSQL with prepared queries, exact types, explicit transactions, and versioned migrations.</p>
+          <ul class="feature-bullets">
+            <li>Fixed literal SQL and explicit type contracts (<code class="inline">data.open</code>, <code class="inline">data.prepare</code>, <code class="inline">one</code>, <code class="inline">query</code>, <code class="inline">execute</code>) preserving exact decimals and <code class="inline">nothing</code> for <code class="inline">NULL</code>.</li>
+            <li>Default-deny <code class="inline">--db-config</code> manifest and <code class="inline">--allow-db</code> grants (<code class="inline">read</code>, <code class="inline">read-write</code>, maintenance-only <code class="inline">migrate</code>), confined rollback-journal SQLite on Windows/Linux amd64, and verified TLS for remote servers.</li>
+            <li>Scoped transactions (<code class="inline">begin</code> / <code class="inline">commit</code> / <code class="inline">rollback</code>), <code class="inline">grab migrate</code>, persistent-server pool cleanup, and the runnable SQLite catalog in <a href="../../examples/DATA.md"><code class="inline">examples/DATA.md</code></a>.</li>
+          </ul>
+        </div>
+        <div class="card-actions">
+          <span>Approved Spec: <a href="../../specifications/GRAB-DATA-SPEC-007.md">GRAB-DATA-SPEC-007.md</a></span>
+          <a class="btn-primary" href="grab_07_features.html">Open GRAB 0.7 Guide &rarr;</a>
+        </div>
+      </article>
+
     </section>
 
-    <h2 class="section-title" id="planned-milestones">Roadmap Status (GRAB 0.6 – 1.0)</h2>
+    <h2 class="section-title" id="planned-milestones">Roadmap Status (GRAB 0.5 – 1.0)</h2>
     <p class="section-sub">Intended future sequence in <a href="../ROADMAP.md">docs/ROADMAP.md</a>. Visual guides are added as each milestone is drafted and approved.</p>
 
     <table class="planned-table">
@@ -500,8 +522,8 @@
         <tr>
           <td><strong>GRAB 0.7</strong></td>
           <td>Database access (<code class="inline">GRAB Data</code>: SQLite, MariaDB, PostgreSQL)</td>
-          <td><span class="badge badge-slate">Planned (Not Yet Approved)</span></td>
-          <td style="color: var(--text-muted);"><code class="inline">grab_07_features.html</code> (Pending)</td>
+          <td><span class="badge badge-green">Complete</span></td>
+          <td><a href="grab_07_features.html"><code class="inline">grab_07_features.html</code> &rarr;</a></td>
         </tr>
         <tr>
           <td><strong>GRAB 0.8</strong></td>

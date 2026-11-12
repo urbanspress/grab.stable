@@ -6,19 +6,23 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
 	"time"
 
+	"grab/internal/data"
 	"grab/internal/interpreter"
 	"grab/internal/parser"
 	"grab/internal/server"
 	"grab/internal/template"
 )
 
-const usageText = "usage: grab run [--diagnostics beginner|developer|production] [--allow-read <dir>] [--allow-write <dir>] [--allow-net <host[,host...]>] <file.grab>\n" +
+const usageText = "usage: grab run [--db-config <manifest.json>] [--allow-db <alias:read|read-write|migrate>] [--diagnostics beginner|developer|production] [--allow-read <dir>] [--allow-write <dir>] [--allow-net <host[,host...]>] <file.grab>\n" +
+	"       grab migrate --db-config <manifest.json> --allow-db <alias:migrate> <migrations.grab>\n" +
 	"       grab serve [--addr 127.0.0.1:8080] [--allow-public] [--trusted-proxy <ip[,cidr...]>] [--static <[prefix=]dir>] [--reload] [--max-concurrency 64] [--max-queue 128] [--queue-timeout 1s] [--request-timeout 10s] [--max-body-bytes 1048576] [--shutdown-timeout 10s] [--log-format text|json] [--diagnostics beginner|developer|production] [--allow-read <dir>] [--allow-write <dir>] [--allow-net <host[,host...]>] <file.grab> [template.grab.html]\n" +
+	"       database flags for serve: --db-config <manifest.json> --allow-db <alias:read|read-write>\n" +
 	"       grab check [--diagnostics beginner|developer|production] <file.grab> [template.grab.html]\n" +
 	"       grab format [--write] <file.grab>"
 
@@ -39,13 +43,18 @@ func runContext(ctx context.Context, arguments []string, stdout, stderr io.Write
 	}
 
 	switch arguments[0] {
-	case "run":
+	case "run", "migrate":
 		cfg, positional, ok := parseCommonFlags(arguments[1:], false)
 		if !ok || len(positional) != 1 {
 			fmt.Fprintln(stderr, usageText)
 			return 2
 		}
 		filePath := positional[0]
+		if e := configureDatabase(&cfg, false); e != nil {
+			fmt.Fprintln(stderr, e)
+			return 1
+		}
+		cfg.opts.Context = ctx
 		sourceBytes, err := os.ReadFile(filePath)
 		if err != nil {
 			fmt.Fprintf(stderr, "grab: %v\n", err)
@@ -70,6 +79,10 @@ func runContext(ctx context.Context, arguments []string, stdout, stderr io.Write
 			return 2
 		}
 		grabFile := positional[0]
+		if e := configureDatabase(&cfg, true); e != nil {
+			fmt.Fprintln(stderr, e)
+			return 1
+		}
 		var tmplFile string
 		if len(positional) == 2 {
 			tmplFile = positional[1]
@@ -163,6 +176,8 @@ func runContext(ctx context.Context, arguments []string, stdout, stderr io.Write
 }
 
 type commonFlagConfig struct {
+	dbConfig string
+	dbAllow  []string
 	addr     string
 	diagMode interpreter.DiagnosticMode
 	opts     interpreter.Options
@@ -179,6 +194,24 @@ func parseCommonFlags(args []string, allowAddr bool) (commonFlagConfig, []string
 
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
+		if arg == "--db-config" || strings.HasPrefix(arg, "--db-config=") {
+			val, next, ok := consumeFlagValue(args, i, "--db-config")
+			if !ok || cfg.dbConfig != "" {
+				return cfg, nil, false
+			}
+			cfg.dbConfig = val
+			i = next
+			continue
+		}
+		if arg == "--allow-db" || strings.HasPrefix(arg, "--allow-db=") {
+			val, next, ok := consumeFlagValue(args, i, "--allow-db")
+			if !ok {
+				return cfg, nil, false
+			}
+			cfg.dbAllow = append(cfg.dbAllow, val)
+			i = next
+			continue
+		}
 		if allowAddr {
 			if arg == "--allow-public" {
 				cfg.server.AllowPublic = true
@@ -284,6 +317,34 @@ func parseCommonFlags(args []string, allowAddr bool) (commonFlagConfig, []string
 		return cfg, nil, false
 	}
 	return cfg, positional, true
+}
+
+func configureDatabase(cfg *commonFlagConfig, serverMode bool) error {
+	if cfg.dbConfig == "" {
+		if len(cfg.dbAllow) != 0 {
+			return fmt.Errorf("GRAB-E403: --allow-db requires --db-config")
+		}
+		return nil
+	}
+	path, e := filepath.Abs(cfg.dbConfig)
+	if e != nil {
+		return fmt.Errorf("GRAB-E210: invalid database configuration path")
+	}
+	f, e := os.Open(path)
+	if e != nil {
+		return fmt.Errorf("GRAB-E210: database configuration unavailable")
+	}
+	defer f.Close()
+	raw, e := io.ReadAll(io.LimitReader(f, (1<<20)+1))
+	if e != nil {
+		return fmt.Errorf("GRAB-E210: database configuration unavailable")
+	}
+	c, e := data.ParseConfig(raw, path)
+	if e != nil {
+		return e
+	}
+	cfg.opts.DataGrants, e = c.Grant(cfg.dbAllow, serverMode)
+	return e
 }
 
 func parseFormatArgs(args []string) (bool, []string, bool) {

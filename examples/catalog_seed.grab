@@ -1,0 +1,8 @@
+use data
+set shop to data.open using "shop"
+set insert to data.prepare using shop, "INSERT OR IGNORE INTO products(id,name,price) VALUES (:id,:name,:price)", record {params: record {id: "integer", name: "text", price: record {type: "decimal", precision: 18, scale: 2, storage: "text"}}, columns: record {}}
+set tx to data.begin using shop
+call data.execute using insert, record {id: 1, name: "Jasmine tea", price: 12.50}, tx
+call data.execute using insert, record {id: 2, name: "Coffee beans", price: 18.95}, tx
+call data.commit using tx
+show "Catalog seeded."

@@ -172,17 +172,32 @@ Delivered in the repository:
 
 ## GRAB 0.7 — Database access (GRAB Data)
 
-**Status:** Planned (Not Yet Approved for Implementation)
+**Status:** Complete — November 11, 2026 (final verification recorded in [`DATA-TESTING.md`](DATA-TESTING.md))
+**Implementation approval:** November 11, 2026; owner also approved Go 1.26 minimum
+**Approved specification:** [`GRAB-DATA-SPEC-007.md`](../specifications/GRAB-DATA-SPEC-007.md)
+**Visual guide:** [`GRAB 0.7 guide`](features/grab_07_features.html)
 **Source:** Blueprint v1.0 Section 7; Blueprint v1.1 roadmap table
 
-Intended scope (requires owner approval before implementation):
+Delivered scope:
 
 - SQLite driver first for development and automated testing, followed by
   MariaDB and PostgreSQL support (`ADR-006`).
 - Connection pooling, mandatory prepared/parameterized statements, and explicit
   lossless type adapters.
-- Transactions, schema migrations, structured result mapping, and durable
-  database-backed background jobs.
+- Explicit `use data` prepared-call syntax, named connection configuration,
+  default-deny `--allow-db` read/read-write/migrate grants, bounded resource
+  lifetimes, and persistent-server pool cleanup across requests and reloads.
+- Transactions, versioned maintenance-only schema migrations, and structured
+  result mapping. Exact currency uses SQLite TEXT storage or remote DECIMAL/NUMERIC;
+  no implicit float conversion. Timestamp precision and NULL remain explicit.
+- Approved decisions ADR-024a–024f refine ADR-006. `grab migrate`, the database
+  manifest/capabilities, real-service tests and CI, and a runnable server catalog
+  are included. See [`DATA.md`](DATA.md) for the conservative SQL subset and
+  Windows/amd64 and Linux/amd64 rollback-journal disk SQLite support.
+
+Durable database storage supports future job systems, but a durable background
+job scheduler, ORM/relationships, and connector features are deferred to later
+design. Real SQLite, MariaDB 11.8, and PostgreSQL 18 adapter tests have been run.
 
 ---
 

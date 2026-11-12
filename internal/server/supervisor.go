@@ -50,6 +50,7 @@ func ServeWithConfig(ctx context.Context, addr, grabPath, templatePath string, o
 	if e != nil {
 		return e
 	}
+	defer a.Close()
 	l, e := net.Listen("tcp", addr)
 	if e != nil {
 		return e
@@ -70,6 +71,7 @@ func ServeListener(ctx context.Context, l net.Listener, grabPath, templatePath s
 	return serveApplication(ctx, l, a, output, ready)
 }
 func serveApplication(ctx context.Context, l net.Listener, a *Application, output io.Writer, ready chan<- string) error {
+	defer a.Close()
 	defer l.Close()
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()

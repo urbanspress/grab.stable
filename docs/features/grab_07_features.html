@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GRAB 0.7 — Database Access</title>
+<style>
+:root{color-scheme:light;--ink:#152c3e;--muted:#455b6c;--line:#d6e3eb;--paper:#fff;--bg:#f3f7fa;--blue:#075c91;--gold:#754400}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.65 system-ui,sans-serif}
+main,nav{max-width:1120px;margin:auto;padding:24px}nav{display:flex;flex-wrap:wrap;gap:22px;font-size:15px}a{color:var(--blue);text-underline-offset:4px}
+header{background:#102e42;color:white;border-radius:24px;padding:clamp(24px,5vw,64px);margin:12px 0 32px}header p{max-width:750px;color:#dcebf4}
+h1{font-size:clamp(34px,5vw,60px);line-height:1.1;margin:20px 0}h2{font-size:29px;margin:0 0 16px}h3{font-size:21px;margin:0 0 10px}
+.badge{display:inline-block;background:#fff0cb;color:var(--gold);font-size:14px;font-weight:750;padding:7px 12px;border-radius:8px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}.card,section{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:26px;margin:22px 0}.grid .card{margin:0}
+.number{display:block;color:var(--blue);font-size:36px;font-weight:800}.muted{color:var(--muted)}.flow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:20px}.flow div{border-left:4px solid #1686b5;background:#edf6fb;padding:18px}
+pre{background:#102e42;color:#e4f4ff;padding:22px;border-radius:12px;overflow:auto;font-size:14px;line-height:1.8}code{font-family:Consolas,monospace}p code,li code{color:#075c91;background:#edf6fb;padding:2px 5px;border-radius:4px}
+table{border-collapse:collapse;width:100%;text-align:left}th,td{padding:15px 12px;border-bottom:1px solid var(--line);vertical-align:top}th{color:var(--blue)}.table-wrap{overflow:auto}.notice{background:#fff8e8;border-color:#e5cb94}.tag{color:var(--gold);font-weight:700;font-size:14px}.two{display:grid;grid-template-columns:1fr 1fr;gap:24px}footer{padding:26px 0;color:var(--muted);font-size:14px}
+@media(max-width:760px){.grid,.flow,.two{grid-template-columns:1fr}main{padding:16px}section,.card{padding:20px}th,td{padding:10px}pre{padding:16px}nav{padding:16px}}
+</style>
+</head>
+<body>
+<nav aria-label="Feature guides"><a href="index.html">All milestones</a><a href="grab_06_features.html">0.6: completed server</a><a href="../../examples/DATA.md">Catalog example</a><a href="../../specifications/GRAB-DATA-SPEC-007.md">Read approved specification</a></nav>
+<main>
+<header>
+<span class="badge">Complete · SQLite, MariaDB, PostgreSQL</span>
+<h1>Give your app<br>a lasting memory.</h1>
+<p>GRAB 0.7 adds database access for products, accounts, orders, and other information that must survive a restart.</p>
+<p><strong>Ready to try locally.</strong> Prepared queries, exact prices, explicit transactions, and versioned migrations now connect to the persistent GRAB server. See the <a style="color:#bfe7ff" href="../../examples/DATA.md">runnable catalog guide</a>.</p>
+</header>
+<div class="grid" aria-label="Implemented adapter order">
+<article class="card"><span class="number">01</span><h2>SQLite</h2><p>A local database file. No separate database service or C compiler for development and automated tests.</p></article>
+<article class="card"><span class="number">02</span><h2>MariaDB</h2><p>A shared database service for deployed applications. Explicit SQL contracts keep money and other values precise.</p></article>
+<article class="card"><span class="number">03</span><h2>PostgreSQL</h2><p>The same GRAB calls with a PostgreSQL adapter. Each database keeps its own SQL dialect and concurrency behavior.</p></article>
+</div>
+<section>
+<span class="tag">RUNNABLE GRAB SYNTAX</span>
+<h2>Prepare the question. Supply the values separately.</h2>
+<p>Import <code>data</code>, open an authorized named connection, and prepare a fixed SQL query. Its contract declares the types going in and coming out.</p>
+<pre><code>use data
+set shop to data.open using "shop"
+set find_product to data.prepare using shop, "SELECT id, name FROM products WHERE id = :id", record {params: record {id: "integer"}, columns: record {id: "integer", name: "text"}}
+set product to data.one using find_product, record {id: 42}
+if product is nothing
+  show "Product not found"
+otherwise
+  show product.name
+end</code></pre>
+<div class="flow" aria-label="Prepared query flow">
+<div><h3>1. Fixed SQL</h3><p>Query structure comes from a literal in the program. Visitor input cannot become a table name, SQL command, or query fragment.</p></div>
+<div><h3>2. Bound values</h3><p><code>:id</code> receives the separate value <code>42</code>. Even a malicious-looking text value stays data.</p></div>
+<div><h3>3. Clear results</h3><p><code>one</code> returns one record or <code>nothing</code>. <code>query</code> returns a list of records. Too many rows for <code>one</code> is an error.</p></div>
+</div>
+</section>
+<section>
+<h2>What builders and visitors gain</h2>
+<div class="two"><div><h3>For developers</h3><ul><li>One readable module API across three databases.</li><li>Predictable types, bounded queries, and clear errors.</li><li>Reusable prepared statements and connection pools.</li><li>Versioned schema changes with recorded checksums.</li></ul></div>
+<div><h3>For people using the app</h3><ul><li>Saved information survives application restarts.</li><li>Account and order updates can succeed or fail together.</li><li>Exact currency values avoid hidden float rounding.</li><li>Database secrets and error details stay out of responses.</li></ul></div></div>
+</section>
+<section>
+<h2>Permission comes before connection</h2>
+<p>The operator names each database in an explicit configuration file. The program cannot substitute a new host, file path, password, or connection URL.</p>
+<pre><code>grab run --db-config grab.data.json --allow-db shop:read-write app.grab</code></pre>
+<div class="table-wrap"><table><caption>Database permissions</caption><thead><tr><th>Grant</th><th>Allowed</th></tr></thead><tbody>
+<tr><td>No grant</td><td>No database access. Importing the module does not grant access.</td></tr>
+<tr><td><code>shop:read</code></td><td>Read the configured shop database.</td></tr>
+<tr><td><code>shop:read-write</code></td><td>Read and change rows; cannot change the schema.</td></tr>
+<tr><td><code>shop:migrate</code></td><td>Explicit maintenance runs may apply versioned schema changes. Never allowed in the web server.</td></tr>
+</tbody></table></div>
+<p class="muted">File and HTTP permissions do not grant database access. Disk SQLite stays confined to its database and rollback journal (WAL/SHM and disk temporary files are refused). Remote databases require destination checks, verified TLS (unless explicitly disabled for a literal loopback IP), and a limited database account.</p>
+</section>
+<section>
+<h2>Keep the value you saved</h2>
+<div class="table-wrap"><table><caption>Lossless mapping</caption><thead><tr><th>Database value</th><th>GRAB value</th><th>Safety rule</th></tr></thead><tbody>
+<tr><td>Whole numbers</td><td>Integer</td><td>Reject values outside the destination's range.</td></tr>
+<tr><td>Prices and exact decimals</td><td>Exact decimal</td><td>SQLite uses TEXT columns; MariaDB/PostgreSQL use DECIMAL/NUMERIC. Never silently convert through float.</td></tr>
+<tr><td>Text / booleans / binary</td><td>Text / yes or no / bytes</td><td>No guessing or implicit conversion.</td></tr>
+<tr><td>Timestamps</td><td>Precisely formatted text</td><td>Keep fractional seconds and distinguish a UTC instant from a time without a timezone.</td></tr>
+<tr><td>NULL</td><td>nothing</td><td>The field remains present. Empty text and zero remain different.</td></tr>
+</tbody></table></div>
+<p>Contracts reject precision loss and unsupported values. Database-side calculations still follow the selected database's SQL rules.</p>
+</section>
+<section>
+<h2>All together, or roll back</h2>
+<div class="two"><div><h3>Transactions</h3><p>Begin a transaction, run its statements, and commit explicitly. A failed statement makes it rollback-only. An unfinished request rolls back automatically.</p><p>No automatic write retries. If a connection fails during commit and the result is uncertain, report that uncertainty so the app can reconcile it.</p></div>
+<div><h3>Migrations</h3><p>Apply numbered schema changes in a separate maintenance run. Lock migration execution and verify the recorded history before changing anything.</p><p>MariaDB schema changes can commit independently. A failed migration is marked dirty for reviewed recovery; the system must not promise to undo committed DDL.</p></div></div>
+</section>
+<section class="notice">
+<h2>Try a lasting product catalog</h2>
+<p>On Windows/amd64 or Linux/amd64 with Go 1.26 or newer, run these commands from the repository root to apply the SQLite migration, seed two products in a transaction, and start the server with a read-only database grant:</p><pre><code>go run ./cmd/grab migrate --db-config examples/grab.data.json --allow-db shop:migrate examples/catalog_migrate.grab
+go run ./cmd/grab run --db-config examples/grab.data.json --allow-db shop:read-write examples/catalog_seed.grab
+go run ./cmd/grab serve --db-config examples/grab.data.json --allow-db shop:read examples/catalog_app.grab</code></pre>
+<p>Open <code>http://127.0.0.1:8080/</code> in your browser to view the catalog (or visit <code>/products/1</code>, <code>/products/2</code>, and the <code>/api/products</code> JSON endpoint). Migrations are an explicit maintenance step—requests and reloads never run them—and repeating the migration or seed is safe. Product names are escaped by templates, prices use SQLite <code>TEXT</code> storage with explicit decimal contracts to preserve exact cents, and <code>catalog.db</code> stays local as a read-only browsing example (not a checkout or payment system).</p>
+<p>Disk SQLite supports Windows/amd64 and Linux/amd64 with confined rollback journals; WAL and unsupported SQL constructs are refused. Remote servers use explicit dialect SQL and verified TLS. Read the <a href="../../examples/DATA.md">catalog walkthrough</a>, <a href="../DATA.md">operator guide and supported boundaries</a>, <a href="../DATA-TESTING.md">verification record</a>, and <a href="../adr/ADR-DECISION-REGISTER.md">approved decisions</a>.</p>
+</section>
+<footer>GRAB 0.7 feature guide · November 11, 2026 · <a href="../ROADMAP.md">Roadmap</a> · <a href="index.html">Feature guide hub</a></footer>
+</main>
+</body>
+</html>

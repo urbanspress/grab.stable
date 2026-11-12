@@ -112,6 +112,17 @@ type Application struct {
 	staticRoot, staticPrefix string
 }
 
+// Close retires the active resource generation after its final request drains.
+func (a *Application) Close() {
+	a.draining.Store(true)
+	a.reloadMu.Lock()
+	p := a.active.Swap(nil)
+	a.reloadMu.Unlock()
+	if p != nil {
+		p.retire()
+	}
+}
+
 func NewApplication(grabPath, templatePath string, opts interpreter.Options, cfg Config, output io.Writer) (*Application, error) {
 	if e := cfg.Validate(); e != nil {
 		return nil, e
@@ -152,13 +163,19 @@ func NewApplication(grabPath, templatePath string, opts interpreter.Options, cfg
 func (a *Application) Reload() error {
 	a.reloadMu.Lock()
 	defer a.reloadMu.Unlock()
+	if a.draining.Load() {
+		return fmt.Errorf("application is draining")
+	}
 	// Initialization output is separate from request logs and serialized.
 	var startup bytes.Buffer
 	p, e := Load(a.grabPath, a.templatePath, a.opts, &startup)
 	if e != nil {
 		return e
 	}
-	a.active.Store(p)
+	old := a.active.Swap(p)
+	if old != nil {
+		old.retire()
+	}
 	a.logMu.Lock()
 	_, _ = a.output.Write(startup.Bytes())
 	a.logMu.Unlock()
@@ -166,6 +183,9 @@ func (a *Application) Reload() error {
 }
 func (a *Application) changed() bool {
 	p := a.active.Load()
+	if p == nil {
+		return false
+	}
 	for f, t := range p.files {
 		st, e := os.Stat(f)
 		if e != nil || !st.ModTime().Equal(t) {
@@ -411,7 +431,21 @@ func (a *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		status, headers, body = a.static(r)
 		return
 	}
-	p := a.active.Load()
+	var p *PreparedApp
+	for {
+		p = a.active.Load()
+		if p == nil {
+			if a.draining.Load() {
+				fail(503, "service unavailable")
+				return
+			}
+			panic("missing active application")
+		}
+		if p.acquire() {
+			break
+		}
+	}
+	defer p.release()
 	var route *interpreter.Route
 	params := grabrt.Record(nil)
 	allowed := map[string]bool{}

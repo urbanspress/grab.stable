@@ -20,9 +20,12 @@ import (
 
 // PreparedApp contains code and templates compiled once per successful load.
 type PreparedApp struct {
-	code   *interpreter.PreparedProgram
-	legacy *template.Template
-	files  map[string]time.Time
+	refsMu  sync.Mutex
+	refs    int
+	retired bool
+	code    *interpreter.PreparedProgram
+	legacy  *template.Template
+	files   map[string]time.Time
 }
 
 func readProgram(path string) (*ast.Program, error) {
@@ -125,6 +128,12 @@ func Load(grabPath, templatePath string, opts interpreter.Options, output io.Wri
 	if err != nil {
 		return nil, err
 	}
+	success := false
+	defer func() {
+		if !success {
+			_ = p.Close()
+		}
+	}()
 	app := &PreparedApp{code: p, files: c.files}
 	if len(p.Routes()) == 0 {
 		_, tp, e := ResolveFiles(grabPath, templatePath)
@@ -155,7 +164,36 @@ func Load(grabPath, templatePath string, opts interpreter.Options, output io.Wri
 		files[p] = t
 	}
 	app.files = files
+	success = true
 	return app, nil
+}
+
+func (p *PreparedApp) acquire() bool {
+	p.refsMu.Lock()
+	defer p.refsMu.Unlock()
+	if p.retired {
+		return false
+	}
+	p.refs++
+	return true
+}
+func (p *PreparedApp) release() {
+	p.refsMu.Lock()
+	p.refs--
+	closeNow := p.retired && p.refs == 0
+	p.refsMu.Unlock()
+	if closeNow {
+		_ = p.code.Close()
+	}
+}
+func (p *PreparedApp) retire() {
+	p.refsMu.Lock()
+	p.retired = true
+	closeNow := p.refs == 0
+	p.refsMu.Unlock()
+	if closeNow {
+		_ = p.code.Close()
+	}
 }
 
 func (p *PreparedApp) execute(ctx context.Context, route *interpreter.Route, req grabrt.Value, output io.Writer) (interpreter.Response, error) {

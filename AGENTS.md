@@ -49,18 +49,24 @@ task groups)** are complete and verified by `go test ./...` (commit `927564f` on
 **GRAB 0.6 (Persistent application server / GRAB Server)** is implemented,
 following the owner's explicit Codex takeover authorization of
 `specifications/GRAB-SERVER-SPEC-006.md` on November 11, 2026.
-Milestones GRAB 0.7 through 1.0 in `docs/ROADMAP.md`
-remain marked `Status: Planned (Not Yet Approved for Implementation)`.
+GRAB 0.6 is checkpointed and pushed to `origin/main` as `c4e9856` after a
+100% passing full test suite. **GRAB 0.7 — Database access (GRAB Data)** is
+complete and verified by `go test ./...` under the owner's explicit approval of
+specification 007 and its design on November 11, 2026. The owner approved Go
+1.26 minimum, dependency network access, and disposable MariaDB/PostgreSQL
+containers, and handed ownership back to **Google Antigravity** in `HANDOFF.md`
+for final wrap-up and checkpointing. See `docs/DATA.md` and
+`docs/DATA-TESTING.md` for supported boundaries and verification evidence.
 
-Do not implement GRAB 0.7–1.0 features (database,
-connector SDK/webhooks, VM, UI framework, or CMS) until the project owner
-explicitly approves the next target in `docs/ROADMAP.md`.
+GRAB 0.8–1.0 remain
+`Planned (Not Yet Approved for Implementation)`; connector SDK/webhooks, VM,
+UI framework, and CMS are not authorized for implementation.
 
 ## Live GRAB 0.1 Status & Repository Map
 
 Status below is based on the source, tests, and documentation currently in this repository. The full Go test suite and build were run successfully on November 11, 2026. A passing package test means the tests present for that package passed; packages without test files have not been directly tested.
 
-### GRAB 0.1–0.6 components and language features
+### GRAB 0.1–0.7 components and language features
 
 | Component or feature | Current status |
 | --- | --- |
@@ -69,43 +75,45 @@ Status below is based on the source, tests, and documentation currently in this 
 | Parser and formatter | Implemented and tested: top-level `use <module>`, `set`, `show`, `if`/`otherwise if`/`otherwise`/`end`, `repeat <count> times`, `for each <item> in <coll>`, `while <cond>`, `try`/`catch`/`end`, `raise`, `do together`/`wait for`/`end`, `make`/`using`/`give back`/`call` (including module-qualified `<module>.<function>`), parenthesized grouping, full GRAB 0.3 operator precedence (`not`, `times`/`divided by`/`modulo`, `plus`/`minus`, `joined with`, comparisons, `is`/`is not`, `and`, `or`), collection lookup (`.field`, `at`, `has`), single-line lists/maps/records, optional trailing commas, duplicate map-key/record-field errors, source spans, syntax error codes (`GRAB-E101`–`GRAB-E103`), and canonical source formatter (`parser.Format`). Parser tests pass. |
 | AST | Implemented: program, `UseDecl`, statements (`set`, `show`, `if`, `repeat`, `for each`, `while`, `try`/`catch`, `raise`, `do together`/`TaskStatement`, `make`, `give back`, `call`), literals, identifiers, parenthesized/unary/binary/joined expressions, `.field`/`at`/`has` lookup nodes, function and module-qualified call expressions, and list/map/record nodes. |
 | Runtime values and display | Implemented and tested: text, Boolean, `nothing`, arbitrary-precision integer, exact decimal, binary64 float, bytes, lists, ordered maps, and ordered records, with canonical display, exact integer/decimal arithmetic (`Add`, `Sub`, `Mul`, `Div`, `Mod`), deep equality (`Equal`), and ordered comparison (`Compare`). Runtime tests pass. |
-| Interpreter, standard library, concurrency, and permissions | Implemented and tested: ordered `set`/rebind and `show`, pre-execution validation (module imports, name resolution, exhaustive `if` and `try`/`catch` branch bindings, `do together` task group validation `GRAB-E208`, function registration, and arity checking), control flow (`if`, `repeat`, `for each`, `while` with `1,000,000`-step guard), functions (`make`/`using`/`give back`/`call` with isolated call frames and `256`-frame recursion limit), structured concurrency (`do together`/`wait for` with snapshot isolation, deterministic top-to-bottom output/binding commit order, and sibling cancellation), structured error handling (`try`/`catch`/`raise`, error records, non-catchable fatal safety limits `GRAB-E306`/`GRAB-E307`, and `beginner`/`developer`/`production` diagnostic modes), 8 built-in standard library modules (`text`, `math`, `collections`, `dates`, `files`, `json`, `http`, `server`), unified `.field`/`at`/`has` lookup across records and maps, default-deny filesystem permissions (`--allow-read`/`--allow-write` with sensitive-path blocklist `GRAB-E401`), default-deny network permissions (`--allow-net` with SSRF blocking `GRAB-E402`), deterministic output with LF, and Go benchmark/allocation suite (`benchmark_test.go`). Interpreter tests pass. |
-| CLI | Implemented and tested: `grab run`, `grab serve`, `grab check`, and `grab format [--write]` with `--diagnostics`, `--allow-read`, `--allow-write`, and `--allow-net` flags. `cmd/grab/main_test.go` provides comprehensive table-driven CLI tests covering `run`, `serve`, `check`, and `format`, flags, loopback enforcement, preflight diagnostics, permissions, and runtime errors. All pass. |
-| Tests and conformance | GRAB 0.1 through GRAB 0.6 specification conformance milestones complete. `go test ./...` passes 100% across all packages (`cmd/grab`, `internal/lexer`, `internal/parser`, `internal/runtime`, `internal/interpreter`, `internal/template`, `internal/server`, and `tests`). |
-| Example programs | Ten runnable `.grab` programs (`hello.grab`, `values.grab`, `product.grab`, `greeting.grab`, `collections.grab`, `pricing.grab`, `inventory.grab`, `stdlib_errors.grab`, `connect_tasks.grab`, `server_app.grab`) plus three companion `.grab.html` templates (`hello.grab.html`, `product.grab.html`, `server_home.grab.html`) in `examples/`. The new server app is checked and formatted, with routes covered by automated HTTP tests; run it with `grab serve examples/server_app.grab`. |
+| Interpreter, standard library, concurrency, and permissions | Implemented and tested: ordered `set`/rebind and `show`, pre-execution validation (module imports, name resolution, exhaustive `if` and `try`/`catch` branch bindings, `do together` task group validation `GRAB-E208`, function registration, and arity checking), control flow (`if`, `repeat`, `for each`, `while` with `1,000,000`-step guard), functions (`make`/`using`/`give back`/`call` with isolated call frames and `256`-frame recursion limit), structured concurrency (`do together`/`wait for` with snapshot isolation, deterministic top-to-bottom output/binding commit order, and sibling cancellation), structured error handling (`try`/`catch`/`raise`, error records, non-catchable fatal safety limits `GRAB-E306`/`GRAB-E307`, and `beginner`/`developer`/`production` diagnostic modes), 9 built-in standard library modules (`text`, `math`, `collections`, `dates`, `files`, `json`, `http`, `server`, `data`), unified `.field`/`at`/`has` lookup across records and maps, default-deny filesystem permissions (`--allow-read`/`--allow-write` with sensitive-path blocklist `GRAB-E401`), default-deny network permissions (`--allow-net` with SSRF blocking `GRAB-E402`), deterministic output with LF, and Go benchmark/allocation suite (`benchmark_test.go`). Interpreter tests pass. |
+| CLI | Implemented and tested: `grab run`, `grab migrate`, `grab serve`, `grab check`, and `grab format [--write]`; database manifest and separate read/read-write/migrate `--allow-db` grants alongside filesystem/network permissions and diagnostics. Check/format perform no database I/O. |
+| Tests and conformance | GRAB 0.1–0.7 automated suites cover language, templates, HTTP/server, databases, CLI, permissions, and lifecycle. Real-service adapter tests and race verification are documented in `docs/DATA-TESTING.md`; offline runs may skip the remote services. |
+| Example programs | Existing 0.1–0.6 examples plus `catalog_migrate.grab`, `catalog_seed.grab`, `catalog_app.grab`, two catalog templates, and `grab.data.json`. Run instructions are in `examples/DATA.md`; HTTP tests exercise the catalog. |
 | GRAB 0.2 templates and localhost server | Implemented and tested in `internal/template` and `internal/server` per `specifications/GRAB-LOCALHOST-SPEC-002.md`: `.grab.html` `{<identifier>}` interpolation (e.g. `{title}`), `{{`/`}}` literal braces, companion and reusable template lookup, value binding, context-aware HTML escaping, source-located diagnostics, and loopback-only `grab serve` with security headers and graceful shutdown. |
 | GRAB 0.6 persistent application server | Implemented and tested: `route` lexing/AST/parsing/formatting, conflict checks (`GRAB-E209`); prepared code and literal templates loaded once; immutable startup baseline and per-request bindings; `use server` HTML/JSON/text/redirect/custom-response/JSON-body helpers (`GRAB-E312`); request params/query/headers/body/form/proxy metadata; static-first routes, HEAD, 404/405; bounded concurrency/queue/body/deadline controls; public-bind opt-in, trusted proxies, confined static files and ETags; probes, redacted request/console logs, panic containment, atomic reload and graceful shutdown. See `examples/SERVER.md`, `internal/server/application_test.go`, and `tests/grab06_conformance_test.go`. |
+| GRAB 0.7 database access | Implemented: `internal/data` adapters and interpreter `use data`, strict literal prepared SQL/type contracts, default-deny database grants/configuration, bounded pools/results/deadlines, explicit scoped transactions, versioned maintenance migrations, and prepared server generation cleanup. Real SQLite/MariaDB/PostgreSQL tests, CLI/HTTP/end-to-end coverage, and runnable catalog. Disk SQLite is confined rollback-journal mode on Windows/amd64 and Linux/amd64; unsupported constructs/platforms fail closed. See `docs/DATA.md` and `docs/DATA-TESTING.md`. |
 
 ### Not implemented
 
-- GRAB 0.1–0.6 does not include user-defined types, user-authored file imports, or in-place collection mutation.
-- Database connections and vendor-specific values (`GRAB Data`), browser/UI/CMS features, connector SDK/webhooks, IR, bytecode, and a VM remain unimplemented and planned for later milestones (`docs/ROADMAP.md`, GRAB 0.7–1.0).
-- The approved 0.1 through 0.6 conformance milestones are complete; this is rule-based test coverage, not a proof over every possible program.
+- GRAB 0.1–0.7 does not include user-defined types, user-authored file imports, or in-place collection mutation.
+- Browser/UI/CMS features, connector SDK/webhooks, IR, bytecode, and a VM remain planned and unapproved (`docs/ROADMAP.md`, GRAB 0.8–1.0 and Post-1.0). Database support boundaries are in `docs/DATA.md`.
+- The approved 0.1 through 0.7 conformance milestones are complete; this is rule-based test coverage, not a proof over every possible program.
 
 ### Repository directory and package map
 
 | Path | Purpose |
 | --- | --- |
-| `cmd/grab/` | `main` package for `grab run`, `grab serve`, `grab check`, and `grab format`; `main_test.go` contains table-driven CLI tests. |
+| `cmd/grab/` | CLI run, migrate, serve, check, format; table-driven CLI/database capability tests. |
 | `docs/` | Project documentation, including `docs/ROADMAP.md` (GRAB 0.1 through 1.0 + Post-1.0). |
-| `docs/features/` | Self-contained HTML milestone feature guides (`index.html` hub and version guides `grab_04_features.html`, `grab_05_features.html`, and `grab_06_features.html`) explaining features, developer benefits, visitor/user benefits, and visual examples in plain English. |
+| `docs/features/` | Self-contained HTML milestone feature guides (`index.html` hub and version guides `grab_04_features.html`, `grab_05_features.html`, `grab_06_features.html`, and `grab_07_features.html`) explaining features, developer benefits, visitor/user benefits, and visual examples in plain English. The 0.7 guide includes the runnable catalog and supported boundaries. |
 | `docs/adr/` | Architecture decision register (`ADR-DECISION-REGISTER.md`) and recorded design boundaries. |
 | `docs/blueprints/` | GRAB architecture blueprint PDFs; v1.0 is the approved baseline and v1.1 is not approved wholesale. |
-| `examples/` | Ten runnable `.grab` programs (including GRAB 0.3 `pricing.grab`, `inventory.grab`, GRAB 0.4 `stdlib_errors.grab` and `product.grab`, GRAB 0.5 `connect_tasks.grab`, and GRAB 0.6 `server_app.grab`) and three `.grab.html` templates (`hello.grab.html`, `product.grab.html`, `server_home.grab.html`). |
+| `examples/` | Thirteen runnable `.grab` programs and five `.grab.html` templates, including the SQLite catalog migration/seed/server app and configuration. See `DATA.md` and `SERVER.md`. |
 | `internal/ast/` | Abstract syntax tree node types used by the parser, formatter, and interpreter. |
-| `internal/interpreter/` | Pre-execution validation, expression evaluation, control-flow, function, `try`/`catch`/`raise`, and `do together`/`wait for` execution, 8 standard library modules (`stdlib.go`, `stdlib_connect.go`, `server.go`), capability permissions and SSRF protection (`capabilities.go`), diagnostic modes (`diagnostics.go`), and benchmarks (`benchmark_test.go`). |
+| `internal/interpreter/` | Validation and AST execution, 9 standard modules including `data.go`, scoped database resources/transactions, capabilities, diagnostics, concurrency, server helpers, and benchmarks. |
+| `internal/data/` | Host-owned database/sql adapters, strict SQL/contracts/configuration, engine authorization, confined rollback-journal SQLite VFS, remote TLS/DNS pinning, migrations, transaction/pool lifecycles, tests, and benchmarks. |
 | `internal/lexer/` | Source reader, positions/spans, tokens, lexical analysis, and lexical diagnostics (`GRAB-E001`–`GRAB-E007`). |
 | `internal/parser/` | Parser for GRAB 0.1–0.6 tokens, AST construction, and canonical code formatter (`format.go`). |
 | `internal/runtime/` | Portable runtime values, arithmetic/comparison operations, and canonical display forms. |
 | `internal/server/` | Persistent server: `prepared.go` (load-once code/templates), `application.go` (routing, limits, proxies, static files, logging, atomic reload), `supervisor.go` (listeners, signals, drain), platform signal files, table-driven tests, and `benchmark_test.go`. Legacy single-page mode is preserved. |
 | `internal/template/` | `.grab.html` `{<identifier>}` parser, HTML lexical context analyzer, context-aware HTML/URL escaper, and renderer (`template_test.go`). |
-| `specifications/` | `GRAB-LANGUAGE-SPEC-001.md` (approved 0.1 spec), `GRAB-LOCALHOST-SPEC-002.md` (approved 0.2 localhost/template spec), `GRAB-LANGUAGE-SPEC-003.md` (approved 0.3 language spec), `GRAB-STDLIB-SPEC-004.md` (approved 0.4 stdlib/errors/permissions spec), `GRAB-CONNECT-SPEC-005.md` (approved 0.5 HTTP/JSON/concurrency spec), and `GRAB-SERVER-SPEC-006.md` (approved 0.6 persistent application server specification). |
-| `tests/` | `conformance_test.go` (0.1 conformance), `localhost_conformance_test.go` (0.2 conformance), `grab03_conformance_test.go` (0.3 conformance), `grab04_conformance_test.go` (0.4 conformance), `grab05_conformance_test.go` (0.5 conformance), `grab06_conformance_test.go` (0.6 HTTP conformance), `structure_test.go` (AST spans), and `README.md`. |
-| Repository root | `go.mod` declares module `grab` and Go 1.22.2; `index.grab` is a runnable sample; `.gitignore` lists local build artifacts and editor files. |
+| `specifications/` | Approved specifications 001–007, including implemented database specification `GRAB-DATA-SPEC-007.md`. Later milestones remain unapproved. |
+| `tests/` | `conformance_test.go` (0.1 conformance), `localhost_conformance_test.go` (0.2 conformance), `grab03_conformance_test.go` (0.3 conformance), `grab04_conformance_test.go` (0.4 conformance), `grab05_conformance_test.go` (0.5 conformance), `grab06_conformance_test.go` (0.6 HTTP conformance), `grab07_conformance_test.go` (0.7 database conformance), `structure_test.go` (AST spans), and `README.md`. |
+| Repository root | `go.mod` declares module `grab`, Go 1.26 minimum, and pinned pure-Go SQLite/MariaDB/PostgreSQL dependencies; `go.sum` locks downloads. `index.grab` is runnable; `.gitignore` excludes local catalog files/build artifacts. |
 
 ### Build, run, and test commands
 
-Run these commands from the repository root with Go 1.22.2 or newer available on `PATH`:
+Run these commands from the repository root with Go 1.26 or newer available on `PATH`:
 
 ```sh
 # Build all Go packages, including the CLI.

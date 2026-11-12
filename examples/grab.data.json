@@ -1,0 +1,5 @@
+{
+  "connections": {
+    "shop": {"driver": "sqlite", "path": "catalog.db"}
+  }
+}

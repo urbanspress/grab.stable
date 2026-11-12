@@ -29,6 +29,7 @@ func (f stdlibFunc) acceptsArity(n int) bool {
 }
 
 var stdlibModules = map[string]map[string]stdlibFunc{
+	"data":   dataFunctions,
 	"server": serverFunctions,
 	"text": {
 		"from":        {arity: 1, fn: stdTextFrom},
@@ -107,7 +108,10 @@ func lookupStdlibFunc(module, name string) (stdlibFunc, bool) {
 
 // ── text module ───────────────────────────────────────────────────────────────
 
-func stdTextFrom(_ *execContext, _ lexer.Span, args []grabrt.Value) (grabrt.Value, error) {
+func stdTextFrom(_ *execContext, span lexer.Span, args []grabrt.Value) (grabrt.Value, error) {
+	if args[0].ContainsResource() {
+		return grabrt.Value{}, &Error{Kind: TypeMismatch, Span: span}
+	}
 	return grabrt.Text(args[0].Display()), nil
 }
 
