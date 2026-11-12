@@ -64,6 +64,9 @@ const (
 	TokenTry
 	TokenCatch
 	TokenRaise
+	TokenDo
+	TokenTogether
+	TokenWait
 )
 
 var tokenKindNames = [...]string{
@@ -127,6 +130,9 @@ var tokenKindNames = [...]string{
 	TokenTry:            "try",
 	TokenCatch:          "catch",
 	TokenRaise:          "raise",
+	TokenDo:             "do",
+	TokenTogether:       "together",
+	TokenWait:           "wait",
 }
 
 // String returns a readable name for the token kind.

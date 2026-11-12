@@ -15,8 +15,8 @@ import (
 	"grab/internal/template"
 )
 
-const usageText = "usage: grab run [--diagnostics beginner|developer|production] [--allow-read <dir>] [--allow-write <dir>] <file.grab>\n" +
-	"       grab serve [--addr 127.0.0.1:8080] [--diagnostics beginner|developer|production] [--allow-read <dir>] [--allow-write <dir>] <file.grab> [template.grab.html]\n" +
+const usageText = "usage: grab run [--diagnostics beginner|developer|production] [--allow-read <dir>] [--allow-write <dir>] [--allow-net <host[,host...]>] <file.grab>\n" +
+	"       grab serve [--addr 127.0.0.1:8080] [--diagnostics beginner|developer|production] [--allow-read <dir>] [--allow-write <dir>] [--allow-net <host[,host...]>] <file.grab> [template.grab.html]\n" +
 	"       grab check [--diagnostics beginner|developer|production] <file.grab> [template.grab.html]\n" +
 	"       grab format [--write] <file.grab>"
 
@@ -206,6 +206,19 @@ func parseCommonFlags(args []string, allowAddr bool) (commonFlagConfig, []string
 				return cfg, nil, false
 			}
 			cfg.opts.Permissions.AllowWrite = append(cfg.opts.Permissions.AllowWrite, val)
+			i = nextIdx
+			continue
+		}
+		if arg == "--allow-net" || strings.HasPrefix(arg, "--allow-net=") {
+			val, nextIdx, ok := consumeFlagValue(args, i, "--allow-net")
+			if !ok {
+				return cfg, nil, false
+			}
+			hosts, valid := interpreter.ParseAllowNetList(val)
+			if !valid {
+				return cfg, nil, false
+			}
+			cfg.opts.Permissions.AllowNet = append(cfg.opts.Permissions.AllowNet, hosts...)
 			i = nextIdx
 			continue
 		}

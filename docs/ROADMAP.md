@@ -114,18 +114,28 @@ Delivered in the repository:
 
 ## GRAB 0.5 — HTTP client, JSON, and async task groups
 
-**Status:** Planned (Not Yet Approved for Implementation)
+**Status:** Complete — November 11, 2026 (`specifications/GRAB-CONNECT-SPEC-005.md`)
+**Approval date:** November 11, 2026 (milestone and specification in `specifications/GRAB-CONNECT-SPEC-005.md`)
 **Source:** Blueprint v1.0 Sections 5, 8; Blueprint v1.1 roadmap table
 
-Intended scope (requires owner approval before implementation):
+Delivered in the repository:
 
-- Universal HTTP client (GRAB Connect foundation): `GET`, `POST`, `PUT`,
-  `PATCH`, `DELETE`, JSON encoding/decoding, custom headers, TLS verification,
+- Universal HTTP client (`use http`, GRAB Connect foundation): `GET`, `POST`, `PUT`,
+  `PATCH`, `DELETE`, `get_json`, `request`, custom headers, TLS verification,
   bounded retries, and timeouts.
-- Explicit cancellation and timeout contracts at the language level.
-- Structured concurrency prototype: explicit task groups (`do together` /
-  `wait for`) with deterministic result ordering and error propagation
-  (ADR-007, ADR-015).
+- Lossless JSON codec (`use json`): `json.parse`, `json.stringify`, and
+  `json.stringify_pretty` preserving exact `integer` and `decimal` numbers and
+  decoding JSON objects into GRAB records/maps with unified `.field`, `at`, and `has` lookup.
+- Default-deny network permissions (`--allow-net <host[,host...]>`), mandatory
+  TLS 1.2+ verification, and automatic SSRF blocking of loopback, private RFC 1918,
+  and cloud-metadata IP ranges (`GRAB-E402`).
+- Structured concurrency (`do together` / `wait for`): explicit task groups with
+  snapshot isolation, deterministic top-to-bottom result/output ordering,
+  sibling cancellation on failure, and deterministic error propagation inside
+  `try` / `catch` (`ADR-007`, `ADR-015`).
+- Expanded conformance suite in `tests/grab05_conformance_test.go` covering all
+  GRAB 0.5 language constructs, `use json`, `use http`, `--allow-net` permissions,
+  SSRF protections, and structured task groups.
 
 ---
 

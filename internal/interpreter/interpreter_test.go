@@ -2,10 +2,15 @@ package interpreter
 
 import (
 	"bytes"
+	"context"
+	"net"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"grab/internal/parser"
 )
@@ -255,5 +260,359 @@ func TestFormatDiagnosticModes(t *testing.T) {
 	prodOut := FormatDiagnostic(src, err, ModeProduction)
 	if prodOut != "grab: [GRAB-E201] unbound variable reference" {
 		t.Fatalf("production diagnostic = %q", prodOut)
+	}
+}
+
+func TestGRAB05JSONAndUnifiedLookup(t *testing.T) {
+	src := `use json
+
+set data to json.parse using "{\"sku\": \"A-17\", \"price\": 19.95, \"stock\": 12, \"ratio\": 1.5e2, \"active\": true, \"note\": null, \"tags\": [\"new\", \"sale\"], \"meta-info\": {\"x-rate\": 5}}"
+show data.sku
+show data at "sku"
+show data has sku
+show data has "sku"
+show data.price plus 0.05
+show data.stock plus 8
+show data.ratio
+show data.active
+show data.note
+show data.tags at 1
+set meta to data at "meta-info"
+show meta at "x-rate"
+
+set m to {"alpha": 100, "beta-key": 200}
+show m.alpha
+show m has alpha
+show m has "beta-key"
+
+set compact to json.stringify using record {sku: "A-17", price: 19.95, active: yes, note: nothing, items: [1, 2]}
+show compact
+set pretty to json.stringify_pretty using record {sku: "A-17", active: no}
+show pretty
+`
+	prog, err := parser.Parse("json05.grab", src)
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	var out bytes.Buffer
+	if err := Run(prog, &out); err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	want := strings.Join([]string{
+		"A-17",
+		"A-17",
+		"yes",
+		"yes",
+		"20.00",
+		"20",
+		"150.0",
+		"yes",
+		"nothing",
+		"sale",
+		"5",
+		"100",
+		"yes",
+		"yes",
+		`{"sku":"A-17","price":19.95,"active":true,"note":null,"items":[1,2]}`,
+		"{\n  \"sku\": \"A-17\",\n  \"active\": false\n}",
+	}, "\n") + "\n"
+	if out.String() != want {
+		t.Fatalf("output =\n%s\nwant:\n%s", out.String(), want)
+	}
+}
+
+func TestGRAB05DoTogetherConcurrencyAndValidation(t *testing.T) {
+	cases := []struct {
+		name      string
+		source    string
+		output    string
+		errorText string
+	}{
+		{
+			name: "concurrent tasks commit and buffer output in top-to-bottom order",
+			source: `use text
+make work using label, amount
+  show "task " joined with label
+  give back amount times 2
+end
+
+set base to 10
+do together
+  set first to wait for (work using "one", base)
+  set second to work using "two", (base plus 5)
+  wait for work using "three", 1
+end
+show first
+show second
+`,
+			output: "task one\ntask two\ntask three\n20\n30\n",
+		},
+		{
+			name: "duplicate target variable in do together rejected preflight with GRAB-E208",
+			source: `do together
+  set item to 1
+  set item to 2
+end
+`,
+			errorText: "invalid task group \"item\"",
+		},
+		{
+			name: "more than 16 tasks in do together rejected preflight with GRAB-E208",
+			source: `do together
+  set t1 to 1
+  set t2 to 2
+  set t3 to 3
+  set t4 to 4
+  set t5 to 5
+  set t6 to 6
+  set t7 to 7
+  set t8 to 8
+  set t9 to 9
+  set t10 to 10
+  set t11 to 11
+  set t12 to 12
+  set t13 to 13
+  set t14 to 14
+  set t15 to 15
+  set t16 to 16
+  set t17 to 17
+end
+`,
+			errorText: "invalid task group at line 1",
+		},
+		{
+			name: "error in do together suppresses partial commits and propagates earliest source order",
+			source: `make fail_task using msg
+  show "before " joined with msg
+  raise msg
+end
+
+set safe to "initial"
+try
+  do together
+    set a to wait for (fail_task using "first failure")
+    set safe to wait for (fail_task using "second failure")
+  end
+catch err
+  show "caught: " joined with err.code joined with " / " joined with err.message
+end
+show safe
+`,
+			output: "caught: GRAB-E308 / first failure\ninitial\n",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			prog, err := parser.Parse("dotogether.grab", tc.source)
+			if err != nil {
+				t.Fatalf("Parse() error = %v", err)
+			}
+			var out bytes.Buffer
+			err = Run(prog, &out)
+			if out.String() != tc.output {
+				t.Fatalf("output = %q, want %q", out.String(), tc.output)
+			}
+			if tc.errorText == "" {
+				if err != nil {
+					t.Fatalf("Run() error = %v", err)
+				}
+				return
+			}
+			if err == nil || !strings.Contains(err.Error(), tc.errorText) {
+				t.Fatalf("Run() error = %v, want containing %q", err, tc.errorText)
+			}
+		})
+	}
+}
+
+type testPipeListener struct {
+	conns  chan net.Conn
+	closed chan struct{}
+}
+
+func newTestPipeListener() *testPipeListener {
+	return &testPipeListener{
+		conns:  make(chan net.Conn),
+		closed: make(chan struct{}),
+	}
+}
+
+func (l *testPipeListener) Accept() (net.Conn, error) {
+	select {
+	case c := <-l.conns:
+		return c, nil
+	case <-l.closed:
+		return nil, net.ErrClosed
+	}
+}
+
+func (l *testPipeListener) Close() error {
+	select {
+	case <-l.closed:
+	default:
+		close(l.closed)
+	}
+	return nil
+}
+
+func (l *testPipeListener) Addr() net.Addr {
+	return &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 8080}
+}
+
+func (l *testPipeListener) DialContext(ctx context.Context, _, _ string) (net.Conn, error) {
+	client, srv := net.Pipe()
+	select {
+	case l.conns <- srv:
+		return client, nil
+	case <-l.closed:
+		client.Close()
+		srv.Close()
+		return nil, net.ErrClosed
+	case <-ctx.Done():
+		client.Close()
+		srv.Close()
+		return nil, ctx.Err()
+	}
+}
+
+func TestGRAB05HTTPClientCapabilitiesAndSSRF(t *testing.T) {
+	var flakyAttempts int32
+	pl := newTestPipeListener()
+	srv := &http.Server{
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.URL.Path {
+			case "/item":
+				w.Header().Set("Content-Type", "application/json")
+				w.Header().Set("X-Custom", "GRAB-05")
+				_, _ = w.Write([]byte(`{"sku":"A-17","price":19.95,"stock":12}`))
+			case "/echo":
+				w.Header().Set("Content-Type", "application/json")
+				buf := new(bytes.Buffer)
+				_, _ = buf.ReadFrom(r.Body)
+				w.WriteHeader(http.StatusCreated)
+				_, _ = w.Write(buf.Bytes())
+			case "/flaky":
+				n := atomic.AddInt32(&flakyAttempts, 1)
+				if n < 3 {
+					w.WriteHeader(http.StatusServiceUnavailable)
+					_, _ = w.Write([]byte("busy"))
+					return
+				}
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(`{"recovered":true}`))
+			case "/slow":
+				time.Sleep(150 * time.Millisecond)
+				_, _ = w.Write([]byte(`{"slow":true}`))
+			case "/redirect-blocked":
+				http.Redirect(w, r, "http://169.254.169.254/latest/meta-data/", http.StatusFound)
+			default:
+				w.WriteHeader(http.StatusNotFound)
+			}
+		}),
+	}
+	go func() {
+		_ = srv.Serve(pl)
+	}()
+	defer func() {
+		_ = srv.Close()
+		_ = pl.Close()
+	}()
+	baseURL := "http://127.0.0.1:8080"
+	allowHost := "127.0.0.1:8080"
+
+	// 1. Default-deny network permissions without --allow-net must fail with GRAB-E402.
+	denySrc := `use http
+show http.get using "` + baseURL + `/item"
+`
+	denyProg, err := parser.Parse("deny.grab", denySrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = Run(denyProg, &bytes.Buffer{})
+	if err == nil || !strings.Contains(err.Error(), "network permission denied") {
+		t.Fatalf("expected network permission denied, got %v", err)
+	}
+
+	// 2. Allowed 127.0.0.1:8080 host succeeds for GET, GET_JSON, POST, retries, and do together.
+	allowSrc := `use http
+use json
+do together
+  set item to wait for (http.get_json using "` + baseURL + `/item")
+  set created to wait for (http.post using "` + baseURL + `/echo", record {order: "ORD-1", total: 42.50})
+  set retried to wait for (http.get using "` + baseURL + `/flaky", record {retries: 2, timeout_ms: 5000})
+end
+show item.sku
+show item.price plus 0.05
+show created.status
+show created.ok
+set created_data to json.parse using created.body
+show created_data.order
+show created_data.total
+show retried.status
+set retried_data to json.parse using retried.body
+show retried_data.recovered
+`
+	allowProg, err := parser.Parse("allow.grab", allowSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	err = RunWithOptions(allowProg, &out, Options{
+		Permissions: Permissions{AllowNet: []string{allowHost}},
+		DialContext: pl.DialContext,
+	})
+	if err != nil {
+		t.Fatalf("RunWithOptions() error = %v", err)
+	}
+	want := "A-17\n20.00\n201\nyes\nORD-1\n42.50\n200\nyes\n"
+	if out.String() != want {
+		t.Fatalf("output = %q, want %q", out.String(), want)
+	}
+
+	// 3. Request timeout raises GRAB-E311.
+	timeoutSrc := `use http
+try
+  show http.get using "` + baseURL + `/slow", record {timeout_ms: 25}
+catch err
+  show err.code
+end
+`
+	timeoutProg, err := parser.Parse("timeout.grab", timeoutSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out.Reset()
+	if err := RunWithOptions(timeoutProg, &out, Options{
+		Permissions: Permissions{AllowNet: []string{allowHost}},
+		DialContext: pl.DialContext,
+	}); err != nil {
+		t.Fatalf("timeout run error = %v", err)
+	}
+	if out.String() != "GRAB-E311\n" {
+		t.Fatalf("timeout output = %q, want GRAB-E311", out.String())
+	}
+
+	// 4. Redirect to cloud metadata 169.254.169.254 is always blocked with GRAB-E402 even if allowlisted.
+	ssrfSrc := `use http
+try
+  show http.get using "` + baseURL + `/redirect-blocked"
+catch err
+  show err.code
+end
+`
+	ssrfProg, err := parser.Parse("ssrf.grab", ssrfSrc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out.Reset()
+	if err := RunWithOptions(ssrfProg, &out, Options{
+		Permissions: Permissions{AllowNet: []string{allowHost, "169.254.169.254"}},
+		DialContext: pl.DialContext,
+	}); err != nil {
+		t.Fatalf("ssrf run error = %v", err)
+	}
+	if out.String() != "GRAB-E402\n" {
+		t.Fatalf("ssrf output = %q, want GRAB-E402", out.String())
 	}
 }

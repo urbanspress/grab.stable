@@ -204,6 +204,8 @@ func (parser *Parser) parseStatement() (ast.Statement, error) {
 		return parser.parseTryStatement()
 	case lexer.TokenRaise:
 		return parser.parseRaiseStatement()
+	case lexer.TokenDo:
+		return parser.parseDoTogetherStatement()
 	case lexer.TokenGive:
 		return parser.parseGiveBackStatement()
 	case lexer.TokenCall:
@@ -455,6 +457,121 @@ func (parser *Parser) parseRaiseStatement() (ast.Statement, error) {
 		Value: val,
 		Span:  lexer.Span{Start: start, End: val.SourceSpan().End},
 	}, nil
+}
+
+func (parser *Parser) parseDoTogetherStatement() (ast.Statement, error) {
+	start := parser.advance().Span.Start // 'do'
+	if _, err := parser.consume(lexer.TokenTogether); err != nil {
+		return nil, err
+	}
+	if _, err := parser.consume(lexer.TokenNewline); err != nil {
+		return nil, err
+	}
+	parser.skipNewlines()
+	if parser.check(lexer.TokenEnd) || parser.check(lexer.TokenEOF) {
+		return nil, parser.unexpected(parser.currentToken())
+	}
+
+	var tasks []*ast.TaskStatement
+	for !parser.check(lexer.TokenEOF) && !parser.check(lexer.TokenEnd) {
+		task, err := parser.parseTaskStatement()
+		if err != nil {
+			return nil, err
+		}
+		tasks = append(tasks, task)
+		if !parser.check(lexer.TokenNewline) && !parser.check(lexer.TokenEOF) {
+			return nil, parser.unexpected(parser.currentToken())
+		}
+		parser.skipNewlines()
+	}
+
+	endTok, err := parser.consume(lexer.TokenEnd)
+	if err != nil {
+		return nil, err
+	}
+	return &ast.DoTogetherStatement{
+		Tasks: tasks,
+		Span:  lexer.Span{Start: start, End: endTok.Span.End},
+	}, nil
+}
+
+func (parser *Parser) parseTaskStatement() (*ast.TaskStatement, error) {
+	switch parser.currentToken().Kind {
+	case lexer.TokenSet:
+		taskStart := parser.advance().Span.Start // 'set'
+		name, err := parser.consume(lexer.TokenIdentifier)
+		if err != nil {
+			return nil, err
+		}
+		if _, err := parser.consume(lexer.TokenTo); err != nil {
+			return nil, err
+		}
+		hasWait := false
+		if parser.match(lexer.TokenWait) {
+			if _, err := parser.consume(lexer.TokenFor); err != nil {
+				return nil, err
+			}
+			hasWait = true
+		}
+		val, err := parser.parseExpression()
+		if err != nil {
+			return nil, err
+		}
+		return &ast.TaskStatement{
+			Name:       name.Lexeme,
+			NameSpan:   name.Span,
+			HasWaitFor: hasWait,
+			Value:      val,
+			Span:       lexer.Span{Start: taskStart, End: val.SourceSpan().End},
+		}, nil
+
+	case lexer.TokenWait:
+		taskStart := parser.advance().Span.Start // 'wait'
+		if _, err := parser.consume(lexer.TokenFor); err != nil {
+			return nil, err
+		}
+		callStmt, err := parser.parseTaskCallStatement()
+		if err != nil {
+			return nil, err
+		}
+		return &ast.TaskStatement{
+			HasWaitFor: true,
+			Call:       callStmt,
+			Span:       lexer.Span{Start: taskStart, End: callStmt.Span.End},
+		}, nil
+
+	case lexer.TokenCall, lexer.TokenIdentifier:
+		callStmt, err := parser.parseTaskCallStatement()
+		if err != nil {
+			return nil, err
+		}
+		return &ast.TaskStatement{
+			HasWaitFor: false,
+			Call:       callStmt,
+			Span:       callStmt.Span,
+		}, nil
+
+	default:
+		return nil, parser.unexpected(parser.currentToken())
+	}
+}
+
+func (parser *Parser) parseTaskCallStatement() (*ast.CallStatement, error) {
+	if parser.check(lexer.TokenCall) {
+		stmt, err := parser.parseCallStatement()
+		if err != nil {
+			return nil, err
+		}
+		return stmt.(*ast.CallStatement), nil
+	}
+	if parser.check(lexer.TokenIdentifier) && (parser.peekToken().Kind == lexer.TokenUsing || parser.isImplicitQualifiedCall()) {
+		stmt, err := parser.parseImplicitCallStatement()
+		if err != nil {
+			return nil, err
+		}
+		return stmt.(*ast.CallStatement), nil
+	}
+	return nil, parser.unexpected(parser.currentToken())
 }
 
 func (parser *Parser) parseGiveBackStatement() (ast.Statement, error) {

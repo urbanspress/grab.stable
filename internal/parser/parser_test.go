@@ -359,3 +359,34 @@ show res
 		t.Fatalf("Format() not idempotent:\n%s", formattedAgain)
 	}
 }
+
+func TestParseAndFormatGRAB05DoTogether(t *testing.T) {
+	source := `use http
+use json
+
+do   together
+  set a to   wait for   http.get using "http://127.0.0.1:9000/a"
+  set b to http.get_json using "http://127.0.0.1:9000/b"
+  wait for   call ping
+end
+`
+	wantFormatted := `use http
+use json
+
+do together
+  set a to wait for http.get using "http://127.0.0.1:9000/a"
+  set b to wait for http.get_json using "http://127.0.0.1:9000/b"
+  wait for call ping
+end
+`
+	formatted, err := Format("grab05.grab", source)
+	if err != nil {
+		t.Fatalf("Format() error = %v", err)
+	}
+	if formatted != wantFormatted {
+		t.Fatalf("Format() =\n%s\nwant:\n%s", formatted, wantFormatted)
+	}
+	if _, err := Parse("empty_do.grab", "do together\nend\n"); err == nil {
+		t.Fatalf("expected error for empty do together block")
+	}
+}

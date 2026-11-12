@@ -164,6 +164,25 @@ func (f *sourceFormatter) formatStatement(stmt ast.Statement, indent int) {
 		f.emitCodeLine(node.Span.End.Line, indent, "end")
 	case *ast.RaiseStatement:
 		f.emitCodeLine(node.Span.Start.Line, indent, "raise "+FormatExpression(node.Value))
+	case *ast.DoTogetherStatement:
+		f.emitCodeLine(node.Span.Start.Line, indent, "do together")
+		for _, task := range node.Tasks {
+			if task.Call != nil {
+				line := "wait for call " + task.Call.QualifiedName()
+				if len(task.Call.Arguments) > 0 {
+					args := make([]string, len(task.Call.Arguments))
+					for i, a := range task.Call.Arguments {
+						args[i] = FormatExpression(a)
+					}
+					line += " using " + strings.Join(args, ", ")
+				}
+				f.emitCodeLine(task.Span.Start.Line, indent+1, line)
+			} else {
+				f.emitCodeLine(task.Span.Start.Line, indent+1, "set "+task.Name+" to wait for "+FormatExpression(task.Value))
+			}
+		}
+		f.emitPriorComments(node.Span.End.Line, indent+1)
+		f.emitCodeLine(node.Span.End.Line, indent, "end")
 	case *ast.GiveBackStatement:
 		if node.Value == nil {
 			f.emitCodeLine(node.Span.Start.Line, indent, "give back")

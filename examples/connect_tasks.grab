@@ -1,0 +1,31 @@
+# connect_tasks.grab — GRAB 0.5 JSON parsing, HTTP capabilities, and async task groups.
+# Demonstrates: use json, use http, do together / wait for, lossless decimal JSON, and default-deny network safety.
+
+use json
+use http
+use text
+use math
+
+make decode_item using payload
+  set item to json.parse using payload
+  set taxed to math.round using (item.price times 1.08), 2
+  give back record {sku: item.sku, name: item.name, price: item.price, taxed: taxed}
+end
+
+do together
+  set coffee to wait for (decode_item using "{\"sku\": \"A-17\", \"name\": \"Roast Coffee\", \"price\": 19.95}")
+  set grinder to wait for (decode_item using "{\"sku\": \"B-42\", \"name\": \"Burr Grinder\", \"price\": 89.50}")
+end
+
+show coffee.name joined with " (" joined with coffee.sku joined with "): $" joined with (text.from using coffee.taxed)
+show grinder.name joined with " (" joined with grinder.sku joined with "): $" joined with (text.from using grinder.taxed)
+
+set order_summary to record {items: [coffee.sku, grinder.sku], subtotal: coffee.price plus grinder.price, taxed_total: coffee.taxed plus grinder.taxed}
+show "Order JSON: " joined with (json.stringify using order_summary)
+
+try
+  set remote_status to http.get using "https://api.example.com/shipping"
+  show "Remote shipping status: " joined with (text.from using remote_status.status)
+catch err
+  show "Network guard [" joined with err.code joined with "]: using local shipping fallback ($5.00)"
+end

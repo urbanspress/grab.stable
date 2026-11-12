@@ -83,6 +83,18 @@ func TestLexerLexAll(t *testing.T) {
 				"\n", "",
 			},
 		},
+		{
+			name:  "GRAB 0.5 keywords and non-reserved http/json module names",
+			input: "do together wait for http json\n",
+			kinds: []TokenKind{
+				TokenDo, TokenTogether, TokenWait, TokenFor,
+				TokenIdentifier, TokenIdentifier, TokenNewline, TokenEOF,
+			},
+			lexemes: []string{
+				"do", "together", "wait", "for",
+				"http", "json", "\n", "",
+			},
+		},
 	}
 
 	for _, tt := range tests {

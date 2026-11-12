@@ -70,3 +70,12 @@ opening quote rather than extending through subsequent content/newline.
 - structured error model (`try ... catch <ident> ... end` and `raise <expr>`), error records (`code`, `category`, `message`, `line`, `column`), exhaustive branch bindings, and non-catchable fatal safety limits (`GRAB-E306`, `GRAB-E307`);
 - capability-based default-deny filesystem permissions (`--allow-read <dir>`, `--allow-write <dir>`), path confinement, symlink checking, `10 MiB` file limit, and mandatory sensitive-path blocklist (`GRAB-E401`);
 - CLI subcommands `grab check` and `grab format [--write]` plus diagnostic modes (`--diagnostics beginner|developer|production`).
+
+## GRAB 0.5 HTTP client, JSON, and async task groups conformance
+
+`grab05_conformance_test.go` verifies `specifications/GRAB-CONNECT-SPEC-005.md`:
+- reserved GRAB 0.5 keywords (`do`, `together`, `wait`);
+- built-in `use json` module (`json.parse`, `json.stringify`, `json.stringify_pretty`), lossless exact `integer` and `decimal` number preservation, identifier-keyed object decoding into `record` (and other objects into `map`), and unified `.field` / `at` / `has` lookup across both `record` and `map`;
+- built-in `use http` module (`http.get`, `http.get_json`, `http.post`, `http.put`, `http.patch`, `http.delete`, `http.request`), automatic JSON body encoding, custom headers, bounded timeouts (`timeout_ms`), bounded retries (`retries`), `10 MiB` body limit, and sensitive header stripping on cross-host redirects;
+- capability-based default-deny network permissions (`--allow-net <host[,host...]>`), wildcard rejection, and SSRF protection (blocking loopback, private RFC 1918, link-local, and cloud-metadata `169.254.169.254` IP ranges with `GRAB-E402`);
+- structured concurrency (`do together ... end`), snapshot isolation, max 16 tasks (`GRAB-E208`), distinct target variable validation (`GRAB-E208`), top-to-bottom deterministic output and binding commit order, sibling cancellation, and deterministic error propagation inside `try`/`catch`.

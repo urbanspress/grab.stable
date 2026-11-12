@@ -141,6 +141,27 @@ type RaiseStatement struct {
 func (statement *RaiseStatement) SourceSpan() lexer.Span { return statement.Span }
 func (*RaiseStatement) statementNode()                   {}
 
+// TaskStatement is a single concurrent task inside a DoTogetherStatement
+// (`set <name> to [wait for] <expr>` or `[wait for] <call_statement>`).
+type TaskStatement struct {
+	Name       string
+	NameSpan   lexer.Span
+	HasWaitFor bool
+	Value      Expression
+	Call       *CallStatement
+	Span       lexer.Span
+}
+
+// DoTogetherStatement executes its Tasks concurrently in an isolated task group
+// and commits results in source order (`do together ... end`).
+type DoTogetherStatement struct {
+	Tasks []*TaskStatement
+	Span  lexer.Span
+}
+
+func (statement *DoTogetherStatement) SourceSpan() lexer.Span { return statement.Span }
+func (*DoTogetherStatement) statementNode()                   {}
+
 // GiveBackStatement returns a value (or nothing if Value is nil) from a function.
 type GiveBackStatement struct {
 	Value Expression

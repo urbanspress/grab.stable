@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GRAB 0.5 Features Guide — HTTP Client, JSON &amp; Async Task Groups</title>
+<style>
+  :root {
+    --page-bg: #f8fafc;
+    --surface: #ffffff;
+    --surface-muted: #f1f5f9;
+    --border: #e2e8f0;
+    --text-main: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    --accent: #0284c7;
+    --accent-soft: #e0f2fe;
+    --green: #15803d;
+    --green-soft: #dcfce7;
+    --amber: #b45309;
+    --amber-soft: #fef3c7;
+    --red: #b91c1c;
+    --red-soft: #fee2e2;
+    --purple: #6d28d9;
+    --purple-soft: #ede9fe;
+    --term-bg: #0b1120;
+    --term-bar: #162033;
+    --term-border: #1e293b;
+    --term-text: #e2e8f0;
+    --radius: 12px;
+    --shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--page-bg);
+    color: var(--text-main);
+    line-height: 1.6;
+  }
+
+  a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  a:hover {
+    text-decoration: underline;
+  }
+
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+
+  .topbar-inner {
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 14px 24px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--text-main);
+  }
+
+  .brand-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: var(--term-bg);
+    color: #38bdf8;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  .milestone-nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+  }
+
+  .nav-pill {
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+
+  .nav-pill:hover {
+    background: var(--surface-muted);
+    text-decoration: none;
+  }
+
+  .nav-pill.active {
+    background: var(--term-bg);
+    color: #ffffff;
+    border-color: var(--term-bg);
+  }
+
+  .nav-pill.future {
+    color: var(--text-muted);
+    border-style: dashed;
+  }
+
+  .container {
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 36px 24px 64px;
+  }
+
+  .hero {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: var(--shadow);
+    margin-bottom: 32px;
+  }
+
+  .status-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .badge {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 999px;
+    letter-spacing: 0.3px;
+  }
+
+  .badge-amber { background: var(--amber-soft); color: var(--amber); }
+  .badge-blue { background: var(--accent-soft); color: var(--accent); }
+  .badge-green { background: var(--green-soft); color: var(--green); }
+  .badge-purple { background: var(--purple-soft); color: var(--purple); }
+  .badge-red { background: var(--red-soft); color: var(--red); }
+
+  .hero h1 {
+    margin: 0 0 12px;
+    font-size: 32px;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+
+  .hero-lead {
+    margin: 0 0 20px;
+    font-size: 17px;
+    color: var(--text-secondary);
+    max-width: 880px;
+  }
+
+  .summary-strip {
+    background: var(--accent-soft);
+    border-left: 4px solid var(--accent);
+    padding: 14px 18px;
+    border-radius: 8px;
+    font-size: 15px;
+    color: #0c4a6e;
+  }
+
+  .section-heading {
+    margin: 36px 0 8px;
+    font-size: 24px;
+    letter-spacing: -0.01em;
+  }
+
+  .section-sub {
+    margin: 0 0 20px;
+    color: var(--text-secondary);
+    font-size: 15px;
+  }
+
+  .benefits-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+    margin-bottom: 36px;
+  }
+
+  @media (min-width: 860px) {
+    .benefits-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .benefit-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: var(--shadow);
+  }
+
+  .benefit-card h2 {
+    margin: 0 0 14px;
+    font-size: 19px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .benefit-list {
+    margin: 0;
+    padding-left: 18px;
+    color: var(--text-secondary);
+    font-size: 15px;
+  }
+
+  .benefit-list li {
+    margin-bottom: 10px;
+  }
+
+  .benefit-list strong {
+    color: var(--text-main);
+  }
+
+  .feature-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    margin-bottom: 28px;
+    overflow: hidden;
+  }
+
+  .feature-head {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  }
+
+  .feature-head h3 {
+    margin: 0;
+    font-size: 20px;
+  }
+
+  .feature-desc {
+    padding: 16px 24px 0;
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 15px;
+  }
+
+  .side-by-side {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 18px;
+    padding: 20px 24px;
+  }
+
+  @media (min-width: 900px) {
+    .side-by-side {
+      grid-template-columns: 1.15fr 0.85fr;
+      align-items: stretch;
+    }
+  }
+
+  .window {
+    background: var(--term-bg);
+    color: var(--term-text);
+    border: 1px solid var(--term-border);
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 13px;
+  }
+
+  .window-bar {
+    background: var(--term-bar);
+    padding: 9px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--term-border);
+  }
+
+  .dots {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  .dot-r { background: #ef4444; }
+  .dot-y { background: #eab308; }
+  .dot-g { background: #22c55e; }
+
+  .win-title {
+    color: #94a3b8;
+    font-size: 12px;
+  }
+
+  .win-body {
+    padding: 16px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.55;
+    flex: 1;
+  }
+
+  .kw { color: #c084fc; font-weight: 600; }
+  .mod { color: #38bdf8; font-weight: 600; }
+  .str { color: #4ade80; }
+  .num { color: #facc15; }
+  .comm { color: #64748b; font-style: italic; }
+  .prompt { color: #38bdf8; font-weight: 700; }
+  .ok { color: #4ade80; font-weight: 600; }
+  .err { color: #f87171; font-weight: 700; }
+  .hint { color: #38bdf8; font-weight: 700; }
+
+  .browser-preview {
+    background: var(--surface-muted);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .browser-bar {
+    background: #e2e8f0;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .url-pill {
+    flex: 1;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 3px 10px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+    color: var(--text-main);
+  }
+
+  .browser-canvas {
+    background: #ffffff;
+    padding: 18px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .product-card-mock {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 16px;
+    background: #ffffff;
+  }
+
+  .price-badge {
+    display: inline-block;
+    background: #dcfce7;
+    color: #166534;
+    font-weight: 800;
+    font-size: 18px;
+    padding: 4px 12px;
+    border-radius: 8px;
+  }
+
+  .takeaway-bar {
+    background: var(--surface-muted);
+    border-top: 1px solid var(--border);
+    padding: 12px 24px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  @media (min-width: 860px) {
+    .takeaway-bar {
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+  }
+
+  .takeaway-bar strong {
+    color: var(--text-main);
+  }
+
+  .milestone-footer {
+    margin-top: 44px;
+    padding: 22px 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    font-size: 14px;
+  }
+
+  code.inline {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    background: var(--surface-muted);
+    padding: 2px 6px;
+    border-radius: 5px;
+    font-size: 0.9em;
+    color: var(--text-main);
+  }
+</style>
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="index.html">
+        <span class="brand-mark">G</span>
+        <span>GRAB Milestone Feature Guides</span>
+      </a>
+      <nav class="milestone-nav" aria-label="Milestone versions">
+        <a class="nav-pill" href="index.html">All Milestones Hub</a>
+        <a class="nav-pill" href="index.html#grab-01">0.1 Foundation</a>
+        <a class="nav-pill" href="index.html#grab-02">0.2 Preview</a>
+        <a class="nav-pill" href="index.html#grab-03">0.3 Language</a>
+        <a class="nav-pill" href="grab_04_features.html">0.4 Stdlib &amp; Safety</a>
+        <a class="nav-pill active" href="grab_05_features.html">0.5 HTTP, JSON &amp; Async</a>
+        <a class="nav-pill future" href="index.html#grab-06" title="Planned milestone">0.6 Server (Planned)</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <section class="hero">
+      <div class="status-row">
+        <span class="badge badge-green">Complete &amp; Verified</span>
+        <span class="badge badge-blue">Milestone GRAB 0.5</span>
+        <span class="badge badge-green">Zero Breaking Changes (0.1–0.4 Compatible)</span>
+      </div>
+      <h1>GRAB 0.5: Universal HTTP Client, Lossless JSON &amp; Async Task Groups</h1>
+      <p class="hero-lead">
+        GRAB 0.5 connects your programs to the outside world with <code class="inline">use http</code> and
+        <code class="inline">use json</code>, runs independent API calls in parallel with
+        <code class="inline">do together</code> / <code class="inline">wait for</code>, and locks down outbound
+        connections with <code class="inline">--allow-net</code> and automatic SSRF security.
+      </p>
+      <div class="summary-strip">
+        <strong>In one sentence:</strong> GRAB 0.5 lets your app talk to live APIs (like payment gateways, shipping calculators, and product catalogs) simultaneously, without losing exact dollar precision or opening security holes.
+      </div>
+    </section>
+
+    <h2 class="section-heading">Why GRAB 0.5 Matters (In Plain English)</h2>
+    <p class="section-sub">How every upgrade in <code class="inline">specifications/GRAB-CONNECT-SPEC-005.md</code> helps both the builder and the customer visiting the website.</p>
+
+    <section class="benefits-grid">
+      <article class="benefit-card">
+        <h2><span class="badge badge-blue">Builder</span> What It Does for the Coder</h2>
+        <ul class="benefit-list">
+          <li><strong>One-line API calls (<code class="inline">use http</code>):</strong> Fetch or send data with <code class="inline">http.get</code>, <code class="inline">http.get_json</code>, <code class="inline">http.post</code>, <code class="inline">http.put</code>, <code class="inline">http.patch</code>, and <code class="inline">http.delete</code>—with built-in timeouts and automatic retries.</li>
+          <li><strong>Exact-money JSON (<code class="inline">use json</code>):</strong> When JSON contains <code class="inline">{"price": 19.95}</code>, GRAB decodes <code class="inline">19.95</code> as an exact base-10 <code class="inline">decimal</code> (not a blurry binary float) and lets you read <code class="inline">item.price</code> right away.</li>
+          <li><strong>Easy parallel tasks (<code class="inline">do together</code> / <code class="inline">wait for</code>):</strong> Run 3 API calls at the same time in a few readable lines without callbacks, race conditions, or unpredictable output order.</li>
+          <li><strong>Explicit network allowlists (<code class="inline">--allow-net</code>):</strong> You control exactly which domains a script is allowed to contact.</li>
+        </ul>
+      </article>
+
+      <article class="benefit-card">
+        <h2><span class="badge badge-green">Visitor</span> What It Does for the Website Visitor</h2>
+        <ul class="benefit-list">
+          <li><strong>Faster page loads:</strong> Instead of waiting for inventory, shipping rates, and promotions one after another (e.g. 300ms + 300ms + 300ms = 900ms), <code class="inline">do together</code> fetches all three at once in ~300ms.</li>
+          <li><strong>Accurate prices &amp; totals:</strong> Visitors never see penny-rounding glitches from external JSON APIs because GRAB preserves exact decimal numbers end to end.</li>
+          <li><strong>Resilient checkout &amp; live data:</strong> Bounded timeouts and safe retries mean a brief hiccup on an external API won't freeze the visitor's browser indefinitely.</li>
+          <li><strong>Protection against internal server leaks (SSRF):</strong> Even if an external URL redirects somewhere malicious, GRAB automatically blocks private internal networks and cloud metadata addresses.</li>
+        </ul>
+      </article>
+    </section>
+
+    <h2 class="section-heading">Features in Action: Developer Console vs. Website Experience</h2>
+    <p class="section-sub">Visual previews from <code class="inline">specifications/GRAB-CONNECT-SPEC-005.md</code>.</p>
+
+    <!-- Feature 1 -->
+    <article class="feature-block">
+      <div class="feature-head">
+        <h3>1. One-Line API Fetch &amp; Lossless JSON (<code class="inline">use http</code> + <code class="inline">use json</code>)</h3>
+        <span class="badge badge-green">Exact Decimal Preservation</span>
+      </div>
+      <p class="feature-desc">
+        <code class="inline">http.get_json</code> fetches JSON from an approved API and decodes JSON objects directly into GRAB records and exact decimals so you can use <code class="inline">item.price</code> and <code class="inline">text.from</code> immediately.
+      </p>
+      <div class="side-by-side">
+        <div class="window">
+          <div class="window-bar">
+            <div class="dots"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span></div>
+            <span class="win-title">live_catalog.grab — Code Editor</span>
+          </div>
+          <div class="win-body"><span class="kw">use</span> <span class="mod">http</span>
+<span class="kw">use</span> <span class="mod">json</span>
+<span class="kw">use</span> <span class="mod">text</span>
+
+<span class="comm"># Fetch JSON{"name": "GRAB Starter Kit", "price": 19.95, "in_stock": yes}</span>
+<span class="kw">set</span> item <span class="kw">to</span> <span class="mod">http.get_json</span> <span class="kw">using</span> <span class="str">"https://api.example.com/products/A-17"</span>
+
+<span class="comm"># item.price is already an exact GRAB decimal (19.95)!</span>
+<span class="kw">set</span> price_badge <span class="kw">to</span> <span class="str">"$"</span> <span class="kw">joined with</span> (<span class="mod">text.from</span> <span class="kw">using</span> item.price)
+<span class="kw">show</span> item.name <span class="kw">joined with</span> <span class="str">" — "</span> <span class="kw">joined with</span> price_badge</div>
+        </div>
+
+        <div class="browser-preview">
+          <div class="browser-bar">
+            <span>Live Storefront Preview</span>
+            <span class="url-pill">http://127.0.0.1:8080/</span>
+          </div>
+          <div class="browser-canvas">
+            <div class="product-card-mock">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <strong style="font-size:17px;">GRAB Starter Kit</strong>
+                  <div style="font-size:13px; color:#64748b;">Fetched live from api.example.com</div>
+                </div>
+                <span class="price-badge">$19.95</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="takeaway-bar">
+        <div><strong>Developer benefit:</strong> No manual string parsing or floating-point rounding bugs.</div>
+        <div><strong>Visitor benefit:</strong> Always sees up-to-date catalog prices and accurate currency badges.</div>
+      </div>
+    </article>
+
+    <!-- Feature 2 -->
+    <article class="feature-block">
+      <div class="feature-head">
+        <h3>2. Parallel API Calls with <code class="inline">do together</code> / <code class="inline">wait for</code></h3>
+        <span class="badge badge-purple">Deterministic Concurrency</span>
+      </div>
+      <p class="feature-desc">
+        Need product details, live stock count, and shipping window at the same time? Wrap them in <code class="inline">do together ... end</code>. GRAB runs them in parallel, isolates their memory so they cannot collide, and always delivers results in exact top-to-bottom order.
+      </p>
+      <div class="side-by-side">
+        <div class="window">
+          <div class="window-bar">
+            <div class="dots"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span></div>
+            <span class="win-title">checkout_summary.grab — Code Editor</span>
+          </div>
+          <div class="win-body"><span class="kw">use</span> <span class="mod">http</span>
+
+<span class="kw">try</span>
+  <span class="kw">do together</span>
+    <span class="kw">set</span> stock <span class="kw">to</span> <span class="kw">wait for</span> <span class="mod">http.get_json</span> <span class="kw">using</span> <span class="str">"https://api.example.com/stock"</span>
+    <span class="kw">set</span> ship <span class="kw">to</span> <span class="kw">wait for</span> <span class="mod">http.get_json</span> <span class="kw">using</span> <span class="str">"https://api.example.com/shipping"</span>
+  <span class="kw">end</span>
+  <span class="kw">show</span> <span class="str">"Stock: "</span> <span class="kw">joined with</span> stock.status <span class="kw">joined with</span> <span class="str">" | Delivery: "</span> <span class="kw">joined with</span> ship.eta
+<span class="kw">catch</span> err
+  <span class="kw">show</span> <span class="str">"Live estimate unavailable ("</span> <span class="kw">joined with</span> err.code <span class="kw">joined with</span> <span class="str">")"</span>
+<span class="kw">end</span></div>
+        </div>
+
+        <div class="window">
+          <div class="window-bar">
+            <div class="dots"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span></div>
+            <span class="win-title">Terminal — Execution Timeline</span>
+          </div>
+          <div class="win-body"><span class="prompt">$</span> grab run --allow-net api.example.com checkout_summary.grab
+
+<span class="comm"># Task 1 (stock) and Task 2 (shipping) start at the exact same moment</span>
+<span class="comm"># Both finish in parallel; results commit in top-to-bottom source order:</span>
+<span class="ok">Stock: In Stock | Delivery: 2-Day Express</span></div>
+        </div>
+      </div>
+      <div class="takeaway-bar">
+        <div><strong>Developer benefit:</strong> If one task fails, GRAB automatically cancels the other in-flight requests and passes the error cleanly to <code class="inline">catch err</code>.</div>
+        <div><strong>Visitor benefit:</strong> Pages that combine multiple backend services load in a fraction of the time.</div>
+      </div>
+    </article>
+
+    <!-- Feature 3 -->
+    <article class="feature-block">
+      <div class="feature-head">
+        <h3>3. Default-Deny Network Security (<code class="inline">--allow-net</code> &amp; SSRF Protection)</h3>
+        <span class="badge badge-red">Capability Security (GRAB-E402)</span>
+      </div>
+      <p class="feature-desc">
+        Just like files in GRAB 0.4, network access is locked by default. You grant access per host with <code class="inline">--allow-net</code>, and GRAB automatically blocks sneaky redirects to internal private networks or cloud metadata servers (<code class="inline">169.254.169.254</code>).
+      </p>
+      <div class="side-by-side">
+        <div class="window">
+          <div class="window-bar">
+            <div class="dots"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span></div>
+            <span class="win-title">Blocked Request (No --allow-net Flag)</span>
+          </div>
+          <div class="win-body"><span class="prompt">$</span> grab run --diagnostics beginner live_catalog.grab
+<span class="err">live_catalog.grab:6:13: error [GRAB-E402] (network permission denied):</span> outbound network access to "api.example.com" requires --allow-net permission
+  6 | set item to http.get_json using "https://api.example.com/products/A-17"
+    |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+<span class="hint">Hint:</span> Re-run with --allow-net api.example.com to allow requests to this host.</div>
+        </div>
+
+        <div class="window">
+          <div class="window-bar">
+            <div class="dots"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span></div>
+            <span class="win-title">Permitted Request (--allow-net api.example.com)</span>
+          </div>
+          <div class="win-body"><span class="prompt">$</span> grab run --allow-net api.example.com live_catalog.grab
+<span class="ok">GRAB Starter Kit — $19.95</span></div>
+        </div>
+      </div>
+      <div class="takeaway-bar">
+        <div><strong>Developer benefit:</strong> Clear <code class="inline">GRAB-E402</code> diagnostic and beginner hint whenever a domain isn't allowlisted yet.</div>
+        <div><strong>Visitor &amp; server benefit:</strong> Scripts can never silently phone home to unknown servers or probe private internal infrastructure.</div>
+      </div>
+    </article>
+
+    <footer class="milestone-footer">
+      <div>
+        <strong>Previous Milestone:</strong> <a href="grab_04_features.html">&larr; GRAB 0.4 (Stdlib, Errors &amp; File Permissions)</a>
+      </div>
+      <div>
+        <a href="index.html">Back to All Milestones Hub</a>
+      </div>
+      <div>
+        <strong>Specification:</strong> <a href="../../specifications/GRAB-CONNECT-SPEC-005.md">specifications/GRAB-CONNECT-SPEC-005.md</a>
+      </div>
+    </footer>
+
+  </main>
+
+</body>
+</html>

@@ -320,7 +320,8 @@
       </a>
       <nav class="milestone-nav" aria-label="Milestone links">
         <a class="nav-pill active" href="index.html">All Milestones Hub</a>
-        <a class="nav-pill" href="grab_04_features.html">GRAB 0.4 Visual Guide &rarr;</a>
+        <a class="nav-pill" href="grab_04_features.html">GRAB 0.4 Guide</a>
+        <a class="nav-pill" href="grab_05_features.html">GRAB 0.5 Visual Guide &rarr;</a>
         <a class="nav-pill" href="../ROADMAP.md">ROADMAP.md</a>
       </nav>
     </div>
@@ -337,7 +338,7 @@
       </p>
     </section>
 
-    <h2 class="section-title">Released &amp; Active Milestones (GRAB 0.1 – 0.4)</h2>
+    <h2 class="section-title">Released &amp; Active Milestones (GRAB 0.1 – 0.5)</h2>
     <p class="section-sub">Each version builds cleanly on the last while keeping existing <code class="inline">.grab</code> programs compatible.</p>
 
     <section class="grid">
@@ -406,7 +407,7 @@
       </article>
 
       <!-- GRAB 0.4 -->
-      <article class="card highlight" id="grab-04">
+      <article class="card" id="grab-04">
         <div>
           <div class="card-top">
             <span class="version-label">GRAB 0.4</span>
@@ -426,10 +427,31 @@
         </div>
       </article>
 
+      <!-- GRAB 0.5 -->
+      <article class="card highlight" id="grab-05">
+        <div>
+          <div class="card-top">
+            <span class="version-label">GRAB 0.5</span>
+            <span class="badge badge-green">Complete</span>
+          </div>
+          <h3>HTTP Client, Lossless JSON &amp; Async Task Groups</h3>
+          <p>Connects GRAB programs to external APIs safely with <code class="inline">use http</code>, exact-decimal <code class="inline">use json</code>, <code class="inline">--allow-net</code> permissions, and parallel <code class="inline">do together</code> / <code class="inline">wait for</code> blocks.</p>
+          <ul class="feature-bullets">
+            <li>Universal HTTP client (<code class="inline">GET</code>, <code class="inline">POST</code>, <code class="inline">PUT</code>, <code class="inline">PATCH</code>, <code class="inline">DELETE</code>, <code class="inline">get_json</code>) with custom headers, timeouts, and bounded retries.</li>
+            <li>Lossless JSON encoding/decoding preserving exact <code class="inline">integer</code> and <code class="inline">decimal</code> numbers and unified <code class="inline">.field</code> / <code class="inline">at</code> lookup.</li>
+            <li>Default-deny <code class="inline">--allow-net</code> host allowlists, SSRF protection, and deterministic <code class="inline">do together</code> / <code class="inline">wait for</code> concurrency.</li>
+          </ul>
+        </div>
+        <div class="card-actions">
+          <span>Spec: <a href="../../specifications/GRAB-CONNECT-SPEC-005.md">GRAB-CONNECT-SPEC-005.md</a></span>
+          <a class="btn-primary" href="grab_05_features.html">Open GRAB 0.5 Visual Guide &rarr;</a>
+        </div>
+      </article>
+
     </section>
 
-    <h2 class="section-title" id="grab-05">Planned Roadmap Milestones (GRAB 0.5 – 1.0)</h2>
-    <p class="section-sub">Intended future sequence in <a href="../ROADMAP.md">docs/ROADMAP.md</a>. Future guides (<code class="inline">grab_05_features.html</code>, etc.) will be added as each milestone is drafted and approved.</p>
+    <h2 class="section-title" id="grab-06">Planned Roadmap Milestones (GRAB 0.6 – 1.0)</h2>
+    <p class="section-sub">Intended future sequence in <a href="../ROADMAP.md">docs/ROADMAP.md</a>. Future guides (<code class="inline">grab_06_features.html</code>, etc.) will be added as each milestone is drafted and approved.</p>
 
     <table class="planned-table">
       <thead>
@@ -444,8 +466,8 @@
         <tr>
           <td><strong>GRAB 0.5</strong></td>
           <td>HTTP client (<code class="inline">GRAB Connect</code>), JSON, and async task groups (<code class="inline">do together</code> / <code class="inline">wait for</code>)</td>
-          <td><span class="badge badge-slate">Planned (Not Yet Approved)</span></td>
-          <td style="color: var(--text-muted);"><code class="inline">grab_05_features.html</code> (Pending)</td>
+          <td><span class="badge badge-green">Complete</span></td>
+          <td><a href="grab_05_features.html"><code class="inline">grab_05_features.html</code> &rarr;</a></td>
         </tr>
         <tr>
           <td><strong>GRAB 0.6</strong></td>

@@ -277,6 +277,12 @@ func (l *Lexer) scanIdentifierOrBytes(start Position, first rune) (Token, error)
 		kind = TokenCatch
 	case "raise":
 		kind = TokenRaise
+	case "do":
+		kind = TokenDo
+	case "together":
+		kind = TokenTogether
+	case "wait":
+		kind = TokenWait
 	}
 	return l.token(kind, start), nil
 }

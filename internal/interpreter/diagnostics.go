@@ -133,6 +133,8 @@ func beginnerHint(code string, err error) string {
 		return "Pass the exact number of arguments expected by the function after 'using'."
 	case "GRAB-E205":
 		return "'give back' can only be used inside a 'make ... end' function."
+	case "GRAB-E208":
+		return "Each task in a 'do together ... end' block must set a distinct variable name (up to 16 tasks per block)."
 	case "GRAB-E301":
 		return "Check that the values have compatible types (for example, use 'text.from using <number>' before 'joined with')."
 	case "GRAB-E302":
@@ -151,8 +153,14 @@ func beginnerHint(code string, err error) string {
 		return "This error was raised by 'raise'. Wrap the call in 'try ... catch err ... end' to handle it gracefully."
 	case "GRAB-E309":
 		return "Check the input passed to the standard library function, or catch invalid input with 'try ... catch err ... end'."
+	case "GRAB-E310":
+		return "Check the URL and server status, or wrap the HTTP call in 'try ... catch err ... end' to handle network failures."
+	case "GRAB-E311":
+		return "The server took too long to respond. Increase 'timeout_ms' in options or wrap the call in 'try ... catch err ... end'."
 	case "GRAB-E401":
 		return "File access is locked by default. Grant folder access with '--allow-read <dir>' or '--allow-write <dir>' (sensitive files like .env and .git are always blocked)."
+	case "GRAB-E402":
+		return "Network access is locked by default. Re-run with '--allow-net <host>' to allow requests to this host (private/metadata IPs are blocked by default)."
 	default:
 		return "Review the line and column reported above to fix the issue."
 	}

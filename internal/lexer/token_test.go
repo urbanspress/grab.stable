@@ -67,6 +67,9 @@ func TestTokenKindString(t *testing.T) {
 		{kind: TokenTry, want: "try"},
 		{kind: TokenCatch, want: "catch"},
 		{kind: TokenRaise, want: "raise"},
+		{kind: TokenDo, want: "do"},
+		{kind: TokenTogether, want: "together"},
+		{kind: TokenWait, want: "wait"},
 		{kind: TokenKind(255), want: "unknown"},
 	}
 

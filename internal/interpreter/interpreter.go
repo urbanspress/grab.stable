@@ -1,21 +1,26 @@
 package interpreter
 
 import (
+	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"strconv"
 	"strings"
+	"sync"
 
 	"grab/internal/ast"
 	"grab/internal/lexer"
 	grabrt "grab/internal/runtime"
 )
 
-// Default execution safety bounds for GRAB 0.3.
+// Default execution safety bounds for GRAB 0.3–0.5.
 const (
 	DefaultMaxLoopSteps = 1_000_000
 	DefaultMaxCallDepth = 256
+	MaxDoTogetherTasks  = 16
 )
 
 // ErrorKind identifies a name-resolution, pre-execution validation, or runtime failure.
@@ -29,6 +34,7 @@ const (
 	UnknownFunction
 	FunctionArityMismatch
 	InvalidGiveBack
+	InvalidTaskGroup
 	TypeMismatch
 	DivisionByZero
 	AbsentFieldOrKey
@@ -38,7 +44,10 @@ const (
 	ExecutionLimitExceeded
 	UserRaisedError
 	StandardLibraryError
+	NetworkError
+	RequestTimeout
 	PermissionDenied
+	NetworkPermissionDenied
 )
 
 // String returns the stable specification category name for the interpreter error.
@@ -58,6 +67,8 @@ func (kind ErrorKind) String() string {
 		return "function arity mismatch"
 	case InvalidGiveBack:
 		return "invalid give back"
+	case InvalidTaskGroup:
+		return "invalid task group"
 	case DivisionByZero:
 		return "division by zero"
 	case AbsentFieldOrKey:
@@ -74,14 +85,20 @@ func (kind ErrorKind) String() string {
 		return "user raised error"
 	case StandardLibraryError:
 		return "standard library error"
+	case NetworkError:
+		return "network error"
+	case RequestTimeout:
+		return "request timeout"
 	case PermissionDenied:
 		return "permission denied"
+	case NetworkPermissionDenied:
+		return "network permission denied"
 	default:
 		return "unknown interpreter error"
 	}
 }
 
-// Code returns the stable GRAB 0.4 error code for the interpreter error kind.
+// Code returns the stable GRAB 0.4–0.5 error code for the interpreter error kind.
 func (kind ErrorKind) Code() string {
 	switch kind {
 	case UnboundVariable:
@@ -94,6 +111,8 @@ func (kind ErrorKind) Code() string {
 		return "GRAB-E204"
 	case InvalidGiveBack:
 		return "GRAB-E205"
+	case InvalidTaskGroup:
+		return "GRAB-E208"
 	case JoinedRequiresText, InvalidLiteral, TypeMismatch:
 		return "GRAB-E301"
 	case DivisionByZero:
@@ -112,8 +131,14 @@ func (kind ErrorKind) Code() string {
 		return "GRAB-E308"
 	case StandardLibraryError:
 		return "GRAB-E309"
+	case NetworkError:
+		return "GRAB-E310"
+	case RequestTimeout:
+		return "GRAB-E311"
 	case PermissionDenied:
 		return "GRAB-E401"
+	case NetworkPermissionDenied:
+		return "GRAB-E402"
 	default:
 		return "GRAB-E301"
 	}
@@ -180,9 +205,12 @@ func (e *Error) Error() string {
 			return fmt.Sprintf("%s: %s at line %d, column %d", e.Kind, e.Message, e.Span.Start.Line, e.Span.Start.Column)
 		}
 		return fmt.Sprintf("%s at line %d, column %d", e.Kind, e.Span.Start.Line, e.Span.Start.Column)
-	case StandardLibraryError:
+	case StandardLibraryError, NetworkError, RequestTimeout, NetworkPermissionDenied, InvalidTaskGroup:
 		if e.Err != nil {
 			return fmt.Sprintf("%s (%v) at line %d, column %d", e.Kind, e.Err, e.Span.Start.Line, e.Span.Start.Column)
+		}
+		if e.Name != "" {
+			return fmt.Sprintf("%s %q at line %d, column %d", e.Kind, e.Name, e.Span.Start.Line, e.Span.Start.Column)
 		}
 		return fmt.Sprintf("%s at line %d, column %d", e.Kind, e.Span.Start.Line, e.Span.Start.Column)
 	default:
@@ -193,6 +221,7 @@ func (e *Error) Error() string {
 // Options configures runtime capabilities and safety bounds for execution.
 type Options struct {
 	Permissions Permissions
+	DialContext func(ctx context.Context, network, addr string) (net.Conn, error)
 }
 
 // Run validates names and functions in the complete program before executing statements.
@@ -228,6 +257,7 @@ func RunWithEnvironmentAndOptions(program *ast.Program, output io.Writer, opts O
 		output:       output,
 		functions:    functions,
 		permissions:  opts.Permissions,
+		dialContext:  opts.DialContext,
 		maxLoopSteps: DefaultMaxLoopSteps,
 		maxCallDepth: DefaultMaxCallDepth,
 	}
@@ -412,6 +442,39 @@ func resolveStatement(statement ast.Statement, bound map[string]struct{}, venv v
 		return nil
 	case *ast.RaiseStatement:
 		return resolveExpression(node.Value, bound, venv)
+	case *ast.DoTogetherStatement:
+		if len(node.Tasks) == 0 || len(node.Tasks) > MaxDoTogetherTasks {
+			return &Error{Kind: InvalidTaskGroup, Span: node.Span}
+		}
+		seenTargets := make(map[string]struct{}, len(node.Tasks))
+		for _, task := range node.Tasks {
+			taskSnapshot := cloneBound(bound)
+			if task.Call != nil {
+				if err := resolveCall(task.Call.Module, task.Call.Name, task.Call.NameSpan, task.Call.Span, task.Call.Arguments, taskSnapshot, venv); err != nil {
+					return err
+				}
+				continue
+			}
+			if !venv.inFunction {
+				if _, exists := venv.functions[task.Name]; exists {
+					return &Error{Kind: DuplicateDefinition, Name: task.Name, Span: task.NameSpan}
+				}
+				if _, exists := venv.modules[task.Name]; exists {
+					return &Error{Kind: DuplicateDefinition, Name: task.Name, Span: task.NameSpan}
+				}
+			}
+			if _, exists := seenTargets[task.Name]; exists {
+				return &Error{Kind: InvalidTaskGroup, Name: task.Name, Span: task.NameSpan}
+			}
+			seenTargets[task.Name] = struct{}{}
+			if err := resolveExpression(task.Value, taskSnapshot, venv); err != nil {
+				return err
+			}
+		}
+		for name := range seenTargets {
+			bound[name] = struct{}{}
+		}
+		return nil
 	case *ast.GiveBackStatement:
 		if !venv.inFunction {
 			return &Error{Kind: InvalidGiveBack, Span: node.Span}
@@ -437,7 +500,7 @@ func resolveCall(module, name string, nameSpan, callSpan lexer.Span, args []ast.
 		if !ok {
 			return &Error{Kind: UnknownFunction, Name: qname, Span: nameSpan}
 		}
-		if len(args) != stdFn.arity {
+		if !stdFn.acceptsArity(len(args)) {
 			return &Error{Kind: FunctionArityMismatch, Name: qname, Span: callSpan}
 		}
 	} else {
@@ -565,15 +628,38 @@ func (s *scope) snapshot() map[string]grabrt.Value {
 	return out
 }
 
+func (s *scope) cloneSnapshot() *scope {
+	flat := make(map[string]grabrt.Value)
+	var chain []*scope
+	for cur := s; cur != nil; cur = cur.parent {
+		chain = append(chain, cur)
+	}
+	for i := len(chain) - 1; i >= 0; i-- {
+		for k, v := range chain[i].values {
+			flat[k] = v
+		}
+	}
+	return &scope{values: flat}
+}
+
 type execContext struct {
+	ctx          context.Context
 	output       io.Writer
 	functions    map[string]*ast.FunctionDef
 	permissions  Permissions
+	dialContext  func(ctx context.Context, network, addr string) (net.Conn, error)
 	loopSteps    int
 	maxLoopSteps int
 	callDepth    int
 	maxCallDepth int
 	callStack    []StackFrame
+}
+
+func (ctx *execContext) context() context.Context {
+	if ctx.ctx != nil {
+		return ctx.ctx
+	}
+	return context.Background()
 }
 
 func (ctx *execContext) attachStack(err error) error {
@@ -783,6 +869,10 @@ func (ctx *execContext) execBlock(statements []ast.Statement, env *scope) (grabr
 				return grabrt.Value{}, false, err
 			}
 			return val, true, nil
+		case *ast.DoTogetherStatement:
+			if err := ctx.execDoTogether(node, env); err != nil {
+				return grabrt.Value{}, false, err
+			}
 		case *ast.CallStatement:
 			if _, err := ctx.invokeCall(node.Module, node.Name, node.Span, node.Arguments, env); err != nil {
 				return grabrt.Value{}, false, err
@@ -790,6 +880,115 @@ func (ctx *execContext) execBlock(statements []ast.Statement, env *scope) (grabr
 		}
 	}
 	return grabrt.Nothing(), false, nil
+}
+
+func (ctx *execContext) execDoTogether(node *ast.DoTogetherStatement, env *scope) error {
+	taskCtx, cancel := context.WithCancel(ctx.context())
+	defer cancel()
+
+	type taskResult struct {
+		val        grabrt.Value
+		out        string
+		err        error
+		beforeStop bool
+	}
+
+	results := make([]taskResult, len(node.Tasks))
+	var wg sync.WaitGroup
+	var cancelOnce sync.Once
+	var mu sync.Mutex
+	cancelledBySibling := false
+
+	for i, task := range node.Tasks {
+		wg.Add(1)
+		taskEnv := env.cloneSnapshot()
+		var buf bytes.Buffer
+		childCtx := &execContext{
+			ctx:          taskCtx,
+			output:       &buf,
+			functions:    ctx.functions,
+			permissions:  ctx.permissions,
+			dialContext:  ctx.dialContext,
+			maxLoopSteps: ctx.maxLoopSteps,
+			maxCallDepth: ctx.maxCallDepth,
+			callDepth:    ctx.callDepth,
+			callStack:    append([]StackFrame(nil), ctx.callStack...),
+		}
+
+		go func(idx int, t *ast.TaskStatement, c *execContext, tEnv *scope, outBuf *bytes.Buffer) {
+			defer wg.Done()
+			var val grabrt.Value
+			var err error
+			if t.Call != nil {
+				_, err = c.invokeCall(t.Call.Module, t.Call.Name, t.Call.Span, t.Call.Arguments, tEnv)
+			} else {
+				val, err = c.evaluate(t.Value, tEnv)
+			}
+			mu.Lock()
+			wasBeforeStop := !cancelledBySibling
+			if err != nil {
+				cancelledBySibling = true
+			}
+			results[idx] = taskResult{
+				val:        val,
+				out:        outBuf.String(),
+				err:        err,
+				beforeStop: wasBeforeStop,
+			}
+			mu.Unlock()
+			if err != nil {
+				cancelOnce.Do(cancel)
+			}
+		}(i, task, childCtx, taskEnv, &buf)
+	}
+
+	wg.Wait()
+
+	// 1. Fatal errors (GRAB-E306/GRAB-E307) always take highest precedence in source order.
+	for _, res := range results {
+		if res.err != nil {
+			var interpErr *Error
+			if errors.As(res.err, &interpErr) && interpErr.IsFatal() {
+				return res.err
+			}
+		}
+	}
+	// 2. Primary task errors (not caused solely by sibling context cancellation) in top-to-bottom source order.
+	for _, res := range results {
+		if res.err != nil && !isSiblingCanceledError(res.err, res.beforeStop) {
+			return res.err
+		}
+	}
+	// 3. Fallback if any error occurred.
+	for _, res := range results {
+		if res.err != nil {
+			return res.err
+		}
+	}
+
+	// Commit outputs and variable bindings in deterministic top-to-bottom source order.
+	for i, task := range node.Tasks {
+		if results[i].out != "" {
+			if _, err := io.WriteString(ctx.output, results[i].out); err != nil {
+				return err
+			}
+		}
+		if task.Call == nil {
+			env.set(task.Name, results[i].val)
+		}
+	}
+	return nil
+}
+
+func isSiblingCanceledError(err error, beforeStop bool) bool {
+	if beforeStop {
+		return false
+	}
+	var interpErr *Error
+	if errors.As(err, &interpErr) && interpErr.Err != nil {
+		return errors.Is(interpErr.Err, context.Canceled)
+	}
+	return errors.Is(err, context.Canceled)
 }
 
 func (ctx *execContext) invokeCall(module, name string, span lexer.Span, argExprs []ast.Expression, callerEnv *scope) (grabrt.Value, error) {
@@ -871,7 +1070,7 @@ func (ctx *execContext) evaluate(expression ast.Expression, env *scope) (grabrt.
 		if err != nil {
 			return grabrt.Value{}, err
 		}
-		if target.Kind() != grabrt.RecordKind {
+		if target.Kind() != grabrt.RecordKind && target.Kind() != grabrt.MapKind {
 			return grabrt.Value{}, &Error{Kind: TypeMismatch, Span: node.Span}
 		}
 		val, ok := target.LookupEntry(node.Field)
@@ -903,7 +1102,7 @@ func (ctx *execContext) evaluate(expression ast.Expression, env *scope) (grabrt.
 				return grabrt.Value{}, &Error{Kind: IndexOutOfBounds, Span: node.Index.SourceSpan()}
 			}
 			return val, nil
-		case grabrt.MapKind:
+		case grabrt.MapKind, grabrt.RecordKind:
 			if indexVal.Kind() != grabrt.TextKind {
 				return grabrt.Value{}, &Error{Kind: TypeMismatch, Span: node.Span}
 			}
@@ -921,14 +1120,7 @@ func (ctx *execContext) evaluate(expression ast.Expression, env *scope) (grabrt.
 		if err != nil {
 			return grabrt.Value{}, err
 		}
-		if node.IsTextKey {
-			if target.Kind() != grabrt.MapKind {
-				return grabrt.Value{}, &Error{Kind: TypeMismatch, Span: node.Span}
-			}
-			_, ok := target.LookupEntry(node.Key)
-			return grabrt.Boolean(ok), nil
-		}
-		if target.Kind() != grabrt.RecordKind {
+		if target.Kind() != grabrt.MapKind && target.Kind() != grabrt.RecordKind {
 			return grabrt.Value{}, &Error{Kind: TypeMismatch, Span: node.Span}
 		}
 		_, ok := target.LookupEntry(node.Key)

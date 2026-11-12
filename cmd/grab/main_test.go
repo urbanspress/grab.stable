@@ -495,6 +495,23 @@ func TestCheckFormatAndFlags_CLI(t *testing.T) {
 			wantCode:   2,
 			wantErrSub: "usage:",
 		},
+		{
+			name:       "run rejects wildcard in --allow-net",
+			args:       []string{"run", "--allow-net=*", grabFile},
+			wantCode:   2,
+			wantErrSub: "usage:",
+		},
+		{
+			name:       "run rejects subdomain wildcard in --allow-net",
+			args:       []string{"run", "--allow-net", "*.example.com", grabFile},
+			wantCode:   2,
+			wantErrSub: "usage:",
+		},
+		{
+			name:     "run accepts comma-separated --allow-net hosts",
+			args:     []string{"run", "--allow-net", "api.example.com,localhost:8080", grabFile},
+			wantCode: 0,
+		},
 	}
 
 	for _, tc := range cases {

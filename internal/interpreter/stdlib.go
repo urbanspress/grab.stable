@@ -15,8 +15,17 @@ import (
 )
 
 type stdlibFunc struct {
-	arity int
-	fn    func(ctx *execContext, span lexer.Span, args []grabrt.Value) (grabrt.Value, error)
+	arity    int
+	minArity int
+	maxArity int
+	fn       func(ctx *execContext, span lexer.Span, args []grabrt.Value) (grabrt.Value, error)
+}
+
+func (f stdlibFunc) acceptsArity(n int) bool {
+	if f.maxArity > 0 {
+		return n >= f.minArity && n <= f.maxArity
+	}
+	return n == f.arity
 }
 
 var stdlibModules = map[string]map[string]stdlibFunc{
@@ -64,6 +73,20 @@ var stdlibModules = map[string]map[string]stdlibFunc{
 		"write_text": {arity: 2, fn: stdFilesWriteText},
 		"exists":     {arity: 1, fn: stdFilesExists},
 		"list_dir":   {arity: 1, fn: stdFilesListDir},
+	},
+	"json": {
+		"parse":            {arity: 1, fn: stdJSONParse},
+		"stringify":        {arity: 1, fn: stdJSONStringify},
+		"stringify_pretty": {arity: 1, fn: stdJSONStringifyPretty},
+	},
+	"http": {
+		"get":      {minArity: 1, maxArity: 2, fn: stdHTTPGet},
+		"get_json": {minArity: 1, maxArity: 2, fn: stdHTTPGetJSON},
+		"post":     {minArity: 2, maxArity: 3, fn: stdHTTPPost},
+		"put":      {minArity: 2, maxArity: 3, fn: stdHTTPPut},
+		"patch":    {minArity: 2, maxArity: 3, fn: stdHTTPPatch},
+		"delete":   {minArity: 1, maxArity: 2, fn: stdHTTPDelete},
+		"request":  {arity: 1, fn: stdHTTPRequest},
 	},
 }
 
