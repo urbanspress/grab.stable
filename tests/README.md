@@ -108,3 +108,18 @@ generations across reload, failed replacement, and generic errors. CLI tests
 cover database flags, maintenance execution, and check/format without DB I/O.
 See [setup and acceptance evidence](../docs/DATA-TESTING.md). Remote tests may
 skip offline, but must actually pass with real services for milestone acceptance.
+
+
+## GRAB 0.8 conformance
+
+`grab08_conformance_test.go` retains the cache/capability vectors.
+`grab08_realtime_conformance_test.go` exercises the runnable channel example,
+static rejection, authorization, publication/refetch, channel-only applications,
+independent admissions and trusted TLS proxy enforcement on actual connections.
+`grab08_workers_conformance_test.go` builds and supervises actual 1/2/4-worker
+processes, rolling reload, worker restart and supervisor death/orphan cleanup.
+`grab08_workflow_conformance_test.go` joins signed webhook ingestion, business and
+outbox transaction, idempotent fake-provider delivery, authorized notification and
+typed cached catalog refetch. Its opt-in remote vectors run two actual workers
+with Redis and each of MariaDB/PostgreSQL. These are finite conformance tests,
+not 30-minute load acceptance. See [SCALE-TESTING.md](../docs/SCALE-TESTING.md).

@@ -52,6 +52,24 @@ type Handle struct {
 	store *store
 }
 
+// Ready checks only already-open stores; it neither grants nor opens resources.
+func (m *Manager) Ready(ctx context.Context) bool {
+	if m == nil {
+		return true
+	}
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	if m.closed {
+		return false
+	}
+	for _, s := range m.stores {
+		if s.remote != nil && s.remote.client.Ping(ctx).Err() != nil {
+			return false
+		}
+	}
+	return true
+}
+
 func NewManager(g *platform.Grants, now func() time.Time) *Manager {
 	if now == nil {
 		now = time.Now
@@ -282,4 +300,20 @@ func limitResult(count, maximum, ttl int64) LimitResult {
 		r.RetryAfterMS = ttl
 	}
 	return r
+}
+
+func (m *Manager) PoolUse() int64 {
+	if m == nil {
+		return 0
+	}
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	var n int64
+	for _, s := range m.stores {
+		if s.remote != nil {
+			stats := s.remote.client.PoolStats()
+			n += int64(stats.TotalConns - stats.IdleConns)
+		}
+	}
+	return n
 }

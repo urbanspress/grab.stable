@@ -19,6 +19,7 @@ import (
 	"grab/internal/lexer"
 	"grab/internal/platform"
 	grabrt "grab/internal/runtime"
+	"grab/internal/telemetry"
 )
 
 // Default execution safety bounds for GRAB 0.3–0.5.
@@ -255,6 +256,9 @@ func (e *Error) Error() string {
 
 // Options configures runtime capabilities and safety bounds for execution.
 type Options struct {
+	DeferWorkers    bool
+	Metrics         *telemetry.Registry
+	Sockets         *socketRuntime
 	Integrations    *integrationRuntime
 	APIContractPath string
 	APIContract     *contracts.Document
@@ -308,6 +312,9 @@ func RunWithEnvironmentAndOptions(program *ast.Program, output io.Writer, opts O
 	if err != nil {
 		return nil, err
 	}
+	if e := ValidateSockets(program, opts.PlatformConfig, opts.APIContract); e != nil {
+		return nil, e
+	}
 	if err := ValidatePlatform(program, opts.PlatformConfig); err != nil {
 		return nil, err
 	}
@@ -338,6 +345,8 @@ func newExecContext(parent context.Context, output io.Writer, functions map[stri
 	}
 	return &execContext{
 		cacheManager:   opts.CacheManager,
+		sockets:        opts.Sockets,
+		metrics:        opts.Metrics,
 		integrations:   opts.Integrations,
 		contracts:      opts.APIContract,
 		data:           opts.DataManager.Scope(),
@@ -771,6 +780,11 @@ func (s *scope) cloneSnapshot() *scope {
 }
 
 type execContext struct {
+	metrics        *telemetry.Registry
+	sockets        *socketRuntime
+	socketIdentity *socketIdentity
+	socketCallback bool
+	trustedContext grabrt.Value
 	integrations   *integrationRuntime
 	eventWork      *events.Work
 	eventValue     grabrt.Value
@@ -1073,8 +1087,10 @@ func (ctx *execContext) execDoTogether(node *ast.DoTogetherStatement, env *scope
 		taskEnv := env.cloneSnapshot()
 		var buf bytes.Buffer
 		childCtx := &execContext{
+			metrics:      ctx.metrics,
 			cacheManager: ctx.cacheManager,
-			contracts:    ctx.contracts, apiOperation: ctx.apiOperation, apiRequest: ctx.apiRequest, apiInput: ctx.apiInput,
+			integrations: ctx.integrations, sockets: ctx.sockets, socketIdentity: ctx.socketIdentity, socketCallback: ctx.socketCallback, trustedContext: ctx.trustedContext,
+			contracts: ctx.contracts, apiOperation: ctx.apiOperation, apiRequest: ctx.apiRequest, apiInput: ctx.apiInput,
 			data:           ctx.dataManager.Scope(),
 			dataManager:    ctx.dataManager,
 			ctx:            taskCtx,

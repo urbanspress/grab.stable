@@ -65,6 +65,9 @@ type Config struct {
 	connectors map[string]Connector
 	events     map[string]EventStore
 	webhooks   map[string]Webhook
+	channels   map[string]Channel
+	workers    *Workers
+	telemetry  map[string]Telemetry
 }
 
 func (c *Config) HasCache(alias string) bool {
@@ -162,11 +165,15 @@ func Parse(raw []byte, manifestPath string) (*Config, error) {
 	}
 	// Until an adapter is implemented its declarations must fail closed, never
 	// be accepted as working configuration.
-	if len(in.Channels)+len(in.Workers)+len(in.Telemetry) != 0 {
-		return nil, ErrInvalid
-	}
+
 	c := &Config{caches: map[string]Cache{}, root: filepath.Dir(manifestPath)}
 	if e := c.parseIntegrations(in.Connectors, in.Events, in.Webhooks); e != nil {
+		return nil, e
+	}
+	if e := c.parseScaling(in.Workers, in.Telemetry); e != nil {
+		return nil, e
+	}
+	if e := c.parseChannels(in.Channels); e != nil {
 		return nil, e
 	}
 	spaces := map[string]bool{}
@@ -223,10 +230,27 @@ type Grants struct {
 }
 
 func (c *Config) Grant(flags map[string][]string) (*Grants, error) {
-	g := &Grants{config: c, cache: map[string]map[string]bool{}, other: map[string]map[string]bool{"connector": {}, "events": {}}}
+	g := &Grants{config: c, cache: map[string]map[string]bool{}, other: map[string]map[string]bool{"connector": {}, "events": {}, "channel": {}, "telemetry": {}}}
 	for subsystem, values := range flags {
 		for _, v := range values {
 			alias, mode, ok := strings.Cut(v, ":")
+			if subsystem == "telemetry" {
+				if c == nil {
+					return nil, ErrDenied
+				}
+				if _, exists := c.telemetry[v]; !exists || ok {
+					return nil, ErrDenied
+				}
+				g.other[subsystem][v] = true
+				continue
+			}
+			if subsystem == "channel" {
+				if !ok || c == nil || !c.HasChannel(alias) || (mode != "connect" && mode != "publish") {
+					return nil, ErrDenied
+				}
+				g.other[subsystem][v] = true
+				continue
+			}
 			if subsystem == "connector" || subsystem == "events" {
 				if !ok || !Identifier(alias) || !Identifier(mode) || c == nil {
 					return nil, ErrDenied

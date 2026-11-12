@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "workers": {
+    "max_db_connections": 8,
+    "max_redis_connections": 32,
+    "db_headroom": 2,
+    "redis_headroom": 5
+  },
+  "channels": {
+    "updates": {
+      "path": "/live",
+      "authorize": "authorize",
+      "receive": "receive",
+      "publish_authorize": "publish_authorize",
+      "client_type": "Notice",
+      "server_type": "Notice",
+      "origins": ["http://127.0.0.1:8080"],
+      "development": true,
+      "broker": {
+        "driver": "redis", "namespace": "demo-updates",
+        "host": "127.0.0.1", "port": 16388,
+        "tls": "disabled", "development": true, "pool_size": 4
+      }
+    }
+  }
+}

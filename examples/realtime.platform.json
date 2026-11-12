@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "channels": {
+    "updates": {
+      "path": "/live",
+      "authorize": "authorize",
+      "receive": "receive",
+      "publish_authorize": "publish_authorize",
+      "client_type": "Notice",
+      "server_type": "Notice",
+      "origins": ["http://127.0.0.1:8080"],
+      "development": true,
+      "broker": {"driver": "memory"}
+    }
+  }
+}

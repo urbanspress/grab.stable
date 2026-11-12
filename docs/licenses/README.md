@@ -1,12 +1,13 @@
-# GRAB 0.8 cache dependency notices
+# GRAB 0.8 dependency notices
 
-New pinned dependencies used by the local cache implementation:
+Pinned cache and WebSocket dependencies:
 
 | Module | Version | License notice |
 | --- | --- | --- |
 | `github.com/redis/go-redis/v9` | `v9.23.0` | [BSD 2-Clause](go-redis-BSD-2-Clause.txt) |
 | `github.com/cespare/xxhash/v2` | `v2.3.0` | [MIT](xxhash-MIT.txt) |
 | `go.uber.org/atomic` | `v1.12.0` | [MIT](atomic-MIT.txt) |
+| `github.com/coder/websocket` | `v1.8.14` | [ISC](coder-websocket-ISC.txt) |
 
 Notices were copied from the downloaded pinned modules. `go.sum` records module
 checksums. This lists the new cache dependencies, not every existing GRAB

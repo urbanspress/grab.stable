@@ -48,6 +48,25 @@ type Statement struct {
 
 func (p *Pool) Driver() string { return p.def.Driver }
 
+// Ready checks existing generation pools without creating new connections to
+// configured but unused databases or running migrations.
+func (m *Manager) Ready(ctx context.Context) bool {
+	if m == nil {
+		return true
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.closed.Load() {
+		return false
+	}
+	for _, p := range m.pools {
+		if p.db.PingContext(ctx) != nil {
+			return false
+		}
+	}
+	return true
+}
+
 type Scope struct {
 	hostOwned      bool
 	hostStatements []*Statement
@@ -709,4 +728,17 @@ func (m *Manager) Close() error {
 		}
 	}
 	return first
+}
+
+func (m *Manager) PoolUse() int64 {
+	if m == nil {
+		return 0
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var n int64
+	for _, p := range m.pools {
+		n += int64(p.db.Stats().InUse)
+	}
+	return n
 }

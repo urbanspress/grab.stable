@@ -3,6 +3,7 @@ module grab
 go 1.26.0
 
 require (
+	github.com/coder/websocket v1.8.14
 	github.com/go-sql-driver/mysql v1.10.1
 	github.com/jackc/pgx/v5 v5.13.0
 	github.com/redis/go-redis/v9 v9.23.0

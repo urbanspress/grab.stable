@@ -25,10 +25,13 @@ import (
 	"grab/internal/contracts"
 	"grab/internal/interpreter"
 	grabrt "grab/internal/runtime"
+	"grab/internal/telemetry"
 )
 
 // Config controls resource limits and deployment policy. Use DefaultConfig.
 type Config struct {
+	Workers, WorkerBasePort                       int
+	WorkerArguments, WorkerFiles                  []string
 	AllowPublic, Reload                           bool
 	TrustedProxy, Static, LogFormat               string
 	MaxConcurrency, MaxQueue                      int
@@ -38,9 +41,12 @@ type Config struct {
 }
 
 func DefaultConfig() Config {
-	return Config{MaxConcurrency: 64, MaxQueue: 128, QueueTimeout: time.Second, RequestTimeout: 10 * time.Second, ShutdownTimeout: 10 * time.Second, MaxBodyBytes: 1048576, LogFormat: "text", Diagnostics: interpreter.ModeDeveloper}
+	return Config{Workers: 1, MaxConcurrency: 64, MaxQueue: 128, QueueTimeout: time.Second, RequestTimeout: 10 * time.Second, ShutdownTimeout: 10 * time.Second, MaxBodyBytes: 1048576, LogFormat: "text", Diagnostics: interpreter.ModeDeveloper}
 }
 func (c Config) Validate() error {
+	if c.Workers < 1 || c.Workers > 32 {
+		return fmt.Errorf("workers must be 1 through 32")
+	}
 	if c.MaxConcurrency < 1 || c.MaxQueue < 0 || c.QueueTimeout <= 0 || c.RequestTimeout <= 0 || c.ShutdownTimeout <= 0 || c.MaxBodyBytes < 1 {
 		return fmt.Errorf("server limits must be positive (queue may be zero)")
 	}
@@ -100,6 +106,7 @@ func parseProxies(raw string) ([]*net.IPNet, error) {
 
 // Application supervises atomic generations and a bounded execution gate.
 type Application struct {
+	telemetry                *telemetry.Manager
 	active                   atomic.Pointer[PreparedApp]
 	draining                 atomic.Bool
 	ids                      atomic.Uint64
@@ -116,6 +123,7 @@ type Application struct {
 // Close retires the active resource generation after its final request drains.
 func (a *Application) Close() {
 	a.draining.Store(true)
+	a.telemetry.Close()
 	a.reloadMu.Lock()
 	p := a.active.Swap(nil)
 	a.reloadMu.Unlock()
@@ -130,6 +138,9 @@ func NewApplication(grabPath, templatePath string, opts interpreter.Options, cfg
 	}
 	if output == nil {
 		output = io.Discard
+	}
+	if opts.Metrics == nil {
+		opts.Metrics = &telemetry.Registry{}
 	}
 	a := &Application{cfg: cfg, slots: make(chan struct{}, cfg.MaxConcurrency), queue: make(chan struct{}, cfg.MaxQueue), grabPath: grabPath, templatePath: templatePath, opts: opts, output: output}
 	a.proxies, _ = parseProxies(cfg.TrustedProxy)
@@ -173,7 +184,24 @@ func (a *Application) Reload() error {
 	if e != nil {
 		return e
 	}
+	for _, d := range p.code.PlatformConfiguration().Channels() {
+		if a.staticPrefix != "" && strings.HasPrefix(d.Path, a.staticPrefix) {
+			p.retire()
+			return fmt.Errorf("channel collides with static path")
+		}
+	}
+	commitTelemetry, e := a.telemetry.PrepareReload(context.Background(), p.code.PlatformConfiguration(), p.code.PlatformCapabilities())
+	if e != nil {
+		p.retire()
+		return e
+	}
+	var routes []string
+	for _, r := range p.code.Routes() {
+		routes = append(routes, r.Definition.Path)
+	}
+	a.opts.Metrics.ConfigureRoutes(routes)
 	old := a.active.Swap(p)
+	commitTelemetry()
 	if old != nil {
 		old.retire()
 	}
@@ -373,6 +401,9 @@ func (a *Application) log(entry requestLog) {
 }
 func (a *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
+	if a.telemetry != nil {
+		a.telemetry.Registry.Add("requests_admitted", 1)
+	}
 	id := fmt.Sprintf("req_%x_%x", start.UnixNano(), a.ids.Add(1))
 	ip, scheme, host := a.metadata(r)
 	entry := requestLog{Timestamp: start.UTC().Format(time.RFC3339Nano), Level: "info", RequestID: id, Method: r.Method, Path: r.URL.Path, ClientIP: ip, Status: 500}
@@ -384,6 +415,7 @@ func (a *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var body []byte
 	var requestBody []byte
 	contracted := false
+	upgraded := false
 	fail := func(n int, message string) {
 		status = n
 		headers.Set("Content-Type", "text/plain; charset=utf-8")
@@ -393,6 +425,9 @@ func (a *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if recover() != nil {
 			entry.ErrorCode = "GRAB-E301"
 			fail(500, "grab: internal server error; request_id="+id)
+		}
+		if upgraded {
+			return
 		}
 		if contracted && status >= 400 && !strings.HasPrefix(headers.Get("Content-Type"), "application/json") {
 			headers.Set("Content-Type", "application/json; charset=utf-8")
@@ -409,6 +444,16 @@ func (a *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			entry.Level = "error"
 		}
 		a.log(entry)
+		if a.telemetry != nil {
+			a.telemetry.Registry.Observe(entry.Route, status, time.Since(start))
+			a.telemetry.Registry.Set("queue_used", int64(len(a.queue)))
+			a.telemetry.Registry.Add("requests_completed", 1)
+			a.telemetry.Registry.Add("request_duration_nanoseconds", time.Since(start).Nanoseconds())
+			if status == 503 {
+				a.telemetry.Registry.Add("requests_rejected", 1)
+			}
+			a.telemetry.Record(entry.Route, r.Header.Get("Traceparent"), start)
+		}
 		w.WriteHeader(status)
 		if r.Method != "HEAD" && status != 204 && status != 304 && status >= 200 {
 			_, _ = w.Write(body)
@@ -419,7 +464,7 @@ func (a *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		headers.Set("Content-Type", "application/json")
 		body = []byte(`{"status":"ok"}`)
 		if r.URL.Path == "/_ready" {
-			if a.active.Load() == nil || a.draining.Load() || len(a.slots) == cap(a.slots) && len(a.queue) == cap(a.queue) {
+			if !a.isReady() || a.draining.Load() || len(a.slots) == cap(a.slots) && len(a.queue) == cap(a.queue) {
 				status = 503
 				body = []byte(`{"status":"draining"}`)
 			} else {
@@ -452,6 +497,24 @@ func (a *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	defer p.release()
+	if alias, ok := p.code.Channel(r.URL.Path); ok {
+		if !a.acquire(r.Context()) {
+			fail(503, "service unavailable")
+			return
+		}
+		var released bool
+		release := func() {
+			if !released {
+				released = true
+				<-a.slots
+			}
+		}
+		defer release()
+		upgraded = true
+		request := grabrt.Record([]grabrt.Entry{{Name: "method", Value: grabrt.Text(r.Method)}, {Name: "path", Value: grabrt.Text(r.URL.Path)}, {Name: "headers", Value: mapStrings(r.Header, true)}, {Name: "scheme", Value: grabrt.Text(scheme)}, {Name: "client_ip", Value: grabrt.Text(ip)}})
+		p.code.ServeChannel(w, r, alias, scheme, request, release)
+		return
+	}
 	if hook, ok := p.code.Webhook(r.URL.Path); ok {
 		if r.Method != "POST" {
 			headers.Set("Allow", "POST")
@@ -704,4 +767,18 @@ func (a *Application) static(r *http.Request) (int, http.Header, []byte) {
 		}
 	}
 	return 200, h, b
+}
+
+func (a *Application) isReady() bool {
+	if a.draining.Load() {
+		return false
+	}
+	p := a.active.Load()
+	if p == nil || !p.acquire() {
+		return false
+	}
+	defer p.release()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	return p.code.Ready(ctx)
 }

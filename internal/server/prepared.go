@@ -156,7 +156,7 @@ func Load(grabPath, templatePath string, opts interpreter.Options, output io.Wri
 		}
 		app.files[opts.PlatformPath] = st.ModTime()
 	}
-	if len(p.Routes()) == 0 {
+	if len(p.Routes()) == 0 && len(opts.PlatformConfig.Channels()) == 0 {
 		_, tp, e := ResolveFiles(grabPath, templatePath)
 		if e != nil {
 			return nil, e
@@ -185,7 +185,9 @@ func Load(grabPath, templatePath string, opts interpreter.Options, output io.Wri
 		files[p] = t
 	}
 	app.files = files
-	p.StartWorkers()
+	if !opts.DeferWorkers {
+		p.StartWorkers()
+	}
 	success = true
 	return app, nil
 }
@@ -210,6 +212,7 @@ func (p *PreparedApp) release() {
 }
 func (p *PreparedApp) retire() {
 	p.code.StopWorkers()
+	p.code.StopSockets()
 	p.refsMu.Lock()
 	p.retired = true
 	closeNow := p.refs == 0

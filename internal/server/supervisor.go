@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"grab/internal/telemetry"
 	"io"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"time"
 
 	"grab/internal/interpreter"
@@ -40,6 +42,9 @@ func ServeWithOptions(ctx context.Context, addr, grabPath, templatePath string, 
 	return ServeWithConfig(ctx, addr, grabPath, templatePath, opts, DefaultConfig(), output, ready)
 }
 func ServeWithConfig(ctx context.Context, addr, grabPath, templatePath string, opts interpreter.Options, cfg Config, output io.Writer, ready chan<- string) error {
+	if cfg.Workers > 1 {
+		return serveWorkers(ctx, grabPath, templatePath, opts, cfg, output, ready)
+	}
 	if addr == "" {
 		addr = DefaultAddr
 	}
@@ -51,6 +56,12 @@ func ServeWithConfig(ctx context.Context, addr, grabPath, templatePath string, o
 		return e
 	}
 	defer a.Close()
+	if expected := os.Getenv("GRAB_WORKER_HASH"); expected != "" {
+		actual, e := SourceHash(grabPath, append([]string{opts.PlatformPath, opts.APIContractPath, templatePath}, cfg.WorkerFiles...))
+		if e != nil || actual != expected {
+			return fmt.Errorf("worker dependencies changed during preparation")
+		}
+	}
 	l, e := net.Listen("tcp", addr)
 	if e != nil {
 		return e
@@ -75,6 +86,23 @@ func serveApplication(ctx context.Context, l net.Listener, a *Application, outpu
 	defer l.Close()
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+	offset, _ := strconv.Atoi(os.Getenv("GRAB_WORKER_ID"))
+	var e error
+	a.telemetry, e = telemetry.New(ctx, a.opts.PlatformConfig, a.opts.PlatformGrants, offset, a.opts.Metrics)
+	if e != nil {
+		return e
+	}
+	restarts, _ := strconv.ParseInt(os.Getenv("GRAB_WORKER_RESTARTS"), 10, 64)
+	a.telemetry.Registry.Set("worker_restarts", restarts)
+	go workerHeartbeat(ctx, cancel, func() bool {
+		ready := a.isReady()
+		v := int64(0)
+		if ready {
+			v = 1
+		}
+		a.telemetry.Registry.Set("worker_ready", v)
+		return ready
+	})
 	srv := &http.Server{Handler: a, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 65536}
 	if output != nil {
 		fmt.Fprintf(output, "grab: serving %s at http://%s/\n", a.grabPath, l.Addr())
@@ -110,6 +138,10 @@ func serveApplication(ctx context.Context, l net.Listener, a *Application, outpu
 			}
 		case <-ctx.Done():
 			a.draining.Store(true)
+			if p := a.active.Load(); p != nil {
+				p.code.StopWorkers()
+				p.code.StopSockets()
+			}
 			shutdown, c := context.WithTimeout(context.Background(), a.cfg.ShutdownTimeout)
 			e := srv.Shutdown(shutdown)
 			c()

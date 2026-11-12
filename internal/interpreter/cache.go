@@ -154,6 +154,11 @@ func stdCacheGet(c *execContext, s lexer.Span, a []rt.Value) (rt.Value, error) {
 	}
 	r, e := c.cacheManager.Get(c.context(), h, k)
 	if e != nil {
+		c.metrics.Add("cache_errors", 1)
+	} else if r.Found {
+		c.metrics.Add("cache_hits", 1)
+	}
+	if e != nil {
 		return rt.Value{}, cacheError(s, e)
 	}
 	return rt.Record([]rt.Entry{{Name: "found", Value: rt.Boolean(r.Found)}, {Name: "value", Value: r.Value}, {Name: "ttl_ms", Value: rt.IntegerFromInt64(r.TTLMS)}}), nil
@@ -191,6 +196,11 @@ func stdCacheLimit(c *execContext, s lexer.Span, a []rt.Value) (rt.Value, error)
 		return rt.Value{}, cacheError(s, e)
 	}
 	r, e := c.cacheManager.Limit(c.context(), h, k, maximum, window)
+	if e != nil {
+		c.metrics.Add("cache_errors", 1)
+	} else if !r.Allowed {
+		c.metrics.Add("rate_denials", 1)
+	}
 	if e != nil {
 		return rt.Value{}, cacheError(s, e)
 	}

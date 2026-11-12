@@ -1,0 +1,38 @@
+use server
+use sockets
+use dates
+
+# Local demonstration credentials only. Replace these callbacks with your
+# application's authenticated session and tenant policy before deployment.
+make authorize using request
+  if request.headers has "authorization"
+    if request.headers at "authorization" is "Bearer local-demo"
+      set now to call dates.now_utc
+      set expires to dates.add_days using now, 1
+      give back record {allowed: yes, principal: "demo", audiences: ["demo"], expires_at: expires.iso}
+    end
+  end
+  give back record {allowed: no, principal: nothing, audiences: [], expires_at: "2000-01-01T00:00:00Z"}
+end
+
+make publish_authorize using publication
+  if publication.context.headers has "authorization"
+    give back publication.context.headers at "authorization" is "Bearer local-demo" and publication.audience is "demo"
+  end
+  give back no
+end
+
+make receive using message
+  call sockets.publish using "updates", message.audience, message.value
+  give back nothing
+end
+
+route "GET" "/" using request
+  give back server.text using 200, "Reconnect and refetch this authoritative HTTP endpoint after a notification."
+end
+
+route "POST" "/notify" using request
+  call sockets.publish using "updates", "demo", "Catalog changed; refetch /"
+  give back server.text using 202, "Notification admitted"
+end
+

@@ -150,6 +150,9 @@ func Prepare(program *ast.Program, opts Options, output io.Writer) (*PreparedPro
 	if err != nil {
 		return nil, err
 	}
+	if e := ValidateSockets(program, opts.PlatformConfig, opts.APIContract); e != nil {
+		return nil, e
+	}
 	if err := ValidatePlatform(program, opts.PlatformConfig); err != nil {
 		return nil, err
 	}
@@ -167,7 +170,7 @@ func Prepare(program *ast.Program, opts Options, output io.Writer) (*PreparedPro
 	}
 	opts.DataManager = data.NewManager(opts.DataGrants, true)
 	p := &PreparedProgram{program: program, functions: f, routes: routes, opts: opts}
-	if len(routes) > 0 {
+	if len(routes) > 0 || len(opts.PlatformConfig.Channels()) > 0 {
 		env := newScope(nil)
 		startupContext := opts.Context
 		if startupContext == nil {
@@ -186,10 +189,15 @@ func Prepare(program *ast.Program, opts Options, output io.Writer) (*PreparedPro
 		p.Close()
 		return nil, e
 	}
+	if e := p.prepareSockets(preparationContext); e != nil {
+		p.Close()
+		return nil, e
+	}
 	return p, nil
 }
 
 func (p *PreparedProgram) Close() error {
+	p.StopSockets()
 	if p.workerCancel != nil {
 		p.workerCancel()
 		p.workerWG.Wait()
@@ -214,6 +222,7 @@ func (p *PreparedProgram) Execute(ctx context.Context, route *Route, req grabrt.
 		}
 	}
 	c := newExecContext(ctx, output, p.functions, p.opts)
+	c.trustedContext = req
 	defer c.data.Close()
 	if route != nil {
 		if o, ok := p.opts.APIContract.Route(route.Definition.Method, route.Definition.Path); ok {

@@ -42,6 +42,31 @@ func permittedIP(ip net.IP, d platform.Cache) bool {
 	return true
 }
 func newRedis(ctx context.Context, d platform.Cache, alias string) (*redisStore, error) {
+	c, e := NewRedisClient(d)
+	if e != nil {
+		return nil, e
+	}
+	timeout := time.Duration(d.TimeoutMS) * time.Millisecond
+	op, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	if e = c.Ping(op).Err(); e != nil {
+		_ = c.Close()
+		return nil, ErrUnavailable
+	}
+	// Quotas and live counters depend on a dedicated non-evicting store. Never
+	// change server settings; require the operator to configure them explicitly.
+	policy, e := c.ConfigGet(op, "maxmemory-policy").Result()
+	if e != nil || policy["maxmemory-policy"] != "noeviction" {
+		_ = c.Close()
+		return nil, ErrUnavailable
+	}
+	return &redisStore{c, "grab:v1:" + d.Namespace + ":" + alias + ":", strconv.Itoa(d.MaxKeys) + ":" + strconv.Itoa(d.MaxBytes)}, nil
+}
+
+// NewRedisClient builds a standalone, non-retrying client whose only dialer
+// pins the configured endpoint, applies SSRF address policy and verified TLS.
+// It performs no network I/O; the caller owns readiness checks and Close.
+func NewRedisClient(d platform.Cache) (*redis.Client, error) {
 	user, e := platform.Secret(d.UsernameEnv)
 	if e != nil {
 		return nil, e
@@ -93,21 +118,7 @@ func newRedis(ctx context.Context, d platform.Cache, alias string) (*redisStore,
 		}
 		return conn, nil
 	}
-	c := redis.NewClient(opts)
-	op, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-	if e = c.Ping(op).Err(); e != nil {
-		_ = c.Close()
-		return nil, ErrUnavailable
-	}
-	// Quotas and live counters depend on a dedicated non-evicting store. Never
-	// change server settings; require the operator to configure them explicitly.
-	policy, e := c.ConfigGet(op, "maxmemory-policy").Result()
-	if e != nil || policy["maxmemory-policy"] != "noeviction" {
-		_ = c.Close()
-		return nil, ErrUnavailable
-	}
-	return &redisStore{c, "grab:v1:" + d.Namespace + ":" + alias + ":", strconv.Itoa(d.MaxKeys) + ":" + strconv.Itoa(d.MaxBytes)}, nil
+	return redis.NewClient(opts), nil
 }
 func (s *redisStore) close() error { return s.client.Close() }
 

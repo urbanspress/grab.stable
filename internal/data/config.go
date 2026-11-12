@@ -275,3 +275,48 @@ func (g *Grants) definition(alias string) (definition, Mode, error) {
 
 // Endpoint is for host dialers only. Password resolution belongs after Grant.
 func (d definition) endpoint() string { return net.JoinHostPort(d.Host, strconv.Itoa(d.Port)) }
+
+// PoolBudget returns a conservative sum of configured maximum open connections.
+func (g *Grants) PoolBudget() int {
+	n := 0
+	if g != nil && g.config != nil {
+		for alias := range g.modes {
+			d := g.config.connections[alias]
+			fallback := 10
+			if d.Driver == "sqlite" {
+				fallback = 1
+			}
+			v, ok := inRange(d.Pool.MaxOpen, fallback, 1, 100)
+			if ok {
+				n += v
+			}
+		}
+	}
+	return n
+}
+
+func (g *Grants) SecretNames() []string {
+	var names []string
+	if g != nil && g.config != nil {
+		for alias := range g.modes {
+			names = append(names, g.config.connections[alias].PasswordEnv)
+		}
+	}
+	return names
+}
+
+func (g *Grants) PoolLimit(alias string) int {
+	if g == nil || g.config == nil {
+		return 0
+	}
+	if _, ok := g.modes[alias]; !ok {
+		return 0
+	}
+	d := g.config.connections[alias]
+	fallback := 10
+	if d.Driver == "sqlite" {
+		fallback = 1
+	}
+	n, _ := inRange(d.Pool.MaxOpen, fallback, 1, 100)
+	return n
+}

@@ -328,8 +328,8 @@
         <a class="nav-pill" href="grab_04_features.html">GRAB 0.4 Guide</a>
         <a class="nav-pill" href="grab_05_features.html">GRAB 0.5 Guide</a>
         <a class="nav-pill" href="grab_06_features.html">GRAB 0.6 Guide</a>
-        <a class="nav-pill" href="grab_07_features.html">GRAB 0.7 Guide &rarr;</a>
-        <a class="nav-pill future" href="grab_08_features.html">GRAB 0.8 (In Progress)</a>
+        <a class="nav-pill" href="grab_07_features.html">GRAB 0.7 Guide</a>
+        <a class="nav-pill" href="grab_08_features.html">GRAB 0.8 Guide &rarr;</a>
         <a class="nav-pill" href="deployment_architecture.html">Deployment Architecture</a>
         <a class="nav-pill future" href="ecosystem.html">Ecosystem (Post-1.0)</a>
         <a class="nav-pill" href="../ROADMAP.md">ROADMAP.md</a>
@@ -348,7 +348,7 @@
       </p>
     </section>
 
-    <h2 class="section-title">Released &amp; Active Milestones (GRAB 0.1 – 0.7)</h2>
+    <h2 class="section-title">Released &amp; Active Milestones (GRAB 0.1 – 0.8)</h2>
     <p class="section-sub">Each version builds cleanly on the last while keeping existing <code class="inline">.grab</code> programs compatible.</p>
 
     <section class="grid">
@@ -500,6 +500,28 @@
         </div>
       </article>
 
+      <!-- GRAB 0.8 -->
+      <article class="card highlight" id="grab-08">
+        <div>
+          <div class="card-top">
+            <span class="version-label">GRAB 0.8</span>
+            <span class="badge badge-green">Implemented (100% Tests Pass)</span>
+          </div>
+          <h3>Integrations, Client Adapters &amp; Scaling</h3>
+          <p>Brings Redis caching/rate limiting, typed JSON API contracts with deterministic TypeScript/React generation, verified connectors, durable 3-engine event queues, WebSocket channels, multi-worker process supervision, and OTLP/OpenMetrics telemetry.</p>
+          <ul class="feature-bullets">
+            <li>Memory and standalone Redis caches with atomic fixed-window rate limits via <code class="inline">use cache</code>.</li>
+            <li>Typed API contracts (<code class="inline">use api</code>) and deterministic TypeScript / React client generation via <code class="inline">grab generate client</code>.</li>
+            <li>Signed webhooks and durable transactional inbox/outbox event queues on SQLite, MariaDB, and PostgreSQL (<code class="inline">use events</code>).</li>
+            <li>Authorized WebSocket channels (<code class="inline">use sockets</code>), supervised multi-worker loopback processes (<code class="inline">--workers</code>), and opt-in OTLP/OpenMetrics telemetry.</li>
+          </ul>
+        </div>
+        <div class="card-actions">
+          <span>Approved Spec: <a href="../../specifications/GRAB-SCALE-SPEC-008.md">GRAB-SCALE-SPEC-008.md</a></span>
+          <a class="btn-primary" href="grab_08_features.html">Open GRAB 0.8 Guide &rarr;</a>
+        </div>
+      </article>
+
     </section>
 
     <h2 class="section-title" id="planned-milestones">Roadmap Status (GRAB 0.5 – 1.0)</h2>
@@ -536,8 +558,8 @@
         <tr>
           <td><strong>GRAB 0.8</strong></td>
           <td>Integrations, typed React/TS client adapters, Redis caching/rate limiting, webhooks, WebSockets, and multi-worker scaling (<code class="inline">GRAB-SCALE-SPEC-008.md</code>)</td>
-          <td><span class="badge badge-amber">Design approved; platform/cache implementation in progress</span></td>
-          <td><a href="grab_08_features.html"><code class="inline">grab_08_features.html</code> (Proposal) &rarr;</a></td>
+          <td><span class="badge badge-green">Implemented (100% tests pass)</span></td>
+          <td><a href="grab_08_features.html"><code class="inline">grab_08_features.html</code> &rarr;</a></td>
         </tr>
         <tr>
           <td><strong>GRAB 0.9</strong></td>
@@ -565,7 +587,7 @@
         <ul class="feature-bullets">
           <li>Visual traffic-flow diagram and 3-way comparison against legacy PHP-FPM/FastCGI setups.</li>
           <li>Plain-English breakdown of zero-cold-start speed, warm connection pools, <code class="inline">/_ready</code> rolling reloads, and <code class="inline">--trusted-proxy</code> security.</li>
-          <li>Clear boundary between live GRAB 0.6/0.7 flags, proposed GRAB 0.8 multi-worker scaling, and planned GRAB 1.0 / GrabLab <code class="inline">docker-compose.yml</code> deployment.</li>
+          <li>Clear boundary between live GRAB 0.6/0.7 flags, implemented GRAB 0.8 multi-worker scaling with release acceptance pending, and planned GRAB 1.0 / GrabLab <code class="inline">docker-compose.yml</code> deployment.</li>
         </ul>
       </div>
       <div class="card-actions">

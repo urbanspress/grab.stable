@@ -109,6 +109,9 @@ func (p *PreparedProgram) prepareEvents(ctx context.Context) error {
 	}
 	for alias := range p.opts.PlatformConfig.Events() {
 		if p.opts.PlatformGrants.Events(alias, "work") == nil {
+			if p.opts.PlatformConfig.Events()[alias].Concurrency > p.opts.DataGrants.PoolLimit(p.opts.PlatformConfig.Events()[alias].Database) {
+				return platform.ErrInvalid
+			}
 			s, e := c.eventStore(ctx, alias, "work")
 			if e != nil {
 				return e
@@ -125,6 +128,16 @@ func (p *PreparedProgram) prepareEvents(ctx context.Context) error {
 func (p *PreparedProgram) StartWorkers() {
 	ctx, cancel := context.WithCancel(context.Background())
 	p.workerCancel = cancel
+	enabled := false
+	for alias := range p.opts.PlatformConfig.Telemetry() {
+		if p.opts.PlatformGrants.Telemetry(alias) == nil {
+			enabled = true
+		}
+	}
+	if enabled {
+		p.workerWG.Add(1)
+		go func() { defer p.workerWG.Done(); p.observeEvents(ctx) }()
+	}
 	for alias, def := range p.opts.PlatformConfig.Events() {
 		if p.opts.PlatformGrants.Events(alias, "work") != nil {
 			continue
@@ -229,6 +242,12 @@ func (p *PreparedProgram) processInbox(ctx context.Context, alias string, s *eve
 	return c.data.Commit(t) == nil
 }
 func (p *PreparedProgram) processWork(parent context.Context, alias string, s *events.Store, w events.Work) {
+	start := time.Now()
+	defer func() { p.opts.Metrics.Work(w.Kind, s.Config.Namespace+":"+w.ID, w.Attempts, start) }()
+	p.opts.Metrics.Add("event_attempts", 1)
+	if w.Recovered {
+		p.opts.Metrics.Add("lease_recovery", 1)
+	}
 	ctx, cancel := context.WithTimeout(parent, 10*time.Second)
 	defer cancel()
 	if w.Kind == "inbox" {
@@ -306,5 +325,48 @@ func workerDenied(s lexer.Span) error { return integrationError(s, "GRAB-E317", 
 func (p *PreparedProgram) StopWorkers() {
 	if p.workerCancel != nil {
 		p.workerCancel()
+	}
+}
+
+func (p *PreparedProgram) observeEvents(ctx context.Context) {
+	tick := time.NewTicker(time.Second)
+	defer tick.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-tick.C:
+		}
+		op, cancel := context.WithTimeout(ctx, time.Second)
+		c := newExecContext(op, io.Discard, p.functions, p.opts)
+		var sum events.Metrics
+		for alias := range p.opts.PlatformConfig.Events() {
+			mode := "work"
+			if p.opts.PlatformGrants.Events(alias, mode) != nil {
+				mode = "accept"
+			}
+			store, e := c.eventStore(op, alias, mode)
+			if e != nil {
+				continue
+			}
+			m, e := store.Metrics(op)
+			if e != nil {
+				continue
+			}
+			sum.Pending += m.Pending
+			sum.Dead += m.Dead
+			if m.InboxLagMS > sum.InboxLagMS {
+				sum.InboxLagMS = m.InboxLagMS
+			}
+			if m.OutboxLagMS > sum.OutboxLagMS {
+				sum.OutboxLagMS = m.OutboxLagMS
+			}
+		}
+		c.data.Close()
+		cancel()
+		p.opts.Metrics.Set("event_pending", sum.Pending)
+		p.opts.Metrics.Set("event_dead", sum.Dead)
+		p.opts.Metrics.Set("inbox_lag_milliseconds", sum.InboxLagMS)
+		p.opts.Metrics.Set("outbox_lag_milliseconds", sum.OutboxLagMS)
 	}
 }

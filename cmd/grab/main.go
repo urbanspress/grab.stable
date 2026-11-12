@@ -25,7 +25,8 @@ const usageText = "usage: grab run [--db-config <manifest.json>] [--allow-db <al
 	"       grab migrate --db-config <manifest.json> --allow-db <alias:migrate> <migrations.grab>\n" +
 	"       grab serve [--addr 127.0.0.1:8080] [--allow-public] [--trusted-proxy <ip[,cidr...]>] [--static <[prefix=]dir>] [--reload] [--max-concurrency 64] [--max-queue 128] [--queue-timeout 1s] [--request-timeout 10s] [--max-body-bytes 1048576] [--shutdown-timeout 10s] [--log-format text|json] [--diagnostics beginner|developer|production] [--allow-read <dir>] [--allow-write <dir>] [--allow-net <host[,host...]>] <file.grab> [template.grab.html]\n" +
 	"       database flags for serve: --db-config <manifest.json> --allow-db <alias:read|read-write>\n" +
-	"       platform flags for run/serve/check: --platform-config <grab.platform.json> --allow-cache <alias:read|read-write|limit>\n" +
+	"       platform flags for run/serve/check: --platform-config <grab.platform.json> --allow-cache <alias:read|read-write|limit> --allow-channel <alias:connect|publish> --allow-telemetry <alias>\n" +
+	"       worker flags for serve: --workers <1..32> --worker-base-port <port> (consecutive loopback ports; external balancer required)\n" +
 	"       grab check [--diagnostics beginner|developer|production] <file.grab> [template.grab.html]\n" +
 	"       grab format [--write] <file.grab>"
 
@@ -112,6 +113,19 @@ func runContext(ctx context.Context, arguments []string, stdout, stderr io.Write
 			tmplFile = positional[1]
 		}
 		cfg.server.Diagnostics = cfg.diagMode
+		cfg.server.WorkerArguments = append([]string(nil), arguments...)
+		cfg.server.WorkerFiles = []string{cfg.dbConfig}
+		if os.Getenv("GRAB_WORKER_CONTROL") != "" {
+			cfg.server.Workers = 1
+			cfg.server.Reload = false
+			cfg.server.ShutdownTimeout = 30 * time.Second
+			cfg.addr = "127.0.0.1:" + os.Getenv("GRAB_WORKER_PORT")
+			hash, e := server.SourceHash(grabFile, []string{cfg.opts.PlatformPath, cfg.opts.APIContractPath, tmplFile, cfg.dbConfig})
+			if e != nil || hash != os.Getenv("GRAB_WORKER_HASH") {
+				fmt.Fprintln(stderr, "worker dependency mismatch")
+				return 1
+			}
+		}
 		if err := server.ServeWithConfig(ctx, cfg.addr, grabFile, tmplFile, cfg.opts, cfg.server, stdout, ready); err != nil {
 			source, _ := os.ReadFile(grabFile)
 			fmt.Fprintln(stderr, interpreter.FormatDiagnostic(string(source), err, cfg.diagMode))
@@ -162,6 +176,10 @@ func runContext(ctx context.Context, arguments []string, stdout, stderr io.Write
 			return 1
 		}
 		if e := interpreter.ValidateContracts(program, cfg.opts.APIContract); e != nil {
+			fmt.Fprintln(stderr, e)
+			return 1
+		}
+		if e := interpreter.ValidateSockets(program, cfg.opts.PlatformConfig, cfg.opts.APIContract); e != nil {
 			fmt.Fprintln(stderr, e)
 			return 1
 		}
@@ -301,7 +319,7 @@ func parseCommonFlags(args []string, allowAddr bool) (commonFlagConfig, []string
 				continue
 			}
 			name := strings.SplitN(arg, "=", 2)[0]
-			if strings.Contains("|--trusted-proxy|--static|--log-format|--max-concurrency|--max-queue|--queue-timeout|--request-timeout|--max-body-bytes|--shutdown-timeout|", "|"+name+"|") {
+			if strings.Contains("|--workers|--worker-base-port|--trusted-proxy|--static|--log-format|--max-concurrency|--max-queue|--queue-timeout|--request-timeout|--max-body-bytes|--shutdown-timeout|", "|"+name+"|") {
 				val, next, ok := consumeFlagValue(args, i, name)
 				if !ok {
 					return cfg, nil, false
@@ -309,6 +327,10 @@ func parseCommonFlags(args []string, allowAddr bool) (commonFlagConfig, []string
 				i = next
 				var err error
 				switch name {
+				case "--workers":
+					cfg.server.Workers, err = strconv.Atoi(val)
+				case "--worker-base-port":
+					cfg.server.WorkerBasePort, err = strconv.Atoi(val)
 				case "--trusted-proxy":
 					cfg.server.TrustedProxy = val
 				case "--static":

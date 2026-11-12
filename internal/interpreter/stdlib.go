@@ -30,6 +30,7 @@ func (f stdlibFunc) acceptsArity(n int) bool {
 
 var stdlibModules = map[string]map[string]stdlibFunc{
 	"cache":   cacheFunctions,
+	"sockets": nil,
 	"api":     apiFunctions,
 	"connect": connectFunctions,
 	"events":  eventFunctions,

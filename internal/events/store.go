@@ -30,6 +30,7 @@ type Store struct {
 	Now    func() time.Time
 }
 type Work struct {
+	Recovered      bool
 	ID             string
 	Kind           string
 	Connector      string
@@ -310,6 +311,7 @@ func (s *Store) Claim(ctx context.Context, owner string) (Work, error) {
 	if e = commit(tx); e != nil {
 		return Work{}, e
 	}
+	w.Recovered = w.State == "leased"
 	w.State = "leased"
 	w.Owner = owner
 	w.Token++
