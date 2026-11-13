@@ -84,11 +84,10 @@ sustained fault/load gate per specification 008 Section 12 is documented in
 `docs/INTEGRATIONS.md`, and `docs/CACHE.md`. Follow `specifications/GRAB-SCALE-SPEC-008.md`
 and `ADR-025a`–`ADR-025h`.
 **GRAB 0.9 — Profile-driven IR and bytecode VM** is complete and verified by `go test -count=1 ./...` under **Google Antigravity** (following owner approval on November 12, 2026). See `specifications/GRAB-VM-SPEC-009.md` and `ADR-026a`–`ADR-026e`.
+**GRAB 1.0 — Stable, production-ready platform & native MCP server (`grab mcp`)** is `Approved target; specification in review` under **Google Antigravity** (`specifications/GRAB-PLATFORM-SPEC-100.md`, proposed `ADR-027a`–`ADR-027d`, `docs/features/grab_10_features.html`). Pre-implementation specification only; no Go implementation code is authorized until owner approval.
 **Current Owner:** Google Antigravity.
 
-GRAB 1.0 and Post-1.0 remain
-`Planned (Not Yet Approved for Implementation)`; native GRAB UI/browser
-compiler and CMS are not authorized for implementation.
+Post-1.0 ecosystem tracks remain `Planned (Not Yet Approved for Implementation)`; native GRAB UI/browser compiler and CMS are not authorized for implementation.
 
 ## Live GRAB 0.1 Status & Repository Map
 
@@ -136,7 +135,7 @@ milestone remains acceptance-pending, particularly sustained fault/load evidence
 | `internal/realtime/`, `internal/telemetry/` | 0.8 bounded authorized WebSocket transport and opt-in private metrics/traces. |
 | `deploy/` | Production VPS deployment starter: Dockerfile, Caddyfile (automated TLS & HTTP/3), docker-compose.yml, and deployment guide. |
 | `docs/` | Project documentation, including `docs/ROADMAP.md` (GRAB 0.1 through 1.0 + Post-1.0). |
-| `docs/features/` | Self-contained HTML milestone feature guides (`index.html` hub, completed guides `grab_04_features.html`–`grab_07_features.html` and `grab_09_features.html`, and implementation/acceptance-pending guide `grab_08_features.html`) explaining features, developer benefits, visitor/user benefits, and visual examples in plain English. |
+| `docs/features/` | Self-contained HTML milestone feature guides (`index.html` hub, completed guides `grab_04_features.html`–`grab_07_features.html` and `grab_09_features.html`, implementation/acceptance-pending guide `grab_08_features.html`, and specification-in-review guide `grab_10_features.html`) explaining features, developer benefits, visitor/user benefits, and visual examples in plain English. |
 | `docs/adr/` | Architecture decision register (`ADR-DECISION-REGISTER.md`) and recorded design boundaries. |
 | `docs/blueprints/` | GRAB architecture blueprint PDFs; v1.0 is the approved baseline and v1.1 is not approved wholesale. |
 | `examples/` | Runnable `.grab` programs and `.grab.html` templates, including SQLite catalog migration/seed/server examples plus `cache_app.grab` and `grab.platform.json`. See `DATA.md`, `SERVER.md` `CACHE.md` and `REALTIME.md`. |
@@ -148,7 +147,7 @@ milestone remains acceptance-pending, particularly sustained fault/load evidence
 | `internal/runtime/` | Portable runtime values, arithmetic/comparison operations, and canonical display forms. |
 | `internal/server/` | Persistent server: `prepared.go` (load-once code/templates), `application.go` (routing, limits, proxies, static files, logging, atomic reload), `supervisor.go` (listeners, signals, drain), platform signal files, table-driven tests, and `benchmark_test.go`. Legacy single-page mode is preserved. |
 | `internal/template/` | `.grab.html` `{<identifier>}` parser, HTML lexical context analyzer, context-aware HTML/URL escaper, and renderer (`template_test.go`). |
-| `specifications/` | Approved/implemented specifications 001–007 and 009 (`GRAB-VM-SPEC-009.md`), plus owner-approved GRAB 0.8 specification `GRAB-SCALE-SPEC-008.md`. Later milestones remain unapproved. |
+| `specifications/` | Approved/implemented specifications 001–007 and 009 (`GRAB-VM-SPEC-009.md`), owner-approved GRAB 0.8 specification `GRAB-SCALE-SPEC-008.md`, and specification-in-review GRAB 1.0 specification `GRAB-PLATFORM-SPEC-100.md`. Post-1.0 milestones remain unapproved. |
 | `tests/` | GRAB 0.8 cache, channel, 1/2/4-worker and complete durable-workflow fixtures (including opt-in two-worker Redis/MariaDB/PostgreSQL vectors), plus `conformance_test.go` (0.1), `localhost_conformance_test.go` (0.2), `grab03_conformance_test.go` (0.3), `grab04_conformance_test.go` (0.4), `grab05_conformance_test.go` (0.5), `grab06_conformance_test.go` (0.6 HTTP), `grab07_conformance_test.go` (0.7 DB), `grab09_vm_equivalence_test.go` (0.9 AST/VM/Auto parity), `structure_test.go` (AST spans), and `README.md`. |
 | Repository root | `go.mod` declares module `grab`, Go 1.26 minimum, and pinned pure-Go SQLite/MariaDB/PostgreSQL dependencies; `go.sum` locks downloads. `AGENTS.md`, `HANDOFF.md`, and `GRAB-EXPERT.md` hold agent workflow rules, active ownership, and non-negotiable invariants. `index.grab` is runnable; `.gitignore` excludes local catalog files/build artifacts. |
 

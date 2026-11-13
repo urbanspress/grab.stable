@@ -1,6 +1,9 @@
 # GRAB Tandem Handoff
 
 - **Current Owner:** Google Antigravity
+- **GRAB 1.0 specification design (November 13, 2026):** Following owner approval of **GRAB 1.0 — Stable, production-ready platform & native MCP server (`grab mcp`)** for **pre-implementation specification design ONLY** (no Go implementation code written), confirmed clean baseline (`git status` clean; `go test ./...` 100% passing) and drafted:
+  - `specifications/GRAB-PLATFORM-SPEC-100.md`: Native JSON-RPC 2.0 / `stdio` MCP server (`grab mcp`) with workspace-confined, default-deny capability tools (`grab_check`, `grab_format`, `grab_inspect_routes`, `grab_inspect_schema`, `grab_scaffold`); in-memory `PreparedApp` asset fingerprinting (`server.asset`) + smart `Cache-Control` (`immutable` on matching `?v=` hash, `no-cache` fallback on mismatch); core `v1.0.0` stability & SemVer `v1.x` compatibility freeze; and production release/security gates (`ADR-017`) for synchronized `origin` + `stable` promotion.
+  - Updated `docs/adr/ADR-DECISION-REGISTER.md` (proposed `ADR-027a`–`ADR-027d`), `docs/ROADMAP.md`, `AGENTS.md`, `docs/features/grab_10_features.html`, and `docs/features/index.html` (`Approved target; specification in review`).
 - **GRAB 0.9 delivery (November 12, 2026):** Following owner approval of `specifications/GRAB-VM-SPEC-009.md` (`ADR-026a`–`ADR-026e`) and authorization to implement under **Google Antigravity**, implemented and verified **GRAB 0.9 — Profile-driven IR and bytecode VM**:
   - `internal/ir/`: AST-to-IR lowering (`CompileProgram`, `CompileTopLevel`, `CompileFunction`, `CompileRoute`), resolved lexical variable slots, shadow slots for `for each`/`catch`, `OpTxEnter`/`OpTxExit` scoped database transaction tracking, `DoTogetherPlan`, and jump-threading optimizer (`opt.go`), plus unit tests (`ir_test.go`).
   - `internal/vm/`: Compact 16-byte stack bytecode (`chunk.go`), fail-closed static verifier (`verify.go`), pooled VM executor via `sync.Pool` (`vm.go`), `HostBridge` module/DB-tx integration, `do together` task-group execution, error mapping (`error.go`), and verifier/VM unit tests (`vm_test.go`).
@@ -37,6 +40,6 @@
 - **Environment notes:** Sandbox policy blocks ordinary loopback client TCP connections; authorized real-service tests run with network access. HTTP-wire conformance also uses the existing `net.Pipe` transport. Race tests run inside Linux Docker because the Windows host has no C compiler. Benchmark timings are machine-specific, not a capacity guarantee.
 - **Worktree:** GRAB 0.8 Parts 1, 2, and 3 are complete, verified with 100% passing tests, and checkpointed to `origin/main`. Disposable MariaDB/PostgreSQL services predated this work; only the Part 3 Redis fixture was created here.
 - **Next Pending Task (Google Antigravity):**
-  1. GRAB 0.9 is complete, verified by 100% passing tests and benchmarks, and pushed to `origin/main`.
-  2. Queue **GRAB 1.0** specification planning or **GRAB 0.8 Section 12 30-minute sustained fault/load acceptance gate** when explicitly authorized by the owner.
-- **Recommended Antigravity model for next step:** **Gemini 4 Argon (Medium)** for GRAB 1.0 specification drafting, or **Gemini 3.8 Flash (High)** for routine tasks.
+  1. Pause for owner review and approval of `specifications/GRAB-PLATFORM-SPEC-100.md` (`ADR-027a`–`ADR-027d`) before beginning GRAB 1.0 Go implementation.
+  2. Queue **GRAB 0.8 Section 12 30-minute sustained fault/load acceptance gate** as part of GRAB 1.0 pre-release verification when authorized.
+- **Recommended Antigravity model for next step:** **Opus 5.5 (High)** or **Gemini 4 Argon (High)** once GRAB 1.0 specification is approved for Go implementation (`internal/mcp/`, `internal/server/`, `cmd/grab/`).

@@ -255,25 +255,19 @@ Implemented scope:
 
 ---
 
-## GRAB 1.0 — Stable, production-ready platform
+## GRAB 1.0 — Stable, production-ready platform & native MCP server (`grab mcp`)
 
-**Status:** Planned (Not Yet Approved for Implementation)
-**Source:** Blueprint v1.0 Sections 10, 12, 13; Blueprint v1.1 roadmap table
+**Status:** Approved target; specification in review (November 13, 2026)
+**Draft specification:** [`GRAB-PLATFORM-SPEC-100.md`](../specifications/GRAB-PLATFORM-SPEC-100.md)
+**Visual guide:** [`GRAB 1.0 guide`](features/grab_10_features.html)
+**Source:** Blueprint v1.0 Sections 9, 10, 11, 12, 13; Blueprint v1.1 roadmap table
 
-Intended scope (requires owner approval before implementation):
+Proposed scope (specification in review; requires owner sign-off before Go implementation begins):
 
-- Frozen GRAB 1.0 language specification with formal compatibility and
-  deprecation policy.
-- Full security audit: capability enforcement, secret redaction, request
-  isolation, and resource budgets (`ADR-009`, `ADR-017`).
-- Complete CLI and package ecosystem (`grab new`, `grab test`, `grab build`,
-  `grab deploy`, `grab.json`, `grab.lock`).
-- Native **GRAB MCP Server (`grab mcp`)** foundation so external and local AI
-  agents can inspect schemas, validate `.grab` and `.grab.html` files via
-  `grab check`, and safely scaffold routes and templates within explicit
-  capability boundaries.
-- Reproducible full-stack benchmark suite and production deployment
-  documentation.
+- **Native GRAB MCP Server (`grab mcp`, `ADR-027a`):** Built-in `stdio` JSON-RPC 2.0 MCP server with five workspace-confined, capability-bounded tools (`grab_check`, `grab_format`, `grab_inspect_routes`, `grab_inspect_schema`, `grab_scaffold`), default-deny read-only mode (`--allow-write` required for writes), and sensitive-path blocking (`GRAB-E401`) for **Groxy AI**, **OpenCode**, **Antigravity**, and **Codex**.
+- **Forward-Compatible Asset Cache-Busting (`server.asset` + Smart `Cache-Control`, `ADR-027b`):** In-memory SHA-256 asset hashing at `PreparedApp` startup/reload (compatible with `--read-only` containers), returning `/static/<file>?v=<12-char-sha256>` with `Cache-Control: public, max-age=31536000, immutable` on hash match and safe `no-cache` fallback on mismatch during rolling multi-worker restarts.
+- **Core `v1.0.0` Stability & Compatibility Freeze (`ADR-027c`):** Formal SemVer `v1.x` freeze of GRAB syntax, exact numeric rules, error codes (`GRAB-E001`–`GRAB-E403`), `.grab.html` context-aware escaping, all 14 standard library modules, and `--engine=auto` Bytecode VM differential parity.
+- **Production Release & Security Gates (`ADR-017`, `ADR-027d`):** Final pre-1.0 security audit, Windows/Linux cross-platform binary checks, `govulncheck ./...`, `go mod verify`, GRAB 0.8 Section 12 sustained fault/load gate (`docs/SCALE-TESTING.md`), documentation completeness, and synchronized `v1.0.0` promotion to both `origin` and `stable`.
 
 ---
 
