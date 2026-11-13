@@ -515,3 +515,109 @@ func TestAutomaticReloadAndLegacyPreparedMode(t *testing.T) {
 		time.Sleep(10 * time.Millisecond)
 	}
 }
+
+func TestServerAssetCacheBustingAndReload(t *testing.T) {
+	staticDir := t.TempDir()
+	cssPath := filepath.Join(staticDir, "app.css")
+	if e := os.WriteFile(cssPath, []byte("body { color: navy; }"), 0600); e != nil {
+		t.Fatal(e)
+	}
+	subDir := filepath.Join(staticDir, "nested")
+	if e := os.MkdirAll(subDir, 0700); e != nil {
+		t.Fatal(e)
+	}
+	if e := os.WriteFile(filepath.Join(subDir, "site.js"), []byte("console.log('ok')"), 0600); e != nil {
+		t.Fatal(e)
+	}
+	// Sensitive files inside staticDir must never enter the asset manifest.
+	if e := os.WriteFile(filepath.Join(staticDir, ".env"), []byte("SECRET=1"), 0600); e != nil {
+		t.Fatal(e)
+	}
+
+	progPath := appFile(t, `use server
+route "GET" "/asset"
+  give back server.text using 200, server.asset using "/static/app.css"
+end
+route "GET" "/rel"
+  give back server.text using 200, server.asset using "nested/site.js"
+end
+route "GET" "/missing"
+  give back server.text using 200, server.asset using "/static/.env"
+end
+`)
+	cfg := DefaultConfig()
+	cfg.Static = staticDir
+	a := application(t, progPath, cfg, nil)
+
+	// No manifest files are written to staticDir (--read-only safe).
+	entries, e := os.ReadDir(staticDir)
+	if e != nil {
+		t.Fatal(e)
+	}
+	if len(entries) != 3 {
+		t.Fatalf("unexpected files written to static dir: %d", len(entries))
+	}
+
+	w1 := request(a, "GET", "/asset", "")
+	if w1.Code != 200 {
+		t.Fatalf("GET /asset = %d %s", w1.Code, w1.Body.String())
+	}
+	url1 := w1.Body.String()
+	if !strings.HasPrefix(url1, "/static/app.css?v=") || len(url1) != len("/static/app.css?v=")+12 {
+		t.Fatalf("unexpected asset URL: %q", url1)
+	}
+
+	wRel := request(a, "GET", "/rel", "")
+	if wRel.Code != 200 || !strings.HasPrefix(wRel.Body.String(), "/static/nested/site.js?v=") {
+		t.Fatalf("GET /rel = %d %q", wRel.Code, wRel.Body.String())
+	}
+
+	if wSens := request(a, "GET", "/missing", ""); wSens.Code != 500 {
+		t.Fatalf("sensitive asset must not resolve: %d %s", wSens.Code, wSens.Body.String())
+	}
+
+	// Matching ?v= hash gets immutable 1-year Cache-Control.
+	wMatch := request(a, "GET", url1, "")
+	if wMatch.Code != 200 {
+		t.Fatalf("GET %s = %d", url1, wMatch.Code)
+	}
+	if got := wMatch.Header().Get("Cache-Control"); got != "public, max-age=31536000, immutable" {
+		t.Fatalf("Cache-Control on match = %q", got)
+	}
+	// Matching ?v= with If-None-Match returns 304 and retains immutable Cache-Control.
+	r304 := httptest.NewRequest("GET", url1, nil)
+	r304.Header.Set("If-None-Match", wMatch.Header().Get("ETag"))
+	rec304 := httptest.NewRecorder()
+	a.ServeHTTP(rec304, r304)
+	if rec304.Code != 304 || rec304.Header().Get("Cache-Control") != "public, max-age=31536000, immutable" {
+		t.Fatalf("304 headers = %d %v", rec304.Code, rec304.Header())
+	}
+
+	// Missing ?v= or mismatched ?v= falls back to no-cache.
+	for _, path := range []string{"/static/app.css", "/static/app.css?v=000000000000", "/static/app.css?v=abc&v=def"} {
+		wMiss := request(a, "GET", path, "")
+		if wMiss.Code != 200 {
+			t.Fatalf("GET %s = %d", path, wMiss.Code)
+		}
+		if got := wMiss.Header().Get("Cache-Control"); got != "no-cache" {
+			t.Fatalf("Cache-Control on %s = %q, want no-cache", path, got)
+		}
+	}
+
+	// Updating the asset and calling Reload() updates the in-memory hash.
+	if e := os.WriteFile(cssPath, []byte("body { color: teal; }"), 0600); e != nil {
+		t.Fatal(e)
+	}
+	if e := a.Reload(); e != nil {
+		t.Fatal(e)
+	}
+	w2 := request(a, "GET", "/asset", "")
+	if w2.Code != 200 || w2.Body.String() == url1 {
+		t.Fatalf("expected updated asset hash after Reload: old=%q new=%q", url1, w2.Body.String())
+	}
+	// Old ?v= against updated file falls back to no-cache.
+	wStale := request(a, "GET", url1, "")
+	if wStale.Code != 200 || wStale.Header().Get("Cache-Control") != "no-cache" {
+		t.Fatalf("stale asset hash must fall back to no-cache: %d %q", wStale.Code, wStale.Header().Get("Cache-Control"))
+	}
+}

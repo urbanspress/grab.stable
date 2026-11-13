@@ -1,9 +1,9 @@
 # GRAB 1.0 — Stable, Production-Ready Platform & Native MCP Server
 
-**Status:** Approved target; specification in review (Drafted November 13, 2026)  
-**Version:** 1.0-draft — November 13, 2026  
+**Status:** Approved target; specification approved (Approved November 13, 2026)  
+**Version:** 1.0 — November 13, 2026  
 **Current Owner:** Google Antigravity  
-**Implementation record:** Pre-implementation specification only. No Go code changes are authorized until the project owner approves this specification.
+**Implementation record:** Owner approved `specifications/GRAB-PLATFORM-SPEC-100.md` and `ADR-027a`–`ADR-027d` for implementation under **Google Antigravity** on November 13, 2026.
 
 ---
 

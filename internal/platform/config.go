@@ -78,6 +78,19 @@ func (c *Config) HasCache(alias string) bool {
 	return ok
 }
 
+// Caches returns a shallow copy of configured cache aliases without resolving secrets.
+func (c *Config) Caches() map[string]Cache {
+	out := map[string]Cache{}
+	if c == nil {
+		return out
+	}
+	for k, v := range c.caches {
+		v.AllowedCIDRs = append([]string(nil), v.AllowedCIDRs...)
+		out[k] = v
+	}
+	return out
+}
+
 // StrictJSON rejects duplicates at every depth, null configuration values,
 // trailing input and excessive nesting before decoding the closed schema.
 func StrictJSON(raw []byte, target any) error { return strictJSON(raw, target, false) }

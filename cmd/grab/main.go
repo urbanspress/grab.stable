@@ -28,7 +28,8 @@ const usageText = "usage: grab run [--engine auto|ast|vm] [--db-config <manifest
 	"       platform flags for run/serve/check: --platform-config <grab.platform.json> --allow-cache <alias:read|read-write|limit> --allow-channel <alias:connect|publish> --allow-telemetry <alias>\n" +
 	"       worker flags for serve: --workers <1..32> --worker-base-port <port> (consecutive loopback ports; external balancer required)\n" +
 	"       grab check [--diagnostics beginner|developer|production] <file.grab> [template.grab.html]\n" +
-	"       grab format [--write] <file.grab>"
+	"       grab format [--write] <file.grab>\n" +
+	"       grab mcp [--workspace <dir>] [--allow-write] [--db-config <manifest.json>] [--platform-config <grab.platform.json>] [--api-contract <grab.api.json>]"
 
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -47,6 +48,8 @@ func runContext(ctx context.Context, arguments []string, stdout, stderr io.Write
 	}
 
 	switch arguments[0] {
+	case "mcp":
+		return runMCP(ctx, arguments[1:], os.Stdin, stdout, stderr)
 	case "events":
 		return eventMaintenance(ctx, arguments[1:], false, stdout, stderr)
 	case "connect":

@@ -318,6 +318,22 @@ func (p Permissions) resolveWritePath(rawPath string) (string, error) {
 	return resolveCapabilityPath(rawPath, p.AllowWrite)
 }
 
+// IsSensitiveSegment reports whether a single path segment matches GRAB's
+// unconditional sensitive-file blocklist (.git, .env, .ssh, *.pem, *.key, etc.).
+func IsSensitiveSegment(seg string) bool { return isSensitiveSegment(seg) }
+
+// HasBlockedSegments reports whether rawPath contains NUL bytes, parent
+// traversal (".."), or sensitive segments.
+func HasBlockedSegments(rawPath string) bool { return hasBlockedSegments(rawPath) }
+
+// IsPathWithinRoot reports whether target stays strictly within root without
+// traversing sensitive segments.
+func IsPathWithinRoot(target, root string) bool { return isPathWithinRoot(target, root) }
+
+// EvalExistingSymlinks resolves symlinks for existing path prefixes so even
+// not-yet-created target files are confined within their real parent directory.
+func EvalExistingSymlinks(absPath string) (string, error) { return evalExistingSymlinks(absPath) }
+
 func resolveCapabilityPath(rawPath string, allowedRoots []string) (string, error) {
 	if hasBlockedSegments(rawPath) || len(allowedRoots) == 0 {
 		return "", errCapabilityDenied

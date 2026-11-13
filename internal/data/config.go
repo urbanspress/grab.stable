@@ -320,3 +320,36 @@ func (g *Grants) PoolLimit(alias string) int {
 	n, _ := inRange(d.Pool.MaxOpen, fallback, 1, 100)
 	return n
 }
+
+// ConnectionSummary describes a configured database connection without resolving secrets.
+type ConnectionSummary struct {
+	Driver      string `json:"driver"`
+	Path        string `json:"path,omitempty"`
+	Host        string `json:"host,omitempty"`
+	Port        int    `json:"port,omitempty"`
+	Database    string `json:"database,omitempty"`
+	User        string `json:"user,omitempty"`
+	PasswordEnv string `json:"password_env,omitempty"`
+	TLS         string `json:"tls,omitempty"`
+}
+
+// Summaries returns sanitized connection metadata for read-only inspection.
+func (c *Config) Summaries() map[string]ConnectionSummary {
+	out := map[string]ConnectionSummary{}
+	if c == nil {
+		return out
+	}
+	for alias, d := range c.connections {
+		out[alias] = ConnectionSummary{
+			Driver:      d.Driver,
+			Path:        d.Path,
+			Host:        d.Host,
+			Port:        d.Port,
+			Database:    d.Database,
+			User:        d.User,
+			PasswordEnv: d.PasswordEnv,
+			TLS:         d.TLS,
+		}
+	}
+	return out
+}

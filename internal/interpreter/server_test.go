@@ -3,6 +3,7 @@ package interpreter
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"strings"
 	"testing"
@@ -223,5 +224,60 @@ end
 		if found != tc.want {
 			t.Fatalf("%s matched %s; want %s", tc.path, found, tc.want)
 		}
+	}
+}
+
+func TestServerAssetHelper(t *testing.T) {
+	resolver := func(path string) (string, error) {
+		if path == "/static/app.css" || path == "app.css" {
+			return "/static/app.css?v=0123456789ab", nil
+		}
+		return "", fmt.Errorf("unknown static asset")
+	}
+	for _, mode := range []EngineMode{EngineAST, EngineVM, EngineAuto} {
+		t.Run(string(mode), func(t *testing.T) {
+			for _, tc := range []struct {
+				name, expr string
+				resolver   func(string) (string, error)
+				want, code string
+			}{
+				{"resolved", `server.text using 200, server.asset using "/static/app.css"`, resolver, "/static/app.css?v=0123456789ab", ""},
+				{"missing resolver", `server.text using 200, server.asset using "/static/app.css"`, nil, "", "GRAB-E312"},
+				{"traversal", `server.text using 200, server.asset using "../secret.css"`, resolver, "", "GRAB-E312"},
+				{"sensitive", `server.text using 200, server.asset using "/static/.env"`, resolver, "", "GRAB-E312"},
+				{"query rejected", `server.text using 200, server.asset using "/static/app.css?v=1"`, resolver, "", "GRAB-E312"},
+				{"unknown asset", `server.text using 200, server.asset using "/static/missing.css"`, resolver, "", "GRAB-E312"},
+			} {
+				t.Run(tc.name, func(t *testing.T) {
+					p, e := parser.Parse("app.grab", "use server\nroute \"GET\" \"/\"\ngive back "+tc.expr+"\nend\n")
+					if e != nil {
+						t.Fatal(e)
+					}
+					prep, e := Prepare(p, Options{Engine: mode, AssetResolver: tc.resolver}, io.Discard)
+					if e != nil {
+						t.Fatal(e)
+					}
+					defer prep.Close()
+					v, _, e := prep.Execute(context.Background(), prep.Routes()[0], grabrt.Nothing(), nil)
+					if tc.code != "" {
+						code, _, _, _ := ExtractErrorMeta(e)
+						if e == nil || code != tc.code {
+							t.Fatalf("error=%v code=%s, want %s", e, code, tc.code)
+						}
+						return
+					}
+					if e != nil {
+						t.Fatal(e)
+					}
+					res, e := DecodeResponse(v)
+					if e != nil {
+						t.Fatal(e)
+					}
+					if string(res.Body) != tc.want {
+						t.Fatalf("body=%q, want %q", res.Body, tc.want)
+					}
+				})
+			}
+		})
 	}
 }

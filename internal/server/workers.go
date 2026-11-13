@@ -196,8 +196,12 @@ func serveWorkers(ctx context.Context, program, template string, opts interprete
 		return fmt.Errorf("rolling validation needs one generation of maintenance pool headroom")
 	}
 	opts.DeferWorkers = true
+	staticPrefix, staticRoot, e := parseStaticConfig(cfg.Static)
+	if e != nil {
+		return e
+	}
 	// Validate complete generation and required stores before spawning any process.
-	prepared, e := Load(program, template, opts, io.Discard)
+	prepared, e := loadWithStatic(program, template, staticPrefix, staticRoot, opts, io.Discard)
 	if e != nil {
 		return e
 	}
@@ -421,7 +425,7 @@ func serveWorkers(ctx context.Context, program, template string, opts interprete
 				if !compatible || candidateOpts.PlatformConfig.PoolBudget(cfg.Workers, opts.DataGrants.PoolBudget()) != nil {
 					continue
 				}
-				candidate, e := Load(program, template, candidateOpts, io.Discard)
+				candidate, e := loadWithStatic(program, template, staticPrefix, staticRoot, candidateOpts, io.Discard)
 				if e != nil {
 					continue
 				}

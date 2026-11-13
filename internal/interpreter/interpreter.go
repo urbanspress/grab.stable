@@ -275,6 +275,9 @@ type Options struct {
 	// TemplateLoader renders server.html through the host's confined template
 	// cache. A nil callback makes server.html unavailable outside the server.
 	TemplateLoader func(path string, data map[string]grabrt.Value) (string, error)
+	// AssetResolver resolves static asset URLs to fingerprinted cache-busting
+	// paths via the host's in-memory PreparedApp asset manifest.
+	AssetResolver func(path string) (string, error)
 	// GRAB 0.9 execution engine and profile-driven tiering thresholds.
 	Engine               EngineMode
 	HotFunctionThreshold int
@@ -375,6 +378,7 @@ func newExecContext(parent context.Context, output io.Writer, functions map[stri
 		permissions:    opts.Permissions,
 		dialContext:    opts.DialContext,
 		templateLoader: opts.TemplateLoader,
+		assetResolver:  opts.AssetResolver,
 		maxLoopSteps:   DefaultMaxLoopSteps,
 		maxCallDepth:   DefaultMaxCallDepth,
 	}
@@ -823,6 +827,7 @@ type execContext struct {
 	permissions    Permissions
 	dialContext    func(ctx context.Context, network, addr string) (net.Conn, error)
 	templateLoader func(path string, data map[string]grabrt.Value) (string, error)
+	assetResolver  func(path string) (string, error)
 	loopSteps      int
 	maxLoopSteps   int
 	callDepth      int
@@ -1123,6 +1128,7 @@ func (ctx *execContext) execDoTogether(node *ast.DoTogetherStatement, env *scope
 			permissions:    ctx.permissions,
 			dialContext:    ctx.dialContext,
 			templateLoader: ctx.templateLoader,
+			assetResolver:  ctx.assetResolver,
 			maxLoopSteps:   ctx.maxLoopSteps,
 			maxCallDepth:   ctx.maxCallDepth,
 			callDepth:      ctx.callDepth,

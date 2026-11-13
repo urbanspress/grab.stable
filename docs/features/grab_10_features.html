@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>GRAB 1.0 · Stable Platform, Asset Cache-Busting &amp; Native MCP Server</title>
 <style>
-:root{color-scheme:light;--ink:#152d3e;--muted:#4c6678;--line:#dbe5eb;--teal:#006e67;--blue:#165caa;--amber:#b45309;--amber-bg:#fef3c7}
+:root{color-scheme:light;--ink:#152d3e;--muted:#4c6678;--line:#dbe5eb;--teal:#006e67;--blue:#165caa;--green:#166534;--green-bg:#dcfce7}
 *{box-sizing:border-box}
 body{margin:0;background:#f3f7fa;color:var(--ink);font:17px/1.65 system-ui,sans-serif}
 main{max-width:1120px;margin:auto;padding:40px 24px 70px}
@@ -17,8 +17,8 @@ h2{font-size:30px;line-height:1.25;margin:45px 0 20px}
 h3{font-size:22px;line-height:1.25;margin:0 0 12px}
 p{margin:10px 0}
 .lead{font-size:22px;max-width:820px;color:var(--muted)}
-.badge{display:inline-block;background:var(--amber-bg);color:var(--amber);border-radius:30px;padding:6px 14px;font-size:14px;font-weight:700}
-.notice{border-left:5px solid #b45309;background:#fffbeb;padding:18px 24px;margin:25px 0;border-radius:0 12px 12px 0}
+.badge{display:inline-block;background:var(--green-bg);color:var(--green);border-radius:30px;padding:6px 14px;font-size:14px;font-weight:700}
+.notice{border-left:5px solid #006e67;background:#eaf7f5;padding:18px 24px;margin:25px 0;border-radius:0 12px 12px 0}
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
 .card{background:white;border:1px solid var(--line);border-radius:16px;padding:27px}
 .card .eyebrow{font-size:13px;color:var(--teal);font-weight:800;letter-spacing:1px;text-transform:uppercase}
@@ -40,18 +40,18 @@ footer{margin-top:45px;border-top:1px solid var(--line);padding-top:20px;color:v
 <main>
 <nav>
   <a href="index.html">← All GRAB milestones</a>
-  <a href="../../specifications/GRAB-PLATFORM-SPEC-100.md">Specification 100 (In Review)</a>
+  <a href="../../specifications/GRAB-PLATFORM-SPEC-100.md">Specification 100 (Approved &amp; Implemented)</a>
 </nav>
 
 <header>
-  <span class="badge">Approved target · Specification in review (Pre-implementation)</span>
+  <span class="badge">Implemented · 100% tests pass on origin/main (release gate pending before stable)</span>
   <h1>Production-ready GRAB.<br>Built-in AI guardrails.</h1>
   <p class="lead">GRAB 1.0 locks down language stability for the <code>v1.x</code> era, adds instant asset cache-busting for zero-downtime deploys, and ships a native MCP server (<code>grab mcp</code>) so AI tools can validate and scaffold safely.</p>
   <p>Milestone guide · November 13, 2026 · Owner: Google Antigravity</p>
 </header>
 
 <div class="notice">
-  <strong>Pre-implementation status:</strong> This guide summarizes the proposed <a href="../../specifications/GRAB-PLATFORM-SPEC-100.md"><code>GRAB-PLATFORM-SPEC-100.md</code></a> specification awaiting owner approval. No Go code changes have been made yet.
+  <strong>Implemented on <code>origin/main</code>:</strong> GRAB 1.0's native MCP server (<code>internal/mcp</code>, <code>grab mcp</code>) and <code>server.asset</code> cache-busting (<code>internal/server</code>, <code>internal/interpreter</code>) are implemented and verified by <code>go test -count=1 ./...</code> under <a href="../../specifications/GRAB-PLATFORM-SPEC-100.md"><code>GRAB-PLATFORM-SPEC-100.md</code></a>. Final <code>v1.0.0</code> promotion to <code>stable</code> remains gated on the GRAB 0.8 Section 12 sustained load check and <code>govulncheck ./...</code>.
 </div>
 
 <h2>How <code>grab mcp</code> keeps AI assistants accurate</h2>
@@ -100,7 +100,7 @@ footer{margin-top:45px;border-top:1px solid var(--line);padding-top:20px;color:v
 
 route "GET" "/"
   set css_url to server.asset using "/static/app.css"
-  give back server.html using "home.grab.html" { title: "Home", css: css_url }
+  give back server.html using "home.grab.html", record {title: "Home", css: css_url}
 end</code></pre>
 
 <h2>Smart <code>Cache-Control</code> during rolling updates</h2>

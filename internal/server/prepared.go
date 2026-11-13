@@ -2,8 +2,11 @@ package server
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
@@ -26,6 +29,101 @@ type PreparedApp struct {
 	code    *interpreter.PreparedProgram
 	legacy  *template.Template
 	files   map[string]time.Time
+	assets  *assetManifest
+}
+
+type assetManifest struct {
+	prefix string
+	hashes map[string]string
+}
+
+func buildAssetManifest(staticPrefix, staticRoot string, watchFiles map[string]time.Time) (*assetManifest, error) {
+	if staticPrefix == "" || staticRoot == "" {
+		return nil, nil
+	}
+	hashes := map[string]string{}
+	err := filepath.WalkDir(staticRoot, func(path string, d fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if path != staticRoot && sensitive(d.Name()) {
+			if d.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if d.IsDir() {
+			return nil
+		}
+		realPath, err := filepath.EvalSymlinks(path)
+		if err != nil || !isWithinDir(realPath, staticRoot) || sensitive(realPath) {
+			return nil
+		}
+		rel, err := filepath.Rel(staticRoot, path)
+		if err != nil || rel == "." {
+			return nil
+		}
+		urlRel := filepath.ToSlash(rel)
+		if sensitive(urlRel) {
+			return nil
+		}
+		f, err := os.Open(realPath)
+		if err != nil {
+			return nil
+		}
+		st, err := f.Stat()
+		if err != nil || !st.Mode().IsRegular() {
+			_ = f.Close()
+			return nil
+		}
+		h := sha256.New()
+		_, copyErr := io.Copy(h, f)
+		_ = f.Close()
+		if copyErr != nil {
+			return copyErr
+		}
+		hashes[staticPrefix+urlRel] = hex.EncodeToString(h.Sum(nil))[:12]
+		if watchFiles != nil {
+			watchFiles[path] = st.ModTime()
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &assetManifest{prefix: staticPrefix, hashes: hashes}, nil
+}
+
+func (m *assetManifest) resolve(raw string) (string, error) {
+	if m == nil {
+		return "", fmt.Errorf("static asset serving is not configured")
+	}
+	if raw == "" || strings.ContainsAny(raw, "\x00\\?#") || sensitive(raw) {
+		return "", fmt.Errorf("invalid static asset path")
+	}
+	var rel string
+	switch {
+	case strings.HasPrefix(raw, m.prefix):
+		rel = strings.TrimPrefix(raw, m.prefix)
+	case strings.HasPrefix(raw, "/"):
+		return "", fmt.Errorf("unknown static asset")
+	default:
+		rel = strings.TrimPrefix(raw, "./")
+	}
+	if rel == "" || strings.HasPrefix(rel, "/") || strings.HasSuffix(rel, "/") {
+		return "", fmt.Errorf("invalid static asset path")
+	}
+	for _, seg := range strings.Split(rel, "/") {
+		if seg == "" || seg == "." || seg == ".." || sensitive(seg) {
+			return "", fmt.Errorf("invalid static asset path")
+		}
+	}
+	urlPath := m.prefix + rel
+	hash, ok := m.hashes[urlPath]
+	if !ok {
+		return "", fmt.Errorf("unknown static asset")
+	}
+	return urlPath + "?v=" + hash, nil
 }
 
 func readProgram(path string) (*ast.Program, error) {
@@ -111,6 +209,10 @@ func checkTemplates(program *ast.Program, c *templateCache) error {
 }
 
 func Load(grabPath, templatePath string, opts interpreter.Options, output io.Writer) (*PreparedApp, error) {
+	return loadWithStatic(grabPath, templatePath, "", "", opts, output)
+}
+
+func loadWithStatic(grabPath, templatePath, staticPrefix, staticRoot string, opts interpreter.Options, output io.Writer) (*PreparedApp, error) {
 	if opts.PlatformLoader != nil {
 		var e error
 		opts.PlatformConfig, opts.PlatformGrants, e = opts.PlatformLoader()
@@ -130,6 +232,13 @@ func Load(grabPath, templatePath string, opts interpreter.Options, output io.Wri
 	if err = checkTemplates(program, c); err != nil {
 		return nil, err
 	}
+	assets, err := buildAssetManifest(staticPrefix, staticRoot, c.files)
+	if err != nil {
+		return nil, err
+	}
+	if assets != nil {
+		opts.AssetResolver = assets.resolve
+	}
 	opts.TemplateLoader = c.render
 	p, err := interpreter.Prepare(program, opts, output)
 	if err != nil {
@@ -141,7 +250,7 @@ func Load(grabPath, templatePath string, opts interpreter.Options, output io.Wri
 			_ = p.Close()
 		}
 	}()
-	app := &PreparedApp{code: p, files: c.files}
+	app := &PreparedApp{code: p, files: c.files, assets: assets}
 	if opts.APIContractPath != "" {
 		st, e := os.Stat(opts.APIContractPath)
 		if e != nil {

@@ -450,6 +450,7 @@ var serverFunctions = map[string]stdlibFunc{
 	"text": {arity: 2, fn: serverText}, "json": {arity: 2, fn: serverJSON},
 	"html": {minArity: 2, maxArity: 3, fn: serverHTML}, "redirect": {minArity: 1, maxArity: 2, fn: serverRedirect},
 	"response": {arity: 1, fn: serverResponse}, "parse_json": {arity: 1, fn: serverParseJSON},
+	"asset": {arity: 1, fn: serverAsset},
 }
 
 func serverText(_ *execContext, s lexer.Span, a []grabrt.Value) (grabrt.Value, error) {
@@ -536,6 +537,20 @@ func serverParseJSON(_ *execContext, s lexer.Span, a []grabrt.Value) (grabrt.Val
 		return grabrt.Value{}, invalidResponse(s, "bad request payload: invalid or empty JSON")
 	}
 	return v, nil
+}
+func serverAsset(c *execContext, s lexer.Span, a []grabrt.Value) (grabrt.Value, error) {
+	if a[0].Kind() != grabrt.TextKind || c.assetResolver == nil {
+		return grabrt.Value{}, invalidResponse(s, "expected static asset path and server asset manifest")
+	}
+	raw := a[0].TextValue()
+	if raw == "" || strings.ContainsAny(raw, "\x00\\?#") || hasBlockedSegments(raw) {
+		return grabrt.Value{}, invalidResponse(s, "invalid static asset path")
+	}
+	resolved, err := c.assetResolver(raw)
+	if err != nil {
+		return grabrt.Value{}, invalidResponse(s, err.Error())
+	}
+	return grabrt.Text(resolved), nil
 }
 
 func (p *PreparedProgram) ContractOperation(r *Route) (contracts.Operation, bool) {

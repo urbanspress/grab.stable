@@ -257,12 +257,12 @@ Implemented scope:
 
 ## GRAB 1.0 — Stable, production-ready platform & native MCP server (`grab mcp`)
 
-**Status:** Approved target; specification in review (November 13, 2026)
-**Draft specification:** [`GRAB-PLATFORM-SPEC-100.md`](../specifications/GRAB-PLATFORM-SPEC-100.md)
+**Status:** Implemented on `origin/main` — automated suite verified; pre-`stable` release gates pending (November 13, 2026)
+**Approved specification:** [`GRAB-PLATFORM-SPEC-100.md`](../specifications/GRAB-PLATFORM-SPEC-100.md)
 **Visual guide:** [`GRAB 1.0 guide`](features/grab_10_features.html)
 **Source:** Blueprint v1.0 Sections 9, 10, 11, 12, 13; Blueprint v1.1 roadmap table
 
-Proposed scope (specification in review; requires owner sign-off before Go implementation begins):
+Implemented on `origin/main` under Google Antigravity (`go build ./...`, `go test -count=1 ./...`, `GOOS=linux GOARCH=amd64 go build ./...`, and Docker Linux `-race` targeted tests passing; `govulncheck ./...` and the GRAB 0.8 Section 12 30-minute sustained load/fault run remain pending before `v1.0.0` promotion to `stable`):
 
 - **Native GRAB MCP Server (`grab mcp`, `ADR-027a`):** Built-in `stdio` JSON-RPC 2.0 MCP server with five workspace-confined, capability-bounded tools (`grab_check`, `grab_format`, `grab_inspect_routes`, `grab_inspect_schema`, `grab_scaffold`), default-deny read-only mode (`--allow-write` required for writes), and sensitive-path blocking (`GRAB-E401`) for **Groxy AI**, **OpenCode**, **Antigravity**, and **Codex**.
 - **Forward-Compatible Asset Cache-Busting (`server.asset` + Smart `Cache-Control`, `ADR-027b`):** In-memory SHA-256 asset hashing at `PreparedApp` startup/reload (compatible with `--read-only` containers), returning `/static/<file>?v=<12-char-sha256>` with `Cache-Control: public, max-age=31536000, immutable` on hash match and safe `no-cache` fallback on mismatch during rolling multi-worker restarts.

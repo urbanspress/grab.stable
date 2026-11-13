@@ -132,6 +132,33 @@ func (a *Application) Close() {
 	}
 }
 
+func parseStaticConfig(raw string) (prefix, root string, err error) {
+	if raw == "" {
+		return "", "", nil
+	}
+	prefix, dir, ok := strings.Cut(raw, "=")
+	if !ok {
+		dir = prefix
+		prefix = "/static/"
+	}
+	if !strings.HasPrefix(prefix, "/") || strings.ContainsAny(prefix, "?#\\") || strings.Contains(prefix, "..") || !strings.HasSuffix(prefix, "/") {
+		return "", "", fmt.Errorf("static prefix must start and end with /")
+	}
+	root, err = filepath.Abs(dir)
+	if err != nil {
+		return "", "", err
+	}
+	root, err = filepath.EvalSymlinks(root)
+	if err != nil {
+		return "", "", err
+	}
+	st, err := os.Stat(root)
+	if err != nil || !st.IsDir() {
+		return "", "", fmt.Errorf("static root must be a directory")
+	}
+	return prefix, root, nil
+}
+
 func NewApplication(grabPath, templatePath string, opts interpreter.Options, cfg Config, output io.Writer) (*Application, error) {
 	if e := cfg.Validate(); e != nil {
 		return nil, e
@@ -144,29 +171,11 @@ func NewApplication(grabPath, templatePath string, opts interpreter.Options, cfg
 	}
 	a := &Application{cfg: cfg, slots: make(chan struct{}, cfg.MaxConcurrency), queue: make(chan struct{}, cfg.MaxQueue), grabPath: grabPath, templatePath: templatePath, opts: opts, output: output}
 	a.proxies, _ = parseProxies(cfg.TrustedProxy)
-	if cfg.Static != "" {
-		prefix, dir, ok := strings.Cut(cfg.Static, "=")
-		if !ok {
-			dir = prefix
-			prefix = "/static/"
-		}
-		if !strings.HasPrefix(prefix, "/") || strings.ContainsAny(prefix, "?#\\") || strings.Contains(prefix, "..") || !strings.HasSuffix(prefix, "/") {
-			return nil, fmt.Errorf("static prefix must start and end with /")
-		}
-		root, e := filepath.Abs(dir)
-		if e != nil {
-			return nil, e
-		}
-		root, e = filepath.EvalSymlinks(root)
-		if e != nil {
-			return nil, e
-		}
-		st, e := os.Stat(root)
-		if e != nil || !st.IsDir() {
-			return nil, fmt.Errorf("static root must be a directory")
-		}
-		a.staticRoot, a.staticPrefix = root, prefix
+	prefix, root, e := parseStaticConfig(cfg.Static)
+	if e != nil {
+		return nil, e
 	}
+	a.staticPrefix, a.staticRoot = prefix, root
 	if e := a.Reload(); e != nil {
 		return nil, e
 	}
@@ -180,7 +189,7 @@ func (a *Application) Reload() error {
 	}
 	// Initialization output is separate from request logs and serialized.
 	var startup bytes.Buffer
-	p, e := Load(a.grabPath, a.templatePath, a.opts, &startup)
+	p, e := loadWithStatic(a.grabPath, a.templatePath, a.staticPrefix, a.staticRoot, a.opts, &startup)
 	if e != nil {
 		return e
 	}
@@ -754,8 +763,16 @@ func (a *Application) static(r *http.Request) (int, http.Header, []byte) {
 		return fail()
 	}
 	sum := sha256.Sum256(b)
-	tag := fmt.Sprintf(`"%x"`, sum)
+	fullHex := fmt.Sprintf("%x", sum)
+	tag := `"` + fullHex + `"`
+	shortHash := fullHex[:12]
 	h.Set("ETag", tag)
+	vVals := r.URL.Query()["v"]
+	if len(vVals) == 1 && vVals[0] == shortHash {
+		h.Set("Cache-Control", "public, max-age=31536000, immutable")
+	} else {
+		h.Set("Cache-Control", "no-cache")
+	}
 	contentType := mime.TypeByExtension(filepath.Ext(path))
 	if contentType == "" {
 		contentType = http.DetectContentType(b)

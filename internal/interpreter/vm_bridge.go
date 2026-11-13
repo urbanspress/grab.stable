@@ -389,6 +389,7 @@ func (b *vmHostBridge) ForkTask(taskCtx context.Context, output io.Writer, stack
 		permissions:    b.ctx.permissions,
 		dialContext:    b.ctx.dialContext,
 		templateLoader: b.ctx.templateLoader,
+		assetResolver:  b.ctx.assetResolver,
 		maxLoopSteps:   b.ctx.maxLoopSteps,
 		maxCallDepth:   b.ctx.maxCallDepth,
 		callDepth:      len(stack),
