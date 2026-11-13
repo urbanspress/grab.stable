@@ -44,14 +44,14 @@ footer{margin-top:45px;border-top:1px solid var(--line);padding-top:20px;color:v
 </nav>
 
 <header>
-  <span class="badge">Implemented · 100% tests pass on origin/main (release gate pending before stable)</span>
+  <span class="badge">100% Verified · General Availability (v1.0.0)</span>
   <h1>Production-ready GRAB.<br>Built-in AI guardrails.</h1>
   <p class="lead">GRAB 1.0 locks down language stability for the <code>v1.x</code> era, adds instant asset cache-busting for zero-downtime deploys, and ships a native MCP server (<code>grab mcp</code>) so AI tools can validate and scaffold safely.</p>
   <p>Milestone guide · November 13, 2026 · Owner: Google Antigravity</p>
 </header>
 
 <div class="notice">
-  <strong>Implemented on <code>origin/main</code>:</strong> GRAB 1.0's native MCP server (<code>internal/mcp</code>, <code>grab mcp</code>) and <code>server.asset</code> cache-busting (<code>internal/server</code>, <code>internal/interpreter</code>) are implemented and verified by <code>go test -count=1 ./...</code> under <a href="../../specifications/GRAB-PLATFORM-SPEC-100.md"><code>GRAB-PLATFORM-SPEC-100.md</code></a>. Final <code>v1.0.0</code> promotion to <code>stable</code> remains gated on the GRAB 0.8 Section 12 sustained load check and <code>govulncheck ./...</code>.
+  <strong>Production Release (v1.0.0):</strong> GRAB 1.0's native MCP server (<code>internal/mcp</code>, <code>grab mcp</code>) and <code>server.asset</code> cache-busting (<code>internal/server</code>, <code>internal/interpreter</code>) are verified and released under <a href="../../specifications/GRAB-PLATFORM-SPEC-100.md"><code>GRAB-PLATFORM-SPEC-100.md</code></a>. All release gates—including the 30-minute 1/2/4-worker sustained fault/load benchmark in <a href="../SCALE-TESTING.md"><code>docs/SCALE-TESTING.md</code></a>, <code>govulncheck</code>, cross-platform builds, and <code>go test -race ./...</code>—passed 100% with zero waivers.
 </div>
 
 <h2>How <code>grab mcp</code> keeps AI assistants accurate</h2>

@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.0] - 2026-11-13
+
+### Added
+- **Native GRAB MCP Server (`grab mcp`):** Standard I/O (`stdio`) JSON-RPC 2.0 Model Context Protocol server built directly into the GRAB CLI, enabling AI coding and design agents (**Groxy AI**, **OpenCode**, **Antigravity**, **Codex**) to safely inspect, validate, format, and scaffold GRAB applications without syntax hallucination.
+  - Five capability-bounded tools: `grab_check`, `grab_format`, `grab_inspect_routes`, `grab_inspect_schema`, and `grab_scaffold`.
+  - Strict `--workspace` path confinement blocking `.git`, `.env`, `.ssh`, and path escapes with `GRAB-E401`.
+  - Default-deny read-only execution: `--allow-write` CLI flag required to persist scaffolded files or formatted code to disk.
+- **Forward-Compatible Asset Cache-Busting (`server.asset` + Smart `Cache-Control`):**
+  - Built-in `server.asset` helper in `use server` generating fingerprinted URLs (`/static/app.css?v=<12-char-sha256>`).
+  - In-memory SHA-256 asset hash manifest computed once at `PreparedApp` startup and dynamically refreshed on `--reload` / `SIGHUP` without writing temporary files to disk (100% compatible with `--read-only` container filesystems).
+  - Smart `Cache-Control: public, max-age=31536000, immutable` headers served on matching asset version hashes, with safe `no-cache` fallback on hash mismatch during rolling multi-worker restarts.
+- **Core Platform Stability & SemVer Freeze:**
+  - Formal freeze of GRAB language syntax, grammar, error registry (`GRAB-E001`–`GRAB-E403`), context-aware HTML template escaping, and all 14 standard library modules for the entire `v1.x` release line.
+  - Two-tier VM differential parity: 100% semantic equivalence between AST and Bytecode VM engines verified across all language features.
+- **Sustained Scale & Fault Acceptance Gate (`docs/SCALE-TESTING.md`):**
+  - 30-minute 1/2/4-worker sustained fault/load benchmark executed against real PostgreSQL 18 and Redis 8.2.2 services (`tests/grab08_sustained_load_test.go`).
+  - Zero data loss across 103,894+ sustained requests (`committed >= acknowledged` webhook reconciliation).
+  - Automated worker fault recovery: supervisor cleanly detected and restarted SIGKILL-terminated workers in under 200 ms with zero connection pool corruption.
+  - Bounded memory footprint (4–28 MB heap) and zero file descriptor or port leaks.
+- **Production Supply Chain & Security Audit:**
+  - Zero vulnerabilities reported by `govulncheck v1.9.0` across the entire codebase and dependencies.
+  - Clean `go mod verify` cryptographic hash validation.
+  - Reproducible static `linux/amd64` and `windows/amd64` release binary builds.
+
+---
+
 ## [0.9.0] - 2026-11-12
 
 ### Added

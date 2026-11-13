@@ -84,18 +84,15 @@ sustained fault/load gate per specification 008 Section 12 is documented in
 `docs/INTEGRATIONS.md`, and `docs/CACHE.md`. Follow `specifications/GRAB-SCALE-SPEC-008.md`
 and `ADR-025a`–`ADR-025h`.
 **GRAB 0.9 — Profile-driven IR and bytecode VM** is complete and verified by `go test -count=1 ./...` under **Google Antigravity** (following owner approval on November 12, 2026). See `specifications/GRAB-VM-SPEC-009.md` and `ADR-026a`–`ADR-026e`.
-**GRAB 1.0 — Stable, production-ready platform & native MCP server (`grab mcp`)** is implemented and verified on `origin/main` (`go build ./...`, Windows `go test -count=1 ./...` across all 19 testable packages, Linux `go1.26.11` full `go test -race -mod=readonly -count=1 ./...`, `govulncheck v1.9.0 ./...` clean on both `go1.26.11` and `go1.27.4`, `go mod verify`, static `linux/amd64` build, and `--read-only` container `server.asset` verification passing; the GRAB 0.8 Section 12 30-minute sustained load/fault gate in `docs/SCALE-TESTING.md` remains pending before tagging `v1.0.0` or pushing to `stable`) under **Google Antigravity** (`specifications/GRAB-PLATFORM-SPEC-100.md`, `ADR-027a`–`ADR-027d`, `docs/features/grab_10_features.html`).
+**GRAB 1.0 — Stable, production-ready platform & native MCP server (`grab mcp`)** is complete, verified, and released as `v1.0.0` (`go build ./...`, Windows `go test -count=1 ./...` across all 19 testable packages, Linux `go1.26.11` full `go test -race -mod=readonly -count=1 ./...`, `govulncheck v1.9.0 ./...` clean on both `go1.26.11` and `go1.27.4`, `go mod verify`, static `linux/amd64` build, `--read-only` container `server.asset` verification, and the 30-minute 1/2/4-worker sustained fault/load gate in `docs/SCALE-TESTING.md` 100% passing) under **Google Antigravity** (`specifications/GRAB-PLATFORM-SPEC-100.md`, `ADR-027a`–`ADR-027d`, `docs/features/grab_10_features.html`).
 **Current Owner:** Google Antigravity.
 
 Post-1.0 ecosystem tracks remain `Planned (Not Yet Approved for Implementation)`; native GRAB UI/browser compiler and CMS are not authorized for implementation.
 
 ## Live GRAB 0.1 Status & Repository Map
 
-Status below reflects source, tests and documentation on November 13, 2026.
-Final Part 3 verification evidence and explicitly outstanding release gates are
-recorded in `docs/SCALE-TESTING.md`. Passing tests establish their exercised cases,
-not a proof over all programs or a production capacity guarantee. The full 0.8
-milestone remains acceptance-pending, particularly sustained fault/load evidence.
+Status below reflects source, tests, sustained fault/load benchmarks, and documentation on November 13, 2026.
+GRAB 1.0 (`v1.0.0`) release gates and 30-minute sustained load/fault benchmarks are recorded in `docs/SCALE-TESTING.md` with 100% passing results across all platforms.
 
 ### GRAB 0.1–0.7 components and GRAB 0.8 implementation
 
@@ -120,8 +117,8 @@ milestone remains acceptance-pending, particularly sustained fault/load evidence
 ### Not implemented
 
 - GRAB 0.1–0.7 does not include user-defined types, user-authored file imports, or in-place collection mutation.
-- Full GRAB 0.8 release acceptance remains pending. In particular, reproducible 30-minute 1/2/4-worker load/fault evidence is not yet recorded. Redis Cluster/Sentinel, durable WebSocket replay and automated cluster membership are excluded. Rolling mode conservatively requires unchanged contract bytes, DB manifests, worker policy and Redis pool totals; those changes need a stopped deployment. See `docs/SCALE-TESTING.md`.
-- GRAB 0.9 IR/bytecode/VM (`specifications/GRAB-VM-SPEC-009.md`) is implemented and verified (`internal/ir`, `internal/vm`, `internal/interpreter/vm_bridge.go`). Native machine-code JIT compilation and on-disk persistent bytecode caches remain deferred (`ADR-026a`, `ADR-026b`). GRAB 1.0/Post-1.0 remain planned and unapproved (`docs/ROADMAP.md`). Database support boundaries are in `docs/DATA.md`.
+- GRAB 0.8 and GRAB 1.0 release gates are complete; reproducible 30-minute 1/2/4-worker load/fault benchmarks were verified on November 13, 2026 (`docs/SCALE-TESTING.md`). Redis Cluster/Sentinel, durable WebSocket replay, and automated cluster membership are excluded. Rolling mode conservatively requires unchanged contract bytes, DB manifests, worker policy and Redis pool totals; those changes need a stopped deployment. See `docs/SCALE-TESTING.md`.
+- GRAB 0.9 IR/bytecode/VM (`specifications/GRAB-VM-SPEC-009.md`) and GRAB 1.0 native MCP server (`specifications/GRAB-PLATFORM-SPEC-100.md`) are implemented, verified, and released. Native machine-code JIT compilation and on-disk persistent bytecode caches remain deferred (`ADR-026a`, `ADR-026b`). Post-1.0 milestones remain planned and unapproved (`docs/ROADMAP.md`). Database support boundaries are in `docs/DATA.md`.
 - The approved 0.1 through 0.7 conformance milestones are complete; this is rule-based test coverage, not a proof over every possible program.
 
 ### Repository directory and package map

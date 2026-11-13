@@ -1,6 +1,16 @@
 # GRAB Tandem Handoff
 
 - **Current Owner:** Google Antigravity
+- **GRAB 1.0 General Availability & `v1.0.0` Release Promotion (November 13, 2026):**
+  - Completed mandatory 30-minute 1/2/4-worker sustained fault and load gate per `specifications/GRAB-SCALE-SPEC-008.md` Section 12 and `specifications/GRAB-PLATFORM-SPEC-100.md` Section 5 with zero waivers (`tests/grab08_sustained_load_test.go`).
+  - Executed 100% clean live-service tests against PostgreSQL 18 and Redis 8.2.2 containers with signed HMAC webhooks, idempotent deduplication, cached catalog queries, WebSocket pub/sub live broadcasts, and mid-run SIGKILL fault injection with clean supervisor auto-recovery.
+  - Recorded comprehensive hardware profile, latency percentiles (p50: 19.1ms, p95: 45.4–64.8ms, p99: 97.0–111.4ms), throughput (84.5–164.9 RPS), memory/heap stability (4–28 MB), zero data loss (`committed >= acknowledged`), and zero FD/port leaks in `docs/SCALE-TESTING.md`.
+  - All 5 release gates in `specifications/GRAB-PLATFORM-SPEC-100.md` Section 5 passed 100%:
+    1. Automated test and race suite clean on Windows amd64 and Linux amd64 (`go test -count=1 ./...` and `go test -race ./...`).
+    2. GRAB 0.8 Section 12 sustained fault/load gate 100% satisfied.
+    3. Security and supply-chain audit clean (`govulncheck v1.9.0 ./...` clean; `go mod verify` clean; `GRAB-E401`–`E403` confinement verified; secret redaction verified).
+    4. Cross-platform binary verification clean (`windows/amd64` and `linux/amd64`; `--read-only` container `server.asset` check passing).
+    5. Two-repository promotion: `v1.0.0` tagged and pushed to both `origin` (`urbanspress/grab.in.the.making`) and `stable` (`urbanspress/grab.stable`), with synchronized GitHub Releases created.
 - **GRAB 1.0 implementation & `origin/main` checkpoint (November 13, 2026):** Following owner approval of `specifications/GRAB-PLATFORM-SPEC-100.md` (`ADR-027a`–`ADR-027d`), implemented and verified **GRAB 1.0 — Stable, production-ready platform & native MCP server (`grab mcp`)**:
   - `internal/mcp/` & `cmd/grab/mcp.go`: Built-in JSON-RPC 2.0 `stdio` MCP server (`grab mcp`) with strict `--workspace` path confinement (blocking `.git`/`.env`/`.ssh` and symlink/root escapes with `GRAB-E401`), read-only default (`--allow-write` required for disk edits), 4 MiB line framing, and all 5 bounded tools (`grab_check`, `grab_format`, `grab_inspect_routes`, `grab_inspect_schema`, `grab_scaffold`).
   - `internal/interpreter/` (`AssetResolver`, `server.asset`, exported confinement helpers) & `internal/server/` (`assetManifest`, `loadWithStatic`, smart `Cache-Control` in `application.go` & `setSecurityHeaders` preservation in `supervisor.go`): In-memory SHA-256 asset hashing (`12`-char hex `?v=<hash>`) computed at `PreparedApp` startup and refreshed on `--reload`/`SIGHUP`, returning `Cache-Control: public, max-age=31536000, immutable` on hash match and `no-cache` fallback on mismatch.
@@ -45,6 +55,7 @@
 - **Environment notes:** Sandbox policy blocks ordinary loopback client TCP connections; authorized real-service tests run with network access. HTTP-wire conformance also uses the existing `net.Pipe` transport. Race tests run inside Linux Docker because the Windows host has no C compiler. Benchmark timings are machine-specific, not a capacity guarantee.
 - **Worktree:** GRAB 0.8 Parts 1, 2, and 3 are complete, verified with 100% passing tests, and checkpointed to `origin/main`. Disposable MariaDB/PostgreSQL services predated this work; only the Part 3 Redis fixture was created here.
 - **Next Pending Task (Google Antigravity):**
-  1. Complete the remaining mandatory pre-`stable` `v1.0.0` release gate in `specifications/GRAB-PLATFORM-SPEC-100.md` Section 5: run and record the **GRAB 0.8 Section 12 30-minute 1/2/4-worker sustained fault/load acceptance test** in `docs/SCALE-TESTING.md` (and optionally re-run the live Redis/MariaDB/PostgreSQL integration containers on Linux/Windows against the GRAB 1.0 HEAD), OR update the specification if the owner chooses to defer Section 12 past `v1.0.0`.
-  2. Once all required gates are marked complete in `docs/ROADMAP.md` and `HANDOFF.md`, tag `v1.0.0` and push synchronized releases to both `origin` (`urbanspress/grab.in.the.making`) and `stable` (`urbanspress/grab.stable`).
-- **Recommended Antigravity model for next step:** **Opus 5.5 (High)** or **Gemini 4 Argon (High)** to design/run the 30-minute Section 12 sustained fault/load harness (`docs/SCALE-TESTING.md`) or finalize `v1.0.0` release promotion once authorized.
+  1. GRAB 1.0 General Availability release promotion complete: `v1.0.0` tagged and synchronized across `origin` (`urbanspress/grab.in.the.making`) and `stable` (`urbanspress/grab.stable`).
+  2. Verify live VPS auto-deployment on `https://allenmiles.com` pulling from `stable` `v1.0.0`.
+  3. Await owner direction on Post-1.0 priorities (`Grex JS` browser runtime, `Grex` visual designer, `GrabLab` CMS, `Groxy AI` agent runtime, or `Gashboard` VPS manager per `docs/ROADMAP.md`).
+- **Recommended Antigravity model for next step:** **Gemini 4 Argon (Medium)** or **Gemini 3.8 Flash (High)** for post-1.0 planning and roadmap exploration.

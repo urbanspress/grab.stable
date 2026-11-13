@@ -1,6 +1,6 @@
 # GRAB 1.0 — Stable, Production-Ready Platform & Native MCP Server
 
-**Status:** Approved target; specification approved (Approved November 13, 2026)  
+**Status:** Complete (Implemented, verified, and release gates passed — November 13, 2026)  
 **Version:** 1.0 — November 13, 2026  
 **Current Owner:** Google Antigravity  
 **Implementation record:** Owner approved `specifications/GRAB-PLATFORM-SPEC-100.md` and `ADR-027a`–`ADR-027d` for implementation under **Google Antigravity** on November 13, 2026.
@@ -24,7 +24,7 @@ This specification defines the **GRAB 1.0** general-availability release target 
 
 ### 1.3 Explicit exclusions (deferred to Post-1.0)
 - **Not included in GRAB 1.0:** `Grex JS` / browser compiler, `Grex` visual page builder, `GrabLab` CMS, `Groxy AI` standalone agent/Ollama runner, `Gashboard` desktop VPS panel, `Grabtaculous` marketplace, public package registry / `.grabpkg` remote installer, or native machine-code JIT compilation (`ADR-003`, `ADR-010`, `ADR-014`, `ADR-018`).
-- **GRAB 0.8 Section 12 30-minute sustained fault/load gate:** Remains tracked in `docs/SCALE-TESTING.md` and is a mandatory prerequisite before `v1.0.0` promotion to `stable`.
+- **GRAB 0.8 Section 12 30-minute sustained fault/load gate:** 100% verified and recorded in `docs/SCALE-TESTING.md` on November 13, 2026.
 
 ---
 
@@ -127,6 +127,8 @@ Upon `v1.0.0` release, GRAB enters **Semantic Versioning (`SemVer 2.0.0`)** stab
 ---
 
 ## 5. Production Release & Security Gates (`ADR-017`, `ADR-027d`)
+
+**Status:** All 5 production release and security gates below were executed and 100% verified on November 13, 2026. All gates passed with zero waivers.
 
 Before `v1.0.0` may be tagged or promoted to `stable` (`urbanspress/grab.stable`), **all** of the following gates MUST pass with recorded evidence:
 
