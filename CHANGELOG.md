@@ -37,7 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.6.0] - 2026-11-11
 
 ### Added
-- **Persistent Multi-Route Web Server (Griss Foundation):** Natural routing syntax (`route "<METHOD>" "<path>" using req ... end`) with path parameter extraction (`{id}`).
+- **Persistent Multi-Route Web Server (Grisp Foundation):** Natural routing syntax (`route "<METHOD>" "<path>" using req ... end`) with path parameter extraction (`{id}`).
 - **Load-Once App Architecture (`PreparedApp`):** Pre-compiles and validates AST and `.grab.html` templates at boot for zero cold starts.
 - **Strict Per-Request Isolation:** Fresh variable bindings per request, eliminating shared-state leakage between visitors.
 - **Server Standard Module (`use server`):** Built-in response builders `server.html`, `server.json`, `server.text`, `server.redirect`, `server.response`, and `server.parse_json`.

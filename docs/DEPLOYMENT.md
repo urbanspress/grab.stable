@@ -23,7 +23,7 @@ This reference summarizes GRAB's standard local development and production hosti
    - Keep host manifests (`--db-config`, proposed `--platform-config`), environment secrets, and raw stack traces strictly server-side (`--diagnostics production` in live deployments).
    - Rely on default-deny capability flags (`--allow-db`, `--allow-read`, `--allow-write`, `--allow-net`, and proposed GRAB 0.8 grants).
 4. **Hardened non-root container execution (Production Gold Standard):**
-   - Run GRAB (**Griss**) inside a non-root container (`read_only: true`, `cap_drop: ["ALL"]`, minimal writable mounts only where required) on a private backend network with Redis (0.8) and PostgreSQL/MariaDB (0.7).
+   - Run GRAB (**Grisp**) inside a non-root container (`read_only: true`, `cap_drop: ["ALL"]`, minimal writable mounts only where required) on a private backend network with Redis (0.8) and PostgreSQL/MariaDB (0.7).
 5. **Zero-cold-start performance & rolling reloads:**
    - GRAB lexes, parses, validates routes/templates, and opens bounded DB pools once per generation (`PreparedApp`)—no per-request bootstrap like PHP-FPM/FastCGI.
    - Use `/_health` (liveness) and `/_ready` (readiness, returning `503` while draining) to coordinate zero-downtime / rolling proxy upstream updates.
@@ -50,7 +50,7 @@ Public Internet (80/443)
   -> Edge Reverse Proxy: Caddy (recommended zero-cron HTTPS), Nginx + Certbot, or Cloudflare Tunnel
        (Let's Encrypt / ZeroSSL + on-demand custom-domain TLS -> forwards clean HTTP/WebSocket traffic)
   -> Hardened Non-Root Container (non-root UID, read-only rootfs, dropped capabilities)
-  -> Griss / GRAB Private Worker Ports (127.0.0.1:8765-8772 via GRAB 0.8 --workers; never root, never manages certs)
+  -> Grisp / GRAB Private Worker Ports (127.0.0.1:8765-8772 via GRAB 0.8 --workers; never root, never manages certs)
   -> Private Redis (0.8) + PostgreSQL / MariaDB (0.7)
 ```
 

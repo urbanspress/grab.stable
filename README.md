@@ -1,4 +1,4 @@
-# GRAB Programming Language & Griss Application Platform
+# GRAB Programming Language & Grisp Application Platform
 
 <p align="center">
   <a href="https://go.dev"><img src="https://img.shields.io/badge/go-%3E%3D%201.26-00ADD8?style=flat&logo=go" alt="Go Version"></a>
@@ -13,7 +13,7 @@
 ## Table of Contents
 
 - [Overview](#overview)
-- [GRAB & Griss Runtime](#grab--griss-runtime)
+- [GRAB & Grisp Runtime](#grab--grisp-runtime)
 - [Architecture & Key Highlights](#architecture--key-highlights)
 - [Quick Start](#quick-start)
 - [CLI Command Reference](#cli-command-reference)
@@ -35,10 +35,10 @@ GRAB is engineered from first principles to power modern, connected web applicat
 
 ---
 
-## GRAB & Griss Runtime
+## GRAB & Grisp Runtime
 
 - **The GRAB Language:** Provides an intuitive, expressive grammar with native support for structured error handling (`try`/`catch`/`raise`), task-group concurrency (`do together`/`wait for`), lossless JSON parsing, unified record/map collection lookups, and exact numerical types.
-- **Griss Application Server:** The persistent application engine powering `grab serve`. Unlike traditional scripting runtimes (such as PHP-FPM or CGI) that re-parse scripts and open fresh database connections on every incoming request, Griss pre-compiles AST and `.grab.html` templates once at startup (`PreparedApp`). It keeps connection pools warm, isolates execution frames per visitor, sheds load under pressure (503 backpressure), and enables zero-downtime atomic application reloads.
+- **Grisp Application Server:** The persistent application engine powering `grab serve`. Unlike traditional scripting runtimes (such as PHP-FPM or CGI) that re-parse scripts and open fresh database connections on every incoming request, Grisp pre-compiles AST and `.grab.html` templates once at startup (`PreparedApp`). It keeps connection pools warm, isolates execution frames per visitor, sheds load under pressure (503 backpressure), and enables zero-downtime atomic application reloads.
 
 ---
 
@@ -98,7 +98,7 @@ Usage:
 
 Core Commands:
   run       Execute a GRAB program (.grab) directly
-  serve     Run a persistent multi-route application server (Griss engine)
+  serve     Run a persistent multi-route application server (Grisp engine)
   check     Validate program syntax, imports, and routes offline
   format    Format GRAB source code canonically (--write to apply)
   migrate   Run database schema migrations against configured databases
@@ -217,7 +217,7 @@ Read our full [Security Policy & Vulnerability Reporting Guide](SECURITY.md).
 
 ## Production Deployment
 
-GRAB persistent server (**Griss**) is designed to run behind a modern edge reverse proxy such as **Caddy** (recommended) or **Nginx**:
+GRAB persistent server (**Grisp**) is designed to run behind a modern edge reverse proxy such as **Caddy** (recommended) or **Nginx**:
 
 - **[deploy/](deploy/)**: Complete production Docker stack.
   - **[deploy/Dockerfile](deploy/Dockerfile)**: Multi-stage, statically compiled Go container running as unprivileged `grab` user.
@@ -234,7 +234,7 @@ Explore our plain-English visual documentation hubs:
 - **[Milestone Feature Guides Hub](docs/features/index.html)** — Comprehensive visual roadmap of all completed and active releases.
 - **[GRAB 0.8 Visual Guide](docs/features/grab_08_features.html)** — Integrations, typed React/TS clients, Redis cache, durable webhooks, and worker scaling.
 - **[GRAB 0.7 Visual Guide](docs/features/grab_07_features.html)** — Database access (SQLite, MariaDB, PostgreSQL), prepared queries, and migrations.
-- **[GRAB 0.6 Visual Guide](docs/features/grab_06_features.html)** — Persistent multi-route application server (Griss engine).
+- **[GRAB 0.6 Visual Guide](docs/features/grab_06_features.html)** — Persistent multi-route application server (Grisp engine).
 - **[GRAB 0.5 Visual Guide](docs/features/grab_05_features.html)** — Universal HTTP client, lossless JSON, and task groups.
 - **[GRAB 0.4 Visual Guide](docs/features/grab_04_features.html)** — Standard library, error model, and capability permissions.
 - **[Deployment Architecture](docs/features/deployment_architecture.html)** — Traffic flow, proxy topologies, and comparison against PHP-FPM.

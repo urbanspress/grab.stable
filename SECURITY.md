@@ -9,7 +9,7 @@ Furthermore, GRAB eliminates entire classes of common web vulnerabilities at the
 - **No Cross-Site Scripting (XSS):** Web templates (`.grab.html`) parse lexical HTML contexts and automatically escape interpolated values according to their placement (HTML body, attributes, or URLs).
 - **No SSRF to Internal Infrastructure:** Outbound HTTP requests (`use http`) automatically block access to loopback (`127.0.0.1`), RFC 1918 private subnets (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`), and cloud instance metadata endpoints (`169.254.169.254`).
 - **No Path Traversal or Secret Leakage:** Filesystem operations (`use files`) enforce path confinement and unconditionally block access to sensitive directories including `.git`, `.env`, `.ssh`, and private cryptographic key files (`GRAB-E401`).
-- **Per-Request Memory Isolation:** In the persistent web server (**Griss** engine), requests run in isolated call frames with fresh variable bindings. Global mutable state between concurrent visitors is disallowed.
+- **Per-Request Memory Isolation:** In the persistent web server (**Grisp** engine), requests run in isolated call frames with fresh variable bindings. Global mutable state between concurrent visitors is disallowed.
 
 ---
 

@@ -139,7 +139,7 @@ Delivered in the repository:
 
 ---
 
-## GRAB 0.6 — Persistent application server (GRAB Server / future **Griss** runtime)
+## GRAB 0.6 — Persistent application server (GRAB Server / future **Grisp** runtime)
 
 **Status:** Complete — November 11, 2026 (`specifications/GRAB-SERVER-SPEC-006.md`)
 **Approval date:** November 11, 2026 (owner explicitly authorized completing the specification in the Codex takeover request)
@@ -147,7 +147,7 @@ Delivered in the repository:
 
 Delivered in the repository:
 
-- Persistent multi-route `grab serve` runtime (`PreparedApp`, the core server foundation that powers the ecosystem's **Griss** application server) that lexes, parses,
+- Persistent multi-route `grab serve` runtime (`PreparedApp`, the core server foundation that powers the ecosystem's **Grisp** application server) that lexes, parses,
   and validates programs and static `.grab.html` templates once per application
   load/reload (`ADR-011`, `ADR-012`), preserving 100% GRAB 0.2 single-file compatibility.
 - Multi-route syntax (`route "<METHOD>" "<path>" [using <req>] ... end`) and
@@ -296,7 +296,7 @@ UI strategy and server/browser security boundary are approved (`ADR-014`, `ADR-0
 Each ecosystem track below requires separate owner approval after GRAB 1.0 and
 remains unimplemented (`Status: Planned (Not Yet Approved for Implementation)`):
 
-- **Griss (Snappy Multi-Worker Application Server):** The persistent
+- **Grisp (Snappy Multi-Worker Application Server):** The persistent
   multi-worker GRAB web application server runtime that Nginx or Caddy passes
   the "rock" to on private loopback ports (`127.0.0.1:8765–8772`), eliminating
   cold starts with compiled `PreparedApp` memory generations, warm database/Redis
@@ -339,7 +339,7 @@ remains unimplemented (`Status: Planned (Not Yet Approved for Implementation)`):
     web-panel login attack surfaces entirely by running as a local desktop
     control panel that manages remote VPS Docker containers, databases
     (PostgreSQL, MariaDB, SQLite), Redis instances, and automatic edge SSL
-    (via Caddy or Nginx + Certbot) over encrypted connections—keeping **Griss**
+    (via Caddy or Nginx + Certbot) over encrypted connections—keeping **Grisp**
     unprivileged on private worker ports (`127.0.0.1:8765–8772`).
   - **Grabtaculous (1-Click App Marketplace):** Built-in Softaculous-style
     one-click app marketplace inside **Gashboard** offering curated container

@@ -564,20 +564,20 @@ go run ./cmd/grab serve --addr 127.0.0.1:8765 --trusted-proxy 127.0.0.1,::1 --lo
         <div class="sub-panel">
           <h3>Stage 2: Live Production <code>docker-compose.yml</code> (GRAB 1.0 &amp; GrabLab Target)</h3>
           <p class="section-sub" style="margin-bottom: 10px;">
-            Illustrative target layout pairing an edge proxy (Caddy recommended for automatic SSL, Nginx + Certbot, or Cloudflare Tunnel) with a hardened non-root Griss / GRAB container, private multi-worker ports, Redis, and PostgreSQL/MariaDB:
+            Illustrative target layout pairing an edge proxy (Caddy recommended for automatic SSL, Nginx + Certbot, or Cloudflare Tunnel) with a hardened non-root Grisp / GRAB container, private multi-worker ports, Redis, and PostgreSQL/MariaDB:
           </p>
           <pre><code># Conceptual target for GRAB 1.0 / GrabLab (planned)
 services:
   edge-proxy:
     image: caddy:2-alpine          # Or Nginx + Certbot / Cloudflare Tunnel
     ports: ["80:80", "443:443"]   # Automatic Let's Encrypt / ZeroSSL HTTPS
-    # Forwards clean HTTP/WebSocket traffic to Griss on 127.0.0.1:8765-8772, checks /_ready
+    # Forwards clean HTTP/WebSocket traffic to Grisp on 127.0.0.1:8765-8772, checks /_ready
 
-  griss-app:
+  grisp-app:
     user: "65532:65532"            # Non-root UID (never manages TLS certs)
     read_only: true                # Immutable rootfs
     cap_drop: ["ALL"]              # Minimal Linux caps
-    # Runs Griss workers on private ports 8765-8772
+    # Runs Grisp workers on private ports 8765-8772
     # Connects privately to Redis (0.8) &amp; Postgres/MariaDB (0.7)</code></pre>
         </div>
       </div>

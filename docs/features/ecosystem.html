@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GRAB Ecosystem Showcase — Griss, GrabLab, Grex, Groxy AI &amp; Gashboard</title>
+<title>GRAB Ecosystem Showcase — Grisp, GrabLab, Grex, Groxy AI &amp; Gashboard</title>
 <style>
   :root {
     --page-bg: #f8fafc;
@@ -221,7 +221,7 @@
 
   .flow-node.desktop { border-color: #6d28d9; background: #f5f3ff; }
   .flow-node.proxy { border-color: #0284c7; background: #f0f9ff; }
-  .flow-node.griss { border-color: #15803d; background: #f0fdf4; }
+  .flow-node.grisp { border-color: #15803d; background: #f0fdf4; }
   .flow-node.apps { border-color: #0f766e; background: #f0fdfa; }
   .flow-node.data { border-color: #b45309; background: #fffbeb; }
 
@@ -423,7 +423,7 @@
       <h1>One cohesive stack.<br>Zero bloat, zero public control-panel login.</h1>
       <p>
         Built on the deterministic GRAB language and hardened server engine, the GRAB Ecosystem unites
-        <strong>Griss</strong> (our snappy multi-worker server), <strong>GrabLab</strong> (our savvy CMS),
+        <strong>Grisp</strong> (our snappy multi-worker server), <strong>GrabLab</strong> (our savvy CMS),
         <strong>Grex &amp; Grex JS</strong> (visual page builder and reactive UI runtime),
         <strong>Groxy AI</strong> (local MCP design and CMS agent), and
         <strong>Gashboard + Grabtaculous</strong> (our discreet desktop VPS manager and 1-click app marketplace).
@@ -438,7 +438,7 @@
     <section class="card" aria-labelledby="map-heading">
       <h2 id="map-heading">Planned Ecosystem Architecture (Post-1.0)</h2>
       <p class="section-sub">
-        How the desktop management plane, edge SSL proxy, <strong>Griss</strong> worker tier, application layer, and private data stores fit together cleanly:
+        How the desktop management plane, edge SSL proxy, <strong>Grisp</strong> worker tier, application layer, and private data stores fit together cleanly:
       </p>
 
       <div class="arch-board" role="region" aria-label="GRAB Ecosystem Architecture Map">
@@ -472,9 +472,9 @@
               <p class="flow-desc">Handles automatic Let's Encrypt / ZeroSSL HTTPS and static media, then passes the "rock" cleanly to private ports <code>127.0.0.1:8765&ndash;8772</code>.</p>
             </div>
             <div class="flow-arrow" aria-hidden="true">&rarr;</div>
-            <div class="flow-node griss">
+            <div class="flow-node grisp">
               <div class="flow-step">Snappy App Server</div>
-              <div class="flow-title">Griss</div>
+              <div class="flow-title">Grisp</div>
               <p class="flow-desc">Persistent multi-worker GRAB server inside a hardened non-root container. Runs compiled RAM generations with zero cold starts and <code>/_ready</code> rolling reloads.</p>
             </div>
             <div class="flow-arrow" aria-hidden="true">&rarr;</div>
@@ -487,7 +487,7 @@
             <div class="flow-node data">
               <div class="flow-step">Private Stores</div>
               <div class="flow-title">Postgres / MariaDB / SQLite + Redis</div>
-              <p class="flow-desc">Accessed over private internal networks through Griss's warm pools, prepared SQL contracts, and Redis cache/rate-limit stores.</p>
+              <p class="flow-desc">Accessed over private internal networks through Grisp's warm pools, prepared SQL contracts, and Redis cache/rate-limit stores.</p>
             </div>
           </div>
         </div>
@@ -497,13 +497,13 @@
     <!-- Product Cards -->
     <section class="grid" aria-label="GRAB Ecosystem Products">
 
-      <!-- Griss -->
-      <article class="product-card" id="griss">
+      <!-- Grisp -->
+      <article class="product-card" id="grisp">
         <div class="card-top">
           <span class="product-tag">Application Server Runtime</span>
           <span class="badge badge-blue">Builds on 0.6/0.7 · 0.8 &amp; Post-1.0</span>
         </div>
-        <h3>Griss — Snappy Multi-Worker Server</h3>
+        <h3>Grisp — Snappy Multi-Worker Server</h3>
         <p class="product-lead">
           The persistent GRAB application server that Nginx or Caddy passes the "rock" to on private loopback ports
           (<code>127.0.0.1:8765&ndash;8772</code>), delivering Swoole/Go-class speed with zero cold starts.
@@ -584,7 +584,7 @@
         <div class="role-list">
           <div class="role-box"><strong>For Non-Coders / Owners:</strong> Point-and-click VPS management—add custom domains with automatic edge SSL (Caddy or Nginx + Certbot), spin up databases, and check server health without memorizing Linux commands.</div>
           <div class="role-box"><strong>For Designers:</strong> Launch staging vs. production sites and custom domains safely in a couple of clicks.</div>
-          <div class="role-box"><strong>For Developers:</strong> Zero public admin panel port exposed on the VPS; provisions isolated non-root containers, Redis, PostgreSQL/MariaDB, and unprivileged <strong>Griss</strong> workers (<code>127.0.0.1:8765&ndash;8772</code>).</div>
+          <div class="role-box"><strong>For Developers:</strong> Zero public admin panel port exposed on the VPS; provisions isolated non-root containers, Redis, PostgreSQL/MariaDB, and unprivileged <strong>Grisp</strong> workers (<code>127.0.0.1:8765&ndash;8772</code>).</div>
         </div>
       </article>
 
