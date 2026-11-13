@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>GRAB 0.1 Visual Guide — Core Language Foundation & Exact Arithmetic</title>
+<style>
+
+:root {
+  --ink: #0f172a;
+  --muted: #475569;
+  --light-muted: #64748b;
+  --line: #cbd5e1;
+  --bg-page: #f8fafc;
+  --surface: #ffffff;
+  --navy: #0f172a;
+  --navy-light: #1e293b;
+  --teal: #0d9488;
+  --teal-soft: #ccfbf1;
+  --blue: #0284c7;
+  --blue-soft: #e0f2fe;
+  --green: #15803d;
+  --green-soft: #dcfce7;
+  --amber: #b45309;
+  --amber-soft: #fef3c7;
+  --purple: #7e22ce;
+  --purple-soft: #f3e8ff;
+}
+
+* { box-sizing: border-box; }
+@page {
+  size: A4;
+  margin: 12mm 14mm 14mm 14mm;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: var(--ink);
+  background: var(--bg-page);
+  line-height: 1.55;
+  font-size: 13.5px;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.page-break {
+  page-break-before: always;
+}
+
+.avoid-break {
+  page-break-inside: avoid;
+}
+
+/* Header & Hero */
+.header-hero {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #0d9488 100%);
+  color: white;
+  border-radius: 12px;
+  padding: 24px 28px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.version-pill {
+  display: inline-block;
+  background: #38bdf8;
+  color: #0f172a;
+  font-weight: 800;
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.date-tag {
+  font-size: 11.5px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+h1 {
+  font-size: 26px;
+  line-height: 1.2;
+  margin: 0 0 6px 0;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+}
+
+.subtitle {
+  font-size: 15px;
+  color: #38bdf8;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+}
+
+.lead-p {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #e2e8f0;
+  margin: 0;
+}
+
+/* Metaphor Box */
+.metaphor-box {
+  background: var(--surface);
+  border: 1px solid #bae6fd;
+  border-left: 5px solid #0284c7;
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+}
+
+.metaphor-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0284c7;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.metaphor-body {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Walkthrough Section */
+.section-heading {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--navy);
+  margin: 22px 0 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 2px solid var(--line);
+  padding-bottom: 5px;
+}
+
+.section-heading span.badge-num {
+  background: var(--navy);
+  color: white;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+}
+
+.walkthrough-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.walkthrough-column {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.col-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+}
+
+.col-header.frontend { color: #0284c7; }
+.col-header.backend { color: #0f766e; }
+
+.item-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+
+.item-card:last-child { margin-bottom: 0; }
+
+.item-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 3px;
+}
+
+.item-desc {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* Data Flow Diagram */
+.flow-diagram {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.flow-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--navy);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.flow-steps {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.flow-step {
+  flex: 1;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 8px 10px;
+  text-align: center;
+}
+
+.flow-step.active {
+  background: #e0f2fe;
+  border-color: #38bdf8;
+}
+
+.flow-step-num {
+  font-size: 10px;
+  font-weight: 800;
+  color: #0284c7;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.flow-step-text {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--navy);
+  line-height: 1.3;
+}
+
+.flow-arrow {
+  color: #94a3b8;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+/* Comparison Table */
+table.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  margin-bottom: 20px;
+}
+
+table.compare-table th {
+  background: #0f172a;
+  color: white;
+  text-align: left;
+  padding: 9px 12px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+table.compare-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 12px;
+  color: var(--muted);
+  vertical-align: top;
+}
+
+table.compare-table tr:last-child td { border-bottom: none; }
+table.compare-table td.strong { font-weight: 700; color: var(--navy); }
+table.compare-table td.grab-win { background: #f0fdf4; color: #166534; font-weight: 600; }
+
+/* Code Display */
+.code-box {
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: #e2e8f0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11.5px;
+  line-height: 1.5;
+  margin-bottom: 18px;
+  border: 1px solid #1e293b;
+}
+
+.code-title {
+  color: #38bdf8;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid #334155;
+  padding-bottom: 4px;
+}
+
+.code-box pre {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.code-kw { color: #f472b6; font-weight: 700; }
+.code-str { color: #a7f3d0; }
+.code-num { color: #fbbf24; }
+.code-fn { color: #38bdf8; }
+.code-comment { color: #64748b; font-style: italic; }
+
+/* Checklist Box */
+.checklist-box {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.checklist-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #166534;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.checklist-items {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 12px;
+  font-size: 11.5px;
+  color: #15803d;
+  font-weight: 600;
+}
+
+.checklist-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.check-icon {
+  color: #16a34a;
+  font-weight: 900;
+}
+
+/* Footer */
+footer {
+  margin-top: 20px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: var(--light-muted);
+}
+
+</style>
+</head>
+<body>
+
+<!-- PAGE 1: HERO & METAPHOR -->
+<div class="header-hero">
+  <div class="header-top">
+    <span class="version-pill">GRAB v0.1.0 · Milestone Guide</span>
+    <span class="date-tag">November 2026 · Spec: GRAB-LANGUAGE-SPEC-001.md</span>
+  </div>
+  <h1>Core Language Foundation & Exact Arithmetic</h1>
+  <div class="subtitle">The Honest Cash Register: Why Precision Math Matters for Modern Commerce</div>
+  <p class="lead-p">GRAB 0.1 establishes a pure Go-implemented, deterministic programming foundation where calculations never introduce floating-point drift, ensuring every financial calculation is mathematically exact.</p>
+</div>
+
+<div class="metaphor-box">
+  <div class="metaphor-title">&#128161; Everyday Metaphor: The Honest Mechanical Register</div>
+  <p class="metaphor-body">Imagine a traditional metal cash register with precisely machined gears. When you ring up a $19.95 shirt, the mechanical wheels lock into exact cent positions. In contrast, standard programming languages (like Python or JavaScript) use binary floating-point math that introduces tiny fractional ghosts, turning $19.95 into $19.949999999999999. GRAB 0.1 is engineered from day one to guarantee that money never rounds wrong.</p>
+</div>
+
+<div class="section-heading">
+  <span class="badge-num">1</span>
+  <span>The Customer Browsing &amp; Buying Experience Walkthrough</span>
+</div>
+<p style="color: var(--muted); margin: 0 0 12px 0; font-size: 12.5px;">
+  How this milestone elevates what the online shopper sees on their screen and what the GRAB platform guarantees behind the scenes.
+</p>
+
+<div class="walkthrough-grid">
+  <!-- Frontend Column -->
+  <div class="walkthrough-column">
+    <div class="col-header frontend">
+      <span>&#128065; Frontend: What the Shopper Sees</span>
+    </div>
+    <div class="item-card"><div class="item-title">Accurate Prices Every Time</div><p class="item-desc">Shoppers see exactly $19.95 and $21.60 after tax. No confusing micro-cent rounding errors or floating-point artifacts appear on screen.</p></div><div class="item-card"><div class="item-title">Predictable Calculations</div><p class="item-desc">Cart order totals, line item multiplications, and sales taxes always balance to the exact penny across all screens.</p></div><div class="item-card"><div class="item-title">Instant Output Display</div><p class="item-desc">Product names, order identifiers, and confirmation messages format reliably without strange formatting glitches.</p></div><div class="item-card"><div class="item-title">Zero Browser Quirks</div><p class="item-desc">Every rendered value adheres to strict human-readable display standards, keeping customer receipts clean and professional.</p></div>
+  </div>
+
+  <!-- Backend Column -->
+  <div class="walkthrough-column">
+    <div class="col-header backend">
+      <span>&#9881; Backend: What Grisp &amp; GRAB Do</span>
+    </div>
+    <div class="item-card"><div class="item-title">Exact Decimal Representation</div><p class="item-desc">Built on arbitrary-precision integers and fixed-point decimals (`grabrt.DecimalKind`), separating money from floating-point approximations.</p></div><div class="item-card"><div class="item-title">Deterministic Text Output</div><p class="item-desc">Standardized LF line endings and UTF-8 encoding across Windows, macOS, and Linux servers.</p></div><div class="item-card"><div class="item-title">Strict Value Isolation</div><p class="item-desc">Values are portable, immutable representations: Text, Boolean (yes/no), Nothing, Integer, Decimal, Float, Bytes, Lists, and Records.</p></div><div class="item-card"><div class="item-title">Clear Compiler Errors</div><p class="item-desc">Locates exact line and column numbers (GRAB-E001 to GRAB-E103) so errors can be diagnosed in seconds.</p></div>
+  </div>
+</div>
+
+<!-- PAGE BREAK FOR CLEAN PRINTING -->
+<div class="page-break"></div>
+
+<!-- PAGE 2: ARCHITECTURE FLOW, COMPARISONS, CODE & CHECKLIST -->
+<div class="section-heading" style="margin-top: 0;">
+  <span class="badge-num">2</span>
+  <span>Visual Data Flow &amp; Architecture</span>
+</div>
+
+<div class="flow-diagram">
+  <div class="flow-title">Customer Request &amp; Execution Lifecycle</div>
+  <div class="flow-steps">
+    
+        <div class="flow-step">
+          <div class="flow-step-num">1. Input</div>
+          <div class="flow-step-text">Price: $19.95, Tax: 8.25%</div>
+        </div>
+        <div class="flow-arrow">&rarr;</div>
+        <div class="flow-step active">
+          <div class="flow-step-num">2. GRAB Engine</div>
+          <div class="flow-step-text">Exact Decimal Math</div>
+        </div>
+        <div class="flow-arrow">&rarr;</div>
+        <div class="flow-step">
+          <div class="flow-step-num">3. Computation</div>
+          <div class="flow-step-text">Subtotal: $21.59585</div>
+        </div>
+        <div class="flow-arrow">&rarr;</div>
+        <div class="flow-step active">
+          <div class="flow-step-num">4. Receipt</div>
+          <div class="flow-step-text">Final: $21.60 Exactly</div>
+        </div>
+        
+  </div>
+</div>
+
+<div class="section-heading">
+  <span class="badge-num">3</span>
+  <span>Business &amp; Technical Advantage Comparison</span>
+</div>
+
+<table class="compare-table">
+  <thead>
+    <tr>
+      <th style="width: 25%;">Capability</th>
+      <th style="width: 37%;">Legacy / Unhardened Stacks</th>
+      <th style="width: 38%;">GRAB Platform Standard</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td class="strong">Financial Math</td><td>Binary float64 ($19.949999999999999)</td><td class="grab-win">Exact Base-10 Decimal ($19.95)</td></tr><tr><td class="strong">Boolean Values</td><td>true / false (inconsistent casting)</td><td class="grab-win">yes / no (strict, unambiguous)</td></tr><tr><td class="strong">Error Diagnostics</td><td>Cryptic stack traces & segfaults</td><td class="grab-win">Clear source-located error spans (line & col)</td></tr><tr><td class="strong">Cross-Platform</td><td>Platform-dependent line endings & floats</td><td class="grab-win">100% deterministic byte output everywhere</td></tr>
+  </tbody>
+</table>
+
+<div class="section-heading">
+  <span class="badge-num">4</span>
+  <span>Real-World Code in Action</span>
+</div>
+
+<div class="code-box">
+  <div class="code-title">E-Commerce Tax & Total Calculation in GRAB 0.1</div>
+  <pre><code>set shirt_price to 19.95
+set tax_rate to 0.0825
+set sales_tax to shirt_price times tax_rate
+set grand_total to shirt_price plus sales_tax
+
+show "Item Price: $" joined with shirt_price
+show "Sales Tax:  $" joined with sales_tax
+show "Total Due:  $" joined with grand_total
+# Output:
+# Item Price: $19.95
+# Sales Tax:  $1.645875
+# Total Due:  $21.595875</code></pre>
+</div>
+
+<div class="checklist-box">
+  <div class="checklist-title">&#128737; Milestone Verification &amp; Release Acceptance</div>
+  <div class="checklist-items">
+    <div class="checklist-item"><span class="check-icon">&#10003;</span><span>Pure Go AST Interpreter Verified</span></div><div class="checklist-item"><span class="check-icon">&#10003;</span><span>Exact Decimal Arithmetic Tested</span></div><div class="checklist-item"><span class="check-icon">&#10003;</span><span>10 Core Portable Value Types</span></div><div class="checklist-item"><span class="check-icon">&#10003;</span><span>Deterministic LF Line Endings</span></div><div class="checklist-item"><span class="check-icon">&#10003;</span><span>100% Automated Conformance Suite</span></div><div class="checklist-item"><span class="check-icon">&#10003;</span><span>Zero IEEE-754 Currency Drift</span></div>
+  </div>
+</div>
+
+<footer>
+  <span>GRAB Programming Language &amp; Application Platform</span>
+  <span>Verified Release Guide · v0.1.0 · Released on origin &amp; stable</span>
+</footer>
+
+</body>
+</html>
