@@ -223,13 +223,17 @@ func (p *PreparedApp) retire() {
 }
 
 func (p *PreparedApp) execute(ctx context.Context, route *interpreter.Route, req grabrt.Value, output io.Writer) (interpreter.Response, error) {
-	v, env, e := p.code.Execute(ctx, route, req, output)
-	if e != nil {
-		return interpreter.Response{}, e
-	}
 	if p.legacy != nil {
+		_, env, e := p.code.Execute(ctx, route, req, output)
+		if e != nil {
+			return interpreter.Response{}, e
+		}
 		b, e := template.Render(p.legacy, env)
 		return interpreter.Response{Status: 200, Headers: map[string][]string{"Content-Type": {"text/html; charset=utf-8"}}, Body: []byte(b)}, e
+	}
+	v, e := p.code.ExecuteRoute(ctx, route, req, output)
+	if e != nil {
+		return interpreter.Response{}, e
 	}
 	r, e := interpreter.DecodeResponse(v)
 	if e != nil {

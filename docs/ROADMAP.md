@@ -241,19 +241,17 @@ or production readiness claim follows from passing unit tests.
 
 ## GRAB 0.9 — Profile-driven IR and bytecode VM
 
-**Status:** Planned (Not Yet Approved for Implementation)
-**Source:** Blueprint v1.0 Section 4 (`ADR-003`, `ADR-013`); Blueprint v1.1
-roadmap table
+**Status:** Complete (Implemented and verified by `go test -count=1 ./...` — November 12, 2026)
+**Approved specification:** [`GRAB-VM-SPEC-009.md`](../specifications/GRAB-VM-SPEC-009.md)
+**Visual guide:** [`GRAB 0.9 guide`](features/grab_09_features.html)
+**Source:** Blueprint v1.0 Section 4 (`ADR-003`, `ADR-013`), Section 12, Section 13 (`ADR-016`); Blueprint v1.1 roadmap table
 
-Intended scope (requires owner approval before implementation):
+Implemented scope:
 
-- Profile-driven optional intermediate representation (IR) and bytecode
-  compiler/virtual machine (`ADR-013`).
-- Semantic equivalence gate: the bytecode VM must pass 100% of the interpreter
-  conformance suite with identical outputs, side-effect ordering, and
-  diagnostics.
-- Repeatable performance regression benchmarks comparing AST interpreter vs.
-  bytecode VM execution (`ADR-016`).
+- Profile-driven two-tier execution (`--engine=auto|ast|vm`) lowering hot functions (`16` calls), hot loops (`64` iterations triggering enclosing compilation on next entry), and hot `PreparedApp` routes (`8` requests) into `internal/ir` and `internal/vm` bytecode while keeping cold startup code on the AST interpreter (`ADR-026a`, `ADR-026b`).
+- Strict semantic equivalence (`ADR-026c`): verified differential parity (`tests/grab09_vm_equivalence_test.go`) between `--engine=ast`, `--engine=vm`, and `--engine=auto` across exact base-10 decimals and inline/promoted `big.Int` integers, `yes`/`no` Booleans, `nothing`, `try`/`catch` error codes/spans, `do together` ordering, SQLite transaction rollbacks, HTTP `PreparedApp` warmups, and capability permissions.
+- Safety & determinism guards (`ADR-026d`): fail-closed static bytecode verification (`internal/vm/verify.go`), `1,000,000`-step loop guard (`GRAB-E307`), `256`-frame call depth guard (`GRAB-E306`), pooled slice-bounded VM frames (`sync.Pool`), and `ctx.Done()` preemption.
+- Evidence-based benchmark gates (`ADR-016`, `ADR-026e`): measured 2.33×–3.14× speedups and up to 95% fewer allocations on prepared function/loop/`try-catch` workloads, ~2.0× faster compute JSON HTTP routes, zero regression on `BenchmarkPreparedApp` (`text`, `json`, `html`), and ~2–4% cold-start overhead in `auto` mode.
 
 ---
 

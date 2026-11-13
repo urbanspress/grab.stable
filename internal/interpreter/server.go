@@ -130,6 +130,7 @@ type PreparedProgram struct {
 	routes       []*Route
 	base         map[string]grabrt.Value
 	opts         Options
+	vm           *vmProgramState
 }
 
 func Prepare(program *ast.Program, opts Options, output io.Writer) (*PreparedProgram, error) {
@@ -178,12 +179,48 @@ func Prepare(program *ast.Program, opts Options, output io.Writer) (*PreparedPro
 		}
 		c := newExecContext(startupContext, output, f, opts)
 		defer c.data.Close()
-		if _, _, err = c.execBlock(program.Statements, env); err != nil {
-			_ = opts.CacheManager.Close()
-			_ = opts.DataManager.Close()
-			return nil, err
+		if resolveEngineMode(opts) == EngineVM {
+			startVM, startErr := newVMProgramState(program, f, nil, nil, EngineAutoOpts(opts))
+			if startErr != nil {
+				_ = opts.CacheManager.Close()
+				_ = opts.DataManager.Close()
+				return nil, startErr
+			}
+			for i := range startVM.fnSlots {
+				if _, fnErr := startVM.compileFunction(i); fnErr != nil {
+					_ = opts.CacheManager.Close()
+					_ = opts.DataManager.Close()
+					return nil, fnErr
+				}
+			}
+			topChunk, topErr := startVM.compileTopLevel(program)
+			if topErr != nil {
+				_ = opts.CacheManager.Close()
+				_ = opts.DataManager.Close()
+				return nil, topErr
+			}
+			c.vmProg = startVM
+			_, p.base, err = c.execVMChunk(topChunk, nil, nil, true)
+			if err != nil {
+				_ = opts.CacheManager.Close()
+				_ = opts.DataManager.Close()
+				return nil, err
+			}
+		} else {
+			if _, _, err = c.execBlock(program.Statements, env); err != nil {
+				_ = opts.CacheManager.Close()
+				_ = opts.DataManager.Close()
+				return nil, err
+			}
+			p.base = env.snapshot()
 		}
-		p.base = env.snapshot()
+	}
+	if vmState, vmErr := newVMProgramState(program, f, routes, p.base, opts); vmErr != nil {
+		_ = opts.CacheManager.Close()
+		_ = opts.DataManager.Close()
+		return nil, vmErr
+	} else {
+		p.vm = vmState
 	}
 	if e := p.prepareEvents(preparationContext); e != nil {
 		p.Close()
@@ -207,21 +244,22 @@ func (p *PreparedProgram) Close() error {
 
 func (p *PreparedProgram) Routes() []*Route { return append([]*Route(nil), p.routes...) }
 func (p *PreparedProgram) Execute(ctx context.Context, route *Route, req grabrt.Value, output io.Writer) (grabrt.Value, map[string]grabrt.Value, error) {
+	return p.execute(ctx, route, req, output, true)
+}
+
+// ExecuteRoute runs a matched route handler without building an end-of-request
+// variable snapshot map.
+func (p *PreparedProgram) ExecuteRoute(ctx context.Context, route *Route, req grabrt.Value, output io.Writer) (grabrt.Value, error) {
+	v, _, err := p.execute(ctx, route, req, output, false)
+	return v, err
+}
+
+func (p *PreparedProgram) execute(ctx context.Context, route *Route, req grabrt.Value, output io.Writer, trackSnapshot bool) (grabrt.Value, map[string]grabrt.Value, error) {
 	if output == nil {
 		output = io.Discard
 	}
-	env := newScope(nil)
-	for k, v := range p.base {
-		env.defineLocal(k, v)
-	}
-	body := p.program.Statements
-	if route != nil {
-		body = route.Definition.Body
-		if route.Definition.RequestName != "" {
-			env.defineLocal(route.Definition.RequestName, req)
-		}
-	}
 	c := newExecContext(ctx, output, p.functions, p.opts)
+	c.vmProg = p.vm
 	c.trustedContext = req
 	defer c.data.Close()
 	if route != nil {
@@ -235,7 +273,54 @@ func (p *PreparedProgram) Execute(ctx context.Context, route *Route, req grabrt.
 			c.apiInput = input
 		}
 	}
+	if p.vm != nil {
+		if route != nil {
+			if slot := p.vm.routes[route]; slot != nil {
+				chunk := slot.chunk.Load()
+				if chunk == nil && p.vm.mode == EngineAuto {
+					if slot.calls.Add(1) >= p.vm.hotRouteThreshold || slot.loopIters.Load() >= p.vm.hotLoopThreshold {
+						chunk, _ = p.vm.compileRoute(route)
+					}
+				}
+				if chunk != nil {
+					var reqBuf [1]grabrt.Value
+					var params []grabrt.Value
+					if route.Definition.RequestName != "" {
+						reqBuf[0] = req
+						params = reqBuf[:]
+					}
+					return c.execVMChunk(chunk, p.vm.baseValues, params, trackSnapshot)
+				}
+				c.activeUnit = slot
+			}
+		} else if len(p.base) == 0 {
+			chunk := p.vm.topSlot.chunk.Load()
+			if chunk == nil && p.vm.mode == EngineAuto {
+				if p.vm.topSlot.calls.Add(1) >= p.vm.hotRouteThreshold || p.vm.topSlot.loopIters.Load() >= p.vm.hotLoopThreshold {
+					chunk, _ = p.vm.compileTopLevel(p.program)
+				}
+			}
+			if chunk != nil {
+				return c.execVMChunk(chunk, nil, nil, trackSnapshot)
+			}
+			c.activeUnit = p.vm.topSlot
+		}
+	}
+	env := newScope(nil)
+	for k, v := range p.base {
+		env.defineLocal(k, v)
+	}
+	body := p.program.Statements
+	if route != nil {
+		body = route.Definition.Body
+		if route.Definition.RequestName != "" {
+			env.defineLocal(route.Definition.RequestName, req)
+		}
+	}
 	v, _, err := c.execBlock(body, env)
+	if !trackSnapshot {
+		return v, nil, err
+	}
 	return v, env.snapshot(), err
 }
 

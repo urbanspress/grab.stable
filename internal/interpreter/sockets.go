@@ -106,6 +106,7 @@ func (p *PreparedProgram) socketCall(ctx context.Context, name string, arg rt.Va
 		return rt.Value{}, realtime.ErrPolicy
 	}
 	c := newExecContext(ctx, io.Discard, p.functions, p.opts)
+	c.vmProg = p.vm
 	defer c.data.Close()
 	c.socketIdentity = id
 	c.socketCallback = id == nil

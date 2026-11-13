@@ -30,6 +30,7 @@ func (p *PreparedProgram) AcceptWebhook(ctx context.Context, alias string, h htt
 		return 404, nil
 	}
 	c := newExecContext(ctx, io.Discard, p.functions, p.opts)
+	c.vmProg = p.vm
 	defer c.data.Close()
 	store, e := c.eventStore(ctx, w.Store, "accept")
 	if e != nil {
@@ -74,6 +75,7 @@ func (p *PreparedProgram) AcceptWebhook(ctx context.Context, alias string, h htt
 func (p *PreparedProgram) prepareEvents(ctx context.Context) error {
 	p.webhookKeys = map[string][][]byte{}
 	c := newExecContext(ctx, io.Discard, p.functions, p.opts)
+	c.vmProg = p.vm
 	defer c.data.Close()
 	for alias, w := range p.opts.PlatformConfig.Webhooks() {
 		for _, r := range p.routes {
@@ -189,6 +191,7 @@ func backoff(attempt int) time.Duration {
 
 func (p *PreparedProgram) processInbox(ctx context.Context, alias string, s *events.Store, w events.Work) bool {
 	c := newExecContext(ctx, io.Discard, p.functions, p.opts)
+	c.vmProg = p.vm
 	defer c.data.Close()
 	pool, e := c.data.Open(ctx, s.Config.Database)
 	if e != nil {

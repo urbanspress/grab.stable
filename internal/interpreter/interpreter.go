@@ -275,6 +275,11 @@ type Options struct {
 	// TemplateLoader renders server.html through the host's confined template
 	// cache. A nil callback makes server.html unavailable outside the server.
 	TemplateLoader func(path string, data map[string]grabrt.Value) (string, error)
+	// GRAB 0.9 execution engine and profile-driven tiering thresholds.
+	Engine               EngineMode
+	HotFunctionThreshold int
+	HotLoopThreshold     int
+	HotRouteThreshold    int
 }
 
 // Run validates names and functions in the complete program before executing statements.
@@ -330,8 +335,20 @@ func RunWithEnvironmentAndOptions(program *ast.Program, output io.Writer, opts O
 	if parent == nil {
 		parent = context.Background()
 	}
+	vmProg, err := newVMProgramState(program, functions, nil, nil, opts)
+	if err != nil {
+		return nil, err
+	}
 	ctx := newExecContext(parent, output, functions, opts)
+	ctx.vmProg = vmProg
 	defer ctx.data.Close()
+	if vmProg != nil && vmProg.mode == EngineVM {
+		_, snap, err := ctx.execVMChunk(vmProg.topSlot.chunk.Load(), nil, nil, true)
+		if err != nil {
+			return nil, err
+		}
+		return snap, nil
+	}
 	globalScope := newScope(nil)
 	if _, _, err := ctx.execBlock(program.Statements, globalScope); err != nil {
 		return nil, err
@@ -801,6 +818,8 @@ type execContext struct {
 	requestCtx     context.Context
 	output         io.Writer
 	functions      map[string]*ast.FunctionDef
+	vmProg         *vmProgramState
+	activeUnit     *vmUnitSlot
 	permissions    Permissions
 	dialContext    func(ctx context.Context, network, addr string) (net.Conn, error)
 	templateLoader func(path string, data map[string]grabrt.Value) (string, error)
@@ -834,6 +853,9 @@ func (ctx *execContext) attachStack(err error) error {
 
 func (ctx *execContext) stepLoop(span lexer.Span) error {
 	ctx.loopSteps++
+	if ctx.activeUnit != nil {
+		ctx.activeUnit.loopIters.Add(1)
+	}
 	if ctx.loopSteps > ctx.maxLoopSteps {
 		return ctx.attachStack(&Error{Kind: ExecutionLimitExceeded, Span: span})
 	}
@@ -1097,6 +1119,7 @@ func (ctx *execContext) execDoTogether(node *ast.DoTogetherStatement, env *scope
 			requestCtx:     ctx.requestCtx,
 			output:         &buf,
 			functions:      ctx.functions,
+			vmProg:         ctx.vmProg,
 			permissions:    ctx.permissions,
 			dialContext:    ctx.dialContext,
 			templateLoader: ctx.templateLoader,
@@ -1221,6 +1244,41 @@ func (ctx *execContext) invokeCall(module, name string, span lexer.Span, argExpr
 		return val, ctx.attachStack(err)
 	}
 
+	if ctx.vmProg != nil {
+		if fnIdx, slot, ok := ctx.vmProg.fnSlotByName(name); ok {
+			chunk := slot.chunk.Load()
+			if chunk == nil && ctx.vmProg.mode == EngineAuto {
+				if slot.calls.Add(1) >= ctx.vmProg.hotFnThreshold || slot.loopIters.Load() >= ctx.vmProg.hotLoopThreshold {
+					chunk, _ = ctx.vmProg.compileFunction(fnIdx)
+				}
+			}
+			if chunk != nil {
+				ctx.callDepth++
+				if ctx.callDepth > ctx.maxCallDepth {
+					ctx.callDepth--
+					return grabrt.Value{}, ctx.attachStack(&Error{Kind: CallStackOverflow, Span: span})
+				}
+				ctx.callStack = append(ctx.callStack, StackFrame{Function: name, Span: span})
+				defer func() {
+					ctx.callDepth--
+					ctx.callStack = ctx.callStack[:len(ctx.callStack)-1]
+				}()
+				val, _, err := ctx.execVMChunk(chunk, nil, argVals, false)
+				if err != nil {
+					return grabrt.Value{}, ctx.attachStack(err)
+				}
+				return val, nil
+			}
+			prevUnit := ctx.activeUnit
+			ctx.activeUnit = slot
+			defer func() { ctx.activeUnit = prevUnit }()
+		}
+	}
+
+	return ctx.invokeUserFunctionAST(name, span, argVals)
+}
+
+func (ctx *execContext) invokeUserFunctionAST(name string, span lexer.Span, argVals []grabrt.Value) (grabrt.Value, error) {
 	fn := ctx.functions[name]
 	ctx.callDepth++
 	if ctx.callDepth > ctx.maxCallDepth {

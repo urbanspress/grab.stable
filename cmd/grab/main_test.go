@@ -512,6 +512,27 @@ func TestCheckFormatAndFlags_CLI(t *testing.T) {
 			args:     []string{"run", "--allow-net", "api.example.com,localhost:8080", grabFile},
 			wantCode: 0,
 		},
+		{
+			name:     "run accepts --engine=vm",
+			args:     []string{"run", "--engine=vm", grabFile},
+			wantCode: 0,
+		},
+		{
+			name:     "run accepts --engine=ast",
+			args:     []string{"run", "--engine", "ast", grabFile},
+			wantCode: 0,
+		},
+		{
+			name:     "run accepts --engine=auto",
+			args:     []string{"run", "--engine=auto", grabFile},
+			wantCode: 0,
+		},
+		{
+			name:       "run rejects invalid --engine mode",
+			args:       []string{"run", "--engine=jit", grabFile},
+			wantCode:   2,
+			wantErrSub: "usage:",
+		},
 	}
 
 	for _, tc := range cases {

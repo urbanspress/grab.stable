@@ -21,9 +21,9 @@ import (
 	"grab/internal/template"
 )
 
-const usageText = "usage: grab run [--db-config <manifest.json>] [--allow-db <alias:read|read-write|migrate>] [--diagnostics beginner|developer|production] [--allow-read <dir>] [--allow-write <dir>] [--allow-net <host[,host...]>] <file.grab>\n" +
+const usageText = "usage: grab run [--engine auto|ast|vm] [--db-config <manifest.json>] [--allow-db <alias:read|read-write|migrate>] [--diagnostics beginner|developer|production] [--allow-read <dir>] [--allow-write <dir>] [--allow-net <host[,host...]>] <file.grab>\n" +
 	"       grab migrate --db-config <manifest.json> --allow-db <alias:migrate> <migrations.grab>\n" +
-	"       grab serve [--addr 127.0.0.1:8080] [--allow-public] [--trusted-proxy <ip[,cidr...]>] [--static <[prefix=]dir>] [--reload] [--max-concurrency 64] [--max-queue 128] [--queue-timeout 1s] [--request-timeout 10s] [--max-body-bytes 1048576] [--shutdown-timeout 10s] [--log-format text|json] [--diagnostics beginner|developer|production] [--allow-read <dir>] [--allow-write <dir>] [--allow-net <host[,host...]>] <file.grab> [template.grab.html]\n" +
+	"       grab serve [--engine auto|ast|vm] [--addr 127.0.0.1:8080] [--allow-public] [--trusted-proxy <ip[,cidr...]>] [--static <[prefix=]dir>] [--reload] [--max-concurrency 64] [--max-queue 128] [--queue-timeout 1s] [--request-timeout 10s] [--max-body-bytes 1048576] [--shutdown-timeout 10s] [--log-format text|json] [--diagnostics beginner|developer|production] [--allow-read <dir>] [--allow-write <dir>] [--allow-net <host[,host...]>] <file.grab> [template.grab.html]\n" +
 	"       database flags for serve: --db-config <manifest.json> --allow-db <alias:read|read-write>\n" +
 	"       platform flags for run/serve/check: --platform-config <grab.platform.json> --allow-cache <alias:read|read-write|limit> --allow-channel <alias:connect|publish> --allow-telemetry <alias>\n" +
 	"       worker flags for serve: --workers <1..32> --worker-base-port <port> (consecutive loopback ports; external balancer required)\n" +
@@ -375,6 +375,19 @@ func parseCommonFlags(args []string, allowAddr bool) (commonFlagConfig, []string
 				return cfg, nil, false
 			}
 			cfg.diagMode = mode
+			i = nextIdx
+			continue
+		}
+		if arg == "--engine" || strings.HasPrefix(arg, "--engine=") {
+			val, nextIdx, ok := consumeFlagValue(args, i, "--engine")
+			if !ok {
+				return cfg, nil, false
+			}
+			engine, valid := interpreter.ParseEngineMode(val)
+			if !valid {
+				return cfg, nil, false
+			}
+			cfg.opts.Engine = engine
 			i = nextIdx
 			continue
 		}

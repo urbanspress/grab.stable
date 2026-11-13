@@ -104,4 +104,30 @@ func TestArithmeticAndComparisons(t *testing.T) {
 			t.Fatalf("Compare(108.00, 100) = (%d, %v), want (>0, true)", cmp, ok)
 		}
 	})
+
+	t.Run("int64 boundary promotion to arbitrary precision", func(t *testing.T) {
+		max64 := mustInteger(t, "9223372036854775807")
+		min64 := mustInteger(t, "-9223372036854775808")
+		one := mustInteger(t, "1")
+		negOne := mustInteger(t, "-1")
+
+		if sum, err := Add(max64, one); err != nil || sum.Kind() != IntegerKind || sum.Display() != "9223372036854775808" {
+			t.Fatalf("MaxInt64+1 = %v (%v), err=%v", sum.Display(), sum.Kind(), err)
+		}
+		if diff, err := Sub(min64, one); err != nil || diff.Kind() != IntegerKind || diff.Display() != "-9223372036854775809" {
+			t.Fatalf("MinInt64-1 = %v (%v), err=%v", diff.Display(), diff.Kind(), err)
+		}
+		if prod, err := Mul(mustInteger(t, "3000000001"), mustInteger(t, "3000000001")); err != nil || prod.Kind() != IntegerKind || prod.Display() != "9000000006000000001" {
+			t.Fatalf("large mul = %v (%v), err=%v", prod.Display(), prod.Kind(), err)
+		}
+		if q, err := Div(min64, negOne); err != nil || q.Kind() != IntegerKind || q.Display() != "9223372036854775808" {
+			t.Fatalf("MinInt64 / -1 = %v (%v), err=%v", q.Display(), q.Kind(), err)
+		}
+		if r, err := Mod(min64, negOne); err != nil || r.Kind() != IntegerKind || r.Display() != "0" {
+			t.Fatalf("MinInt64 %% -1 = %v (%v), err=%v", r.Display(), r.Kind(), err)
+		}
+		if cmp, ok := mustInteger(t, "9223372036854775808").Compare(max64); !ok || cmp <= 0 {
+			t.Fatalf("Compare(MaxInt64+1, MaxInt64) = (%d, %v), want (>0, true)", cmp, ok)
+		}
+	})
 }

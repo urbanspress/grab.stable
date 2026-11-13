@@ -54,6 +54,8 @@ type Entry struct {
 type Value struct {
 	kind     Kind
 	boolean  bool
+	bigInt   bool
+	smallInt int64
 	text     string
 	integer  big.Int
 	decimal  Decimal
@@ -90,13 +92,14 @@ func Boolean(value bool) Value { return Value{kind: BooleanKind, boolean: value}
 func Text(value string) Value  { return Value{kind: TextKind, text: value} }
 
 func IntegerFromString(value string) (Value, error) {
+	if small, err := strconv.ParseInt(value, 10, 64); err == nil {
+		return Value{kind: IntegerKind, smallInt: small}, nil
+	}
 	integer, ok := new(big.Int).SetString(value, 10)
 	if !ok {
 		return Value{}, fmt.Errorf("invalid integer %q", value)
 	}
-	result := Value{kind: IntegerKind}
-	result.integer.Set(integer)
-	return result, nil
+	return IntegerFromBig(integer), nil
 }
 
 func DecimalFromString(value string) (Value, error) {
@@ -127,15 +130,16 @@ func FloatFromString(value string) (Value, error) {
 }
 
 func IntegerFromBig(value *big.Int) Value {
-	result := Value{kind: IntegerKind}
+	if value.IsInt64() {
+		return Value{kind: IntegerKind, smallInt: value.Int64()}
+	}
+	result := Value{kind: IntegerKind, bigInt: true}
 	result.integer.Set(value)
 	return result
 }
 
 func IntegerFromInt64(value int64) Value {
-	result := Value{kind: IntegerKind}
-	result.integer.SetInt64(value)
-	return result
+	return Value{kind: IntegerKind, smallInt: value}
 }
 
 func DecimalFromBig(coefficient *big.Int, scale int) Value {
@@ -167,7 +171,25 @@ func cloneEntries(entries []Entry) []Entry { return append([]Entry(nil), entries
 func (value Value) Kind() Kind             { return value.kind }
 func (value Value) BooleanValue() bool     { return value.boolean }
 func (value Value) TextValue() string      { return value.text }
-func (value Value) IntegerValue() *big.Int { return new(big.Int).Set(&value.integer) }
+func (value Value) IntegerValue() *big.Int {
+	if !value.bigInt {
+		return big.NewInt(value.smallInt)
+	}
+	return new(big.Int).Set(&value.integer)
+}
+
+func (value Value) toBig(scratch *big.Int) *big.Int {
+	if value.bigInt {
+		return &value.integer
+	}
+	scratch.SetInt64(value.smallInt)
+	return scratch
+}
+
+func (value Value) cmpBigInt(other Value) int {
+	var a, b big.Int
+	return value.toBig(&a).Cmp(other.toBig(&b))
+}
 func (value Value) DecimalValue() Decimal {
 	var copy Decimal
 	copy.Coefficient.Set(&value.decimal.Coefficient)
@@ -199,6 +221,12 @@ func (value Value) LookupEntry(name string) (Value, bool) {
 
 // Equal reports whether two GRAB values are equal under the 'is' operator.
 func (value Value) Equal(other Value) bool {
+	if value.kind == IntegerKind && other.kind == IntegerKind {
+		if !value.bigInt && !other.bigInt {
+			return value.smallInt == other.smallInt
+		}
+		return value.cmpBigInt(other) == 0
+	}
 	if (value.kind == IntegerKind || value.kind == DecimalKind) &&
 		(other.kind == IntegerKind || other.kind == DecimalKind) {
 		return compareExactNumeric(value, other) == 0
@@ -247,6 +275,18 @@ func (value Value) Equal(other Value) bool {
 // (-1, true), (0, true), or (1, true) when comparable, or (0, false) when
 // the operand kinds cannot be ordered.
 func (value Value) Compare(other Value) (int, bool) {
+	if value.kind == IntegerKind && other.kind == IntegerKind {
+		if !value.bigInt && !other.bigInt {
+			if value.smallInt < other.smallInt {
+				return -1, true
+			}
+			if value.smallInt > other.smallInt {
+				return 1, true
+			}
+			return 0, true
+		}
+		return value.cmpBigInt(other), true
+	}
 	if (value.kind == IntegerKind || value.kind == DecimalKind) &&
 		(other.kind == IntegerKind || other.kind == DecimalKind) {
 		return compareExactNumeric(value, other), true
@@ -269,7 +309,15 @@ func (value Value) Compare(other Value) (int, bool) {
 // Add computes value + other per GRAB 0.3 numeric rules.
 func Add(left, right Value) (Value, error) {
 	if left.kind == IntegerKind && right.kind == IntegerKind {
-		return IntegerFromBig(new(big.Int).Add(&left.integer, &right.integer)), nil
+		if !left.bigInt && !right.bigInt {
+			sum := left.smallInt + right.smallInt
+			if (sum^left.smallInt)&(sum^right.smallInt) >= 0 {
+				return Value{kind: IntegerKind, smallInt: sum}, nil
+			}
+		}
+		var a, b, res big.Int
+		res.Add(left.toBig(&a), right.toBig(&b))
+		return IntegerFromBig(&res), nil
 	}
 	if (left.kind == IntegerKind || left.kind == DecimalKind) &&
 		(right.kind == IntegerKind || right.kind == DecimalKind) {
@@ -285,7 +333,15 @@ func Add(left, right Value) (Value, error) {
 // Sub computes left - right per GRAB 0.3 numeric rules.
 func Sub(left, right Value) (Value, error) {
 	if left.kind == IntegerKind && right.kind == IntegerKind {
-		return IntegerFromBig(new(big.Int).Sub(&left.integer, &right.integer)), nil
+		if !left.bigInt && !right.bigInt {
+			diff := left.smallInt - right.smallInt
+			if (left.smallInt^right.smallInt)&(left.smallInt^diff) >= 0 {
+				return Value{kind: IntegerKind, smallInt: diff}, nil
+			}
+		}
+		var a, b, res big.Int
+		res.Sub(left.toBig(&a), right.toBig(&b))
+		return IntegerFromBig(&res), nil
 	}
 	if (left.kind == IntegerKind || left.kind == DecimalKind) &&
 		(right.kind == IntegerKind || right.kind == DecimalKind) {
@@ -301,7 +357,15 @@ func Sub(left, right Value) (Value, error) {
 // Mul computes left * right per GRAB 0.3 numeric rules.
 func Mul(left, right Value) (Value, error) {
 	if left.kind == IntegerKind && right.kind == IntegerKind {
-		return IntegerFromBig(new(big.Int).Mul(&left.integer, &right.integer)), nil
+		if !left.bigInt && !right.bigInt {
+			if left.smallInt >= -3000000000 && left.smallInt <= 3000000000 &&
+				right.smallInt >= -3000000000 && right.smallInt <= 3000000000 {
+				return Value{kind: IntegerKind, smallInt: left.smallInt * right.smallInt}, nil
+			}
+		}
+		var a, b, res big.Int
+		res.Mul(left.toBig(&a), right.toBig(&b))
+		return IntegerFromBig(&res), nil
 	}
 	if (left.kind == IntegerKind || left.kind == DecimalKind) &&
 		(right.kind == IntegerKind || right.kind == DecimalKind) {
@@ -319,12 +383,23 @@ func Mul(left, right Value) (Value, error) {
 // Div computes left / right per GRAB 0.3 numeric rules.
 func Div(left, right Value) (Value, error) {
 	if left.kind == IntegerKind && right.kind == IntegerKind {
-		if right.integer.Sign() == 0 {
+		if !left.bigInt && !right.bigInt && !(left.smallInt == math.MinInt64 && right.smallInt == -1) {
+			if right.smallInt == 0 {
+				return Value{}, ErrDivisionByZero
+			}
+			if left.smallInt%right.smallInt == 0 {
+				return Value{kind: IntegerKind, smallInt: left.smallInt / right.smallInt}, nil
+			}
+			return divideDecimals(asDecimal(left), asDecimal(right))
+		}
+		var a, b, quo, rem big.Int
+		la, rb := left.toBig(&a), right.toBig(&b)
+		if rb.Sign() == 0 {
 			return Value{}, ErrDivisionByZero
 		}
-		quo, rem := new(big.Int).QuoRem(&left.integer, &right.integer, new(big.Int))
+		quo.QuoRem(la, rb, &rem)
 		if rem.Sign() == 0 {
-			return IntegerFromBig(quo), nil
+			return IntegerFromBig(&quo), nil
 		}
 		return divideDecimals(asDecimal(left), asDecimal(right))
 	}
@@ -346,10 +421,22 @@ func Mod(left, right Value) (Value, error) {
 	if left.kind != IntegerKind || right.kind != IntegerKind {
 		return Value{}, ErrTypeMismatch
 	}
-	if right.integer.Sign() == 0 {
+	if !left.bigInt && !right.bigInt {
+		if right.smallInt == 0 {
+			return Value{}, ErrDivisionByZero
+		}
+		if left.smallInt == math.MinInt64 && right.smallInt == -1 {
+			return Value{kind: IntegerKind, smallInt: 0}, nil
+		}
+		return Value{kind: IntegerKind, smallInt: left.smallInt % right.smallInt}, nil
+	}
+	var a, b, rem big.Int
+	la, rb := left.toBig(&a), right.toBig(&b)
+	if rb.Sign() == 0 {
 		return Value{}, ErrDivisionByZero
 	}
-	return IntegerFromBig(new(big.Int).Rem(&left.integer, &right.integer)), nil
+	rem.Rem(la, rb)
+	return IntegerFromBig(&rem), nil
 }
 
 func asDecimal(value Value) Decimal {
@@ -357,7 +444,11 @@ func asDecimal(value Value) Decimal {
 		return value.DecimalValue()
 	}
 	var d Decimal
-	d.Coefficient.Set(&value.integer)
+	if !value.bigInt {
+		d.Coefficient.SetInt64(value.smallInt)
+	} else {
+		d.Coefficient.Set(&value.integer)
+	}
 	d.Scale = 0
 	return d
 }
@@ -462,6 +553,9 @@ func (value Value) display(nested bool) string {
 		}
 		return value.text
 	case IntegerKind:
+		if !value.bigInt {
+			return strconv.FormatInt(value.smallInt, 10)
+		}
 		return value.integer.String()
 	case DecimalKind:
 		return formatDecimal(value.decimal)
