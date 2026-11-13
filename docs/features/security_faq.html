@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GRAB &amp; Grisp Security Architecture &amp; Benefits FAQ</title>
+<style>
+  :root {
+    --page-bg: #f8fafc;
+    --surface: #ffffff;
+    --surface-muted: #f1f5f9;
+    --border: #e2e8f0;
+    --text-main: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    --accent: #0284c7;
+    --accent-soft: #e0f2fe;
+    --green: #15803d;
+    --green-soft: #dcfce7;
+    --amber: #b45309;
+    --amber-soft: #fef3c7;
+    --term-bg: #0b1120;
+    --radius: 12px;
+    --shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--page-bg);
+    color: var(--text-main);
+    line-height: 1.65;
+  }
+
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+
+  .topbar-inner {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--text-main);
+  }
+
+  .brand-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--term-bg);
+    color: #38bdf8;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  .btn-print {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--accent);
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.25);
+    transition: background 0.2s ease;
+  }
+
+  .btn-print:hover {
+    background: #0369a1;
+  }
+
+  .container {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  .hero {
+    background: linear-gradient(135deg, #0b1120 0%, #1e293b 100%);
+    border-radius: var(--radius);
+    padding: 44px 36px;
+    color: #ffffff;
+    margin-bottom: 40px;
+    box-shadow: 0 20px 40px rgba(11, 17, 32, 0.2);
+  }
+
+  .hero-tag {
+    display: inline-block;
+    padding: 4px 12px;
+    background: rgba(56, 189, 248, 0.2);
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    border-radius: 999px;
+    color: #38bdf8;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .hero h1 {
+    margin: 0 0 12px;
+    font-size: clamp(28px, 4vw, 38px);
+    font-weight: 800;
+    line-height: 1.25;
+  }
+
+  .hero p {
+    margin: 0;
+    font-size: 17px;
+    color: #94a3b8;
+    max-width: 760px;
+    line-height: 1.6;
+  }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px;
+    margin-bottom: 44px;
+  }
+
+  .summary-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: var(--shadow);
+  }
+
+  .summary-card-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    margin-bottom: 12px;
+  }
+
+  .summary-card h3 {
+    margin: 0 0 8px;
+    font-size: 17px;
+    font-weight: 700;
+  }
+
+  .summary-card p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  .section-title {
+    font-size: 24px;
+    font-weight: 800;
+    margin: 40px 0 20px;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 10px;
+  }
+
+  .faq-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+    page-break-inside: avoid;
+  }
+
+  .faq-q {
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 0 0 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .faq-badge {
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+
+  .faq-a {
+    font-size: 15px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin: 0;
+  }
+
+  .faq-a p {
+    margin: 0 0 12px;
+  }
+
+  .faq-a p:last-child {
+    margin-bottom: 0;
+  }
+
+  .callout {
+    background: var(--surface-muted);
+    border-left: 4px solid var(--accent);
+    padding: 14px 18px;
+    border-radius: 0 8px 8px 0;
+    margin: 14px 0;
+    font-size: 14px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 24px 0;
+    background: var(--surface);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+
+  th, td {
+    padding: 14px 18px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+
+  th {
+    background: var(--surface-muted);
+    font-weight: 700;
+    color: var(--text-main);
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+
+  .badge-strong {
+    display: inline-block;
+    padding: 2px 8px;
+    background: var(--green-soft);
+    color: var(--green);
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 12px;
+  }
+
+  .badge-warn {
+    display: inline-block;
+    padding: 2px 8px;
+    background: var(--amber-soft);
+    color: var(--amber);
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 12px;
+  }
+
+  footer {
+    text-align: center;
+    padding: 40px 0 20px;
+    color: var(--text-muted);
+    font-size: 13px;
+    border-top: 1px solid var(--border);
+    margin-top: 60px;
+  }
+
+  @media print {
+    body { background: #ffffff; color: #000000; }
+    .topbar { display: none; }
+    .hero { background: #ffffff; color: #000000; border: 1px solid #cccccc; box-shadow: none; padding: 20px; }
+    .hero p { color: #333333; }
+    .hero-tag { border-color: #000000; color: #000000; }
+    .faq-card, .summary-card, table { box-shadow: none; border-color: #cccccc; }
+    .btn-print { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-mark">G</span>
+      <span>GRAB &amp; Grisp Security FAQ</span>
+    </div>
+    <button class="btn-print" onclick="window.print()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"></path><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><path d="M6 14h12v8H6z"></path></svg>
+      Print / Save as PDF
+    </button>
+  </div>
+</header>
+
+<main class="container">
+
+  <section class="hero">
+    <div class="hero-tag">Executive Security Guide</div>
+    <h1>Security Architecture &amp; Protection Benefits</h1>
+    <p>A plain-English guide to how the GRAB programming language and Grisp application server protect applications, servers, databases, and visitors by default.</p>
+  </section>
+
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-card-icon">🛡️</div>
+      <h3>Zero-Trust Language</h3>
+      <p>Code cannot access files, external networks, or databases without explicit operator permission grants.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">🔒</div>
+      <h3>Auto HTML Escaping</h3>
+      <p>Cross-Site Scripting (XSS) is blocked at the template compiler level before output ever leaves the server.</p>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-icon">⚡</div>
+      <h3>Loopback Isolation</h3>
+      <p>Grisp binds strictly to 127.0.0.1 behind Nginx. Backend ports are completely invisible to the public internet.</p>
+    </div>
+  </div>
+
+  <h2 class="section-title">Frequently Asked Questions</h2>
+
+  <article class="faq-card">
+    <h3 class="faq-q"><span class="faq-badge">Q1</span> Can a visitor or attacker edit our website using Chrome DevTools?</h3>
+    <div class="faq-a">
+      <p><strong>No. Nothing in Chrome DevTools touches your server or affects other visitors.</strong></p>
+      <p>When someone opens Chrome DevTools (or presses F12) and changes colors, text, or CSS styling, they are solely editing the temporary memory of the browser running on their own local screen. It is like writing with a pencil on a printed flyer received in the mail—it has zero effect on the original document stored on the server.</p>
+      <div class="callout">
+        <strong>Instant Reset:</strong> As soon as the user refreshes the page (F5), the server delivers a fresh copy of the site. No other user in the world ever sees their local changes.
+      </div>
+    </div>
+  </article>
+
+  <article class="faq-card">
+    <h3 class="faq-q"><span class="faq-badge">Q2</span> Can an attacker inject malicious scripts or malware through user comments or forms?</h3>
+    <div class="faq-a">
+      <p><strong>No. GRAB's two-layer defense stops injection attacks automatically:</strong></p>
+      <p><strong>Layer 1 — Context-Aware HTML Escaping:</strong> Every dynamic value inserted into a <code>.grab.html</code> template is automatically sanitized. If an attacker inputs <code>&lt;script&gt;steal()&lt;/script&gt;</code>, GRAB transforms it into harmless text: <code>&amp;lt;script&amp;gt;steal()&amp;lt;/script&amp;gt;</code>. The browser displays it as plain characters on the screen; it never becomes executable code.</p>
+      <p><strong>Layer 2 — Content Security Policy (CSP):</strong> Grisp sends strict HTTP security headers commanding the visitor's browser: <em>"Do not execute any inline scripts or external plugins."</em> The browser outright blocks unauthorized scripts.</p>
+    </div>
+  </article>
+
+  <article class="faq-card">
+    <h3 class="faq-q"><span class="faq-badge">Q3</span> Can a hacker steal user data using an injected &lt;style&gt; tag?</h3>
+    <div class="faq-a">
+      <p><strong>No. Modern browsers cannot execute JavaScript inside CSS, and Grisp blocks external data leaks.</strong></p>
+      <p>In theoretical legacy attacks, attackers tried using CSS background images to phone home character-by-character to a remote server. In Grisp, this attack is completely prevented:</p>
+      <ul>
+        <li>GRAB auto-escaping prevents attackers from injecting active <code>&lt;style&gt;</code> tags into user content.</li>
+        <li>Grisp's <code>default-src 'self'</code> policy strictly commands the browser to reject connections to any outside domain, preventing data exfiltration.</li>
+      </ul>
+    </div>
+  </article>
+
+  <article class="faq-card">
+    <h3 class="faq-q"><span class="faq-badge">Q4</span> Why did our dark-mode styling initially appear as plain text, and how was it solved?</h3>
+    <div class="faq-a">
+      <p><strong>It was Grisp's default-deny security policy actively protecting the browser.</strong></p>
+      <p>By default, Grisp commands browsers to only load stylesheets from dedicated external files (such as <code>/style.css</code>) and block inline styles written directly inside the HTML page. Because our initial test template had CSS directly inside <code>&lt;style&gt;</code> tags, the browser obeyed Grisp's security rules and fell back to unstyled text.</p>
+      <p><strong>The Fix:</strong> We updated Nginx to permit <code>style-src 'self' 'unsafe-inline'</code>. This allows full visual CSS styling while continuing to 100% block all JavaScript execution and external plugins.</p>
+    </div>
+  </article>
+
+  <article class="faq-card">
+    <h3 class="faq-q"><span class="faq-badge">Q5</span> How does GRAB protect databases from SQL Injection?</h3>
+    <div class="faq-a">
+      <p><strong>SQL injection is eliminated at the language compiler level.</strong></p>
+      <p>In traditional PHP or Python, developers can accidentally write dynamic SQL queries using string concatenation (e.g., <code>"SELECT * FROM users WHERE name = " + input</code>). GRAB 0.7 does not permit dynamic raw SQL strings. All database queries must be declared as static prepared statements with typed parameters. User inputs are always treated as data values, never as executable code.</p>
+    </div>
+  </article>
+
+  <article class="faq-card">
+    <h3 class="faq-q"><span class="faq-badge">Q6</span> How does loopback isolation protect the Grisp server on a live VPS?</h3>
+    <div class="faq-a">
+      <p><strong>Grisp is physically unreachable from the public internet.</strong></p>
+      <p>Grisp binds strictly to the internal loopback IP <code>127.0.0.1:8765</code>. The VPS firewall drops all incoming public traffic targeting that port. Public requests only enter through Nginx on ports 80/443, which verifies TLS certificates, enforces rate limits, and proxies clean requests to Grisp.</p>
+    </div>
+  </article>
+
+  <h2 class="section-title">Security Architecture Comparison</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Security Capability</th>
+        <th>Legacy PHP / WordPress</th>
+        <th>Node.js / Express</th>
+        <th>GRAB + Grisp</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Context-Aware HTML Escaping</strong></td>
+        <td><span class="badge-warn">Manual</span></td>
+        <td><span class="badge-warn">Manual / Template</span></td>
+        <td><span class="badge-strong">Automatic (Language Core)</span></td>
+      </tr>
+      <tr>
+        <td><strong>Content Security Policy (CSP)</strong></td>
+        <td><span class="badge-warn">Requires Plugins</span></td>
+        <td><span class="badge-warn">Manual Config</span></td>
+        <td><span class="badge-strong">Hardened by Default</span></td>
+      </tr>
+      <tr>
+        <td><strong>SQL Injection Defense</strong></td>
+        <td><span class="badge-warn">Optional ORM</span></td>
+        <td><span class="badge-warn">Optional ORM</span></td>
+        <td><span class="badge-strong">Compiler Enforced</span></td>
+      </tr>
+      <tr>
+        <td><strong>Filesystem Sandbox</strong></td>
+        <td><span class="badge-warn">Full Host Access</span></td>
+        <td><span class="badge-warn">Full Host Access</span></td>
+        <td><span class="badge-strong">Default-Deny (--allow-read)</span></td>
+      </tr>
+      <tr>
+        <td><strong>Network Egress (SSRF Protection)</strong></td>
+        <td><span class="badge-warn">Unrestricted</span></td>
+        <td><span class="badge-warn">Unrestricted</span></td>
+        <td><span class="badge-strong">Default-Deny (--allow-net)</span></td>
+      </tr>
+      <tr>
+        <td><strong>Loopback Port Isolation</strong></td>
+        <td><span class="badge-warn">Varies</span></td>
+        <td><span class="badge-warn">Varies</span></td>
+        <td><span class="badge-strong">Standard Architecture</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <footer>
+    GRAB Programming Language &amp; Grisp Application Server · Official Security Architecture Guide
+  </footer>
+
+</main>
+
+</body>
+</html>

@@ -232,6 +232,8 @@ GRAB persistent server (**Grisp**) is designed to run behind a modern edge rever
 Explore our plain-English visual documentation hubs:
 
 - **[Milestone Feature Guides Hub](docs/features/index.html)** — Comprehensive visual roadmap of all completed and active releases.
+- **[GRAB 0.9 Visual Guide](docs/features/grab_09_features.html)** — Profile-driven IR and Bytecode VM performance breakdown.
+- **[Security & Protection FAQ](docs/features/security_faq.html)** — Plain-English security architecture, DevTools protection, CSP, and printable PDF.
 - **[GRAB 0.8 Visual Guide](docs/features/grab_08_features.html)** — Integrations, typed React/TS clients, Redis cache, durable webhooks, and worker scaling.
 - **[GRAB 0.7 Visual Guide](docs/features/grab_07_features.html)** — Database access (SQLite, MariaDB, PostgreSQL), prepared queries, and migrations.
 - **[GRAB 0.6 Visual Guide](docs/features/grab_06_features.html)** — Persistent multi-route application server (Grisp engine).
@@ -244,6 +246,7 @@ Explore our plain-English visual documentation hubs:
 ## Documentation Index
 
 - **[ROADMAP.md](docs/ROADMAP.md):** Complete project roadmap from GRAB 0.1 through 1.0 and Post-1.0.
+- **[SECURITY-FAQ.md](docs/SECURITY-FAQ.md):** Built-in security architecture, DevTools isolation, and defense-in-depth protections FAQ.
 - **[DATA.md](docs/DATA.md) & [DATA-TESTING.md](docs/DATA-TESTING.md):** Database engine support and real-service verification.
 - **[CACHE.md](docs/CACHE.md):** Redis and in-memory cache limits, codec, and rate limiting.
 - **[API.md](docs/API.md):** Typed JSON contracts and deterministic TypeScript/React generator.
