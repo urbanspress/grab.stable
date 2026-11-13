@@ -19,7 +19,7 @@ import (
 func setSecurityHeaders(h http.Header) {
 	h.Set("X-Content-Type-Options", "nosniff")
 	h.Set("X-Frame-Options", "DENY")
-	h.Set("Content-Security-Policy", "default-src 'self'; script-src 'none'; object-src 'none'")
+	h.Set("Content-Security-Policy", "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'none'; object-src 'none'")
 	h.Set("Cache-Control", "no-store")
 }
 func NewHandler(grabPath, templatePath string, output io.Writer) http.Handler {

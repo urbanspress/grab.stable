@@ -138,8 +138,9 @@ func TestNewHandler_HTTPBehaviorAndSecurityHeaders(t *testing.T) {
 		if got := h.Get("X-Frame-Options"); got != "DENY" {
 			t.Errorf("X-Frame-Options = %q, want DENY", got)
 		}
-		if got := h.Get("Content-Security-Policy"); !strings.Contains(got, "script-src 'none'") {
-			t.Errorf("Content-Security-Policy = %q, want script-src 'none'", got)
+		wantCSP := "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'none'; object-src 'none'"
+		if got := h.Get("Content-Security-Policy"); got != wantCSP {
+			t.Errorf("Content-Security-Policy = %q, want %q", got, wantCSP)
 		}
 		if got := h.Get("Cache-Control"); got != "no-store" {
 			t.Errorf("Cache-Control = %q, want no-store", got)
