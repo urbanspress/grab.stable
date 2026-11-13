@@ -30,6 +30,10 @@ Read this checklist **before** editing any Go package in GRAB. These invariants 
 - **No raw dynamic SQL or unescaped HTML:** always use strict literal prepared SQL statements (`internal/data`), `TEXT`-safe encoding, context-aware HTML/attribute/URL escaping (`internal/template`), and secret redaction in logs and error diagnostics.
 - **Fail closed on malformed/untrusted inputs:** keep signature verification (`grab-hmac-sha256-v1`), `Origin` / TLS / trusted-proxy checks, and `grab.connect.lock` SHA-256 verification strict—never fall back automatically from Redis to memory cache or downgrade TLS/security defaults.
 
+## 5. Two-Repository Workflow & Release Protection
+- **Strict `stable` Protection:** All AI agents and models MUST push work-in-progress commits, drafts, and partial milestone checkpoints ONLY to `origin` (`urbanspress/grab.in.the.making`). Pushing to `stable` (`urbanspress/grab.stable`) is strictly forbidden unless the milestone is 100% `Complete` in `docs/ROADMAP.md`, `go build ./...` and `go test -count=1 ./...` pass 100%, and `HANDOFF.md` records no pending milestone tasks.
+- **Synchronized Releases:** Whenever a completed milestone is promoted to `stable`, the agent must push `main` and annotated version tags to both `origin` and `stable`, and create the matching GitHub Release on both repositories (`gh release create <tag> --repo urbanspress/grab.in.the.making` and `gh release create <tag> --repo urbanspress/grab.stable`).
+
 ---
 
 ## Pre-Finish Sanity Gate

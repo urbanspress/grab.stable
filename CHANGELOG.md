@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.9.0] - 2026-11-12
+
+### Added
+- **Two-Tier Profile-Driven Virtual Machine (`--engine=auto|ast|vm`):** Automatic transparent tiering: cold one-off scripts start immediately on AST; hot functions (16 calls), hot loops (64 back-edge iterations), and hot routes (8 hits) promote dynamically to bytecode via thread-safe `sync.Once`.
+- **Intermediate Representation (IR) & Optimizer (`internal/ir`):** Pre-indexed lexical slot allocations (`OpGetLocal`, `OpSetLocal`), jump-threading branch optimization, and scoped transaction tracking (`OpTxEnter`, `OpTxExit`).
+- **Compact Bytecode & Fail-Closed Static Verifier (`internal/vm`):** 16-byte fixed-size instruction stream with static validation of stack bounds, constant pools, and jump targets prior to execution.
+- **Structured PC-Range Exception Tables:** Fast happy-path `try`/`catch` without allocation; handler lookup via binary search over program-counter tables only when an error is raised (3.08× faster, 58.8% fewer allocs).
+- **Inline Small-Integer Fast Path (`internal/runtime`):** Inline `int64` storage for small integers, automatically promoting to arbitrary-precision `big.Int` on overflow.
+- **Pooled Machine Recycling:** `sync.Pool` allocation reuse for execution machine frames, eliminating memory churn under high concurrency.
+- **Route Snapshot Map Bypass (`ExecuteRoute`):** High-throughput HTTP route handler path avoiding per-request variable map allocations (1.91× faster on compute routes).
+- **Strict Conformance Parity:** 100% byte-for-byte semantic equivalence across AST, VM, and Auto execution engines verified by `tests/grab09_vm_equivalence_test.go`.
+
+---
+
 ## [0.8.0] - 2026-11-12
 
 ### Added

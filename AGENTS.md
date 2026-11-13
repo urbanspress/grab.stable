@@ -28,6 +28,13 @@ programming language and application platform.
 ## Mandatory Test Completion Gate
 - NEVER mark a task complete or ask the user for approval until you have written automated tests covering the new language feature or bug fix AND executed the full test suite with 100% passing results.
 
+## Two-Repository Workflow & Release Protection
+- **Repository Roles:**
+  - `origin` (`https://github.com/urbanspress/grab.in.the.making.git`): Active development repository for ongoing work, feature branches, experimental spikes, and in-progress milestone commits.
+  - `stable` (`https://github.com/urbanspress/grab.stable.git`): Production release repository powering live VPS auto-deployment and public production releases.
+- **Strict `stable` Protection:** All AI agents and models MUST push work-in-progress commits, drafts, and partial milestone checkpoints ONLY to `origin` (`urbanspress/grab.in.the.making`). Pushing to `stable` (`urbanspress/grab.stable`) is strictly forbidden unless the milestone is 100% `Complete` in `docs/ROADMAP.md`, `go build ./...` and `go test -count=1 ./...` pass 100%, and `HANDOFF.md` records no pending milestone tasks.
+- **Synchronized Releases:** Whenever a completed milestone is promoted to `stable`, the agent must push `main` and annotated version tags to both `origin` and `stable`, and create the matching GitHub Release on both repositories (`gh release create <tag> --repo urbanspress/grab.in.the.making` and `gh release create <tag> --repo urbanspress/grab.stable`).
+
 ## Tandem Handoff Protocol
 - **Google Antigravity -> Codex:** If Google Antigravity fails to fix a bug or pass `go test ./...` after 2 attempts, or encounters complex spec/architecture work, it must stop editing and revert only the specific files it edited during that failed attempt. If any pre-existing uncommitted work would be affected, it must stop and ask the project owner for approval before reverting. It must log what it tried in `HANDOFF.md` and say: "Ready to hand off to Codex. Type `use-codex` to continue."
 - **Codex -> Google Antigravity:** Whenever Codex finishes an architectural task or core test suite, it must update `AGENTS.md`, write the next routine follow-up task into `HANDOFF.md`, and say: "Core task complete—ready to hand off to Google Antigravity. Type `use-antigravity` to continue."

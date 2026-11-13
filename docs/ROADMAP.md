@@ -291,6 +291,13 @@ UI strategy and server/browser security boundary are approved (`ADR-014`, `ADR-0
 
 ### Post-1.0 Ecosystem Milestones
 
+**Dedicated Multi-Repository Architecture:** To keep the core GRAB programming language and Grisp application server repository (`grab.in.the.making` / `grab.stable`) decoupled, lightweight, and clean, each downstream ecosystem layer will live in its own dedicated GitHub repository:
+- `grex-js`: Native reactive UI runtime and browser compiler.
+- `grex-builder`: Responsive visual page builder and element library.
+- `grablab-cms`: Flagship CMS application, permalink router, and publishing workflows.
+- `groxy-ai`: Autonomous design & CMS agent tooling.
+- `gashboard` + `grabtaculous`: Desktop-based VPS control panel and 1-click application marketplace.
+
 Each ecosystem track below requires separate owner approval after GRAB 1.0 and
 remains unimplemented (`Status: Planned (Not Yet Approved for Implementation)`):
 
