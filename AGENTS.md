@@ -88,7 +88,7 @@ and `ADR-025a`–`ADR-025h`.
 **GRAB 1.0 — Stable, production-ready platform & native MCP server (`grab mcp`)** is complete, verified, and released as `v1.0.0` (`go build ./...`, Windows `go test -count=1 ./...` across all 19 testable packages, Linux `go1.26.11` full `go test -race -mod=readonly -count=1 ./...`, `govulncheck v1.9.0 ./...` clean on both `go1.26.11` and `go1.27.4`, `go mod verify`, static `linux/amd64` build, `--read-only` container `server.asset` verification, and the 30-minute 1/2/4-worker sustained fault/load gate in `docs/SCALE-TESTING.md` 100% passing) under **Google Antigravity** (`specifications/GRAB-PLATFORM-SPEC-100.md`, `ADR-027a`–`ADR-027d`, `docs/features/grab_10_features.html`).
 **Current Owner:** Google Antigravity.
 
-Post-1.0 ecosystem tracks remain `Planned (Not Yet Approved for Implementation)`; native GRAB UI/browser compiler and CMS are not authorized for implementation.
+Post-1.0 ecosystem tracks live in dedicated downstream repositories: **Step 1 (`grex-js v1.0.0`)** is complete in `urbanspress/grex-js`; **Step 2 (`grablab-cms`)** is active in `urbanspress/grablab-cms` (Zero-Plugin Core + Exclusive Active Theme architecture; `GRABLAB-SPEC-001.md` drafted for approval); **Step 3 (`grex-builder` Visual Theme)**, **Step 4 (`groxy-ai`)**, and **Step 5 (`gashboard` + `grabtaculous`)** remain `Planned (Not Yet Approved for Implementation)`. Core GRAB (`v1.0.1`) remains focused exclusively on the language, compiler/VM, and Grisp server.
 
 ## Live GRAB 0.1 Status & Repository Map
 
