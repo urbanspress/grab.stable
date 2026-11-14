@@ -24,13 +24,13 @@ import (
 
 // Build-time version metadata populated via -ldflags "-X main.Version=... -X main.BuildDate=...".
 var (
-	Version   = "1.0.1"
+	Version   = "1.1.0"
 	BuildDate = "unknown"
 )
 
-const usageText = "usage: grab run [--engine auto|ast|vm] [--db-config <manifest.json>] [--allow-db <alias:read|read-write|migrate>] [--diagnostics beginner|developer|production] [--allow-read <dir>] [--allow-write <dir>] [--allow-net <host[,host...]>] <file.grab>\n" +
+const usageText = "usage: grab run [--engine auto|ast|vm] [--db-config <manifest.json>] [--allow-db <alias:read|read-write|migrate>] [--diagnostics beginner|developer|production] [--allow-read <dir>] [--allow-write <dir>] [--allow-net <host[,host...]>] [--allow-env <VAR[,VAR...]>] <file.grab>\n" +
 	"       grab migrate --db-config <manifest.json> --allow-db <alias:migrate> <migrations.grab>\n" +
-	"       grab serve [--engine auto|ast|vm] [--addr 127.0.0.1:8080] [--allow-public] [--trusted-proxy <ip[,cidr...]>] [--static <[prefix=]dir>] [--reload] [--max-concurrency 64] [--max-queue 128] [--queue-timeout 1s] [--request-timeout 10s] [--max-body-bytes 1048576] [--shutdown-timeout 10s] [--log-format text|json] [--diagnostics beginner|developer|production] [--allow-read <dir>] [--allow-write <dir>] [--allow-net <host[,host...]>] <file.grab> [template.grab.html]\n" +
+	"       grab serve [--engine auto|ast|vm] [--addr 127.0.0.1:8080] [--allow-public] [--allow-scripts] [--trusted-proxy <ip[,cidr...]>] [--static <[prefix=]dir>] [--reload] [--max-concurrency 64] [--max-queue 128] [--queue-timeout 1s] [--request-timeout 10s] [--max-body-bytes 1048576] [--shutdown-timeout 10s] [--log-format text|json] [--diagnostics beginner|developer|production] [--allow-read <dir>] [--allow-write <dir>] [--allow-net <host[,host...]>] [--allow-env <VAR[,VAR...]>] <file.grab> [template.grab.html]\n" +
 	"       database flags for serve: --db-config <manifest.json> --allow-db <alias:read|read-write>\n" +
 	"       platform flags for run/serve/check: --platform-config <grab.platform.json> --allow-cache <alias:read|read-write|limit> --allow-channel <alias:connect|publish> --allow-telemetry <alias>\n" +
 	"       worker flags for serve: --workers <1..32> --worker-base-port <port> (consecutive loopback ports; external balancer required)\n" +
@@ -332,6 +332,10 @@ func parseCommonFlags(args []string, allowAddr bool) (commonFlagConfig, []string
 				cfg.server.AllowPublic = true
 				continue
 			}
+			if arg == "--allow-scripts" {
+				cfg.server.AllowScripts = true
+				continue
+			}
 			if arg == "--reload" {
 				cfg.server.Reload = true
 				continue
@@ -437,6 +441,19 @@ func parseCommonFlags(args []string, allowAddr bool) (commonFlagConfig, []string
 				return cfg, nil, false
 			}
 			cfg.opts.Permissions.AllowNet = append(cfg.opts.Permissions.AllowNet, hosts...)
+			i = nextIdx
+			continue
+		}
+		if arg == "--allow-env" || strings.HasPrefix(arg, "--allow-env=") {
+			val, nextIdx, ok := consumeFlagValue(args, i, "--allow-env")
+			if !ok {
+				return cfg, nil, false
+			}
+			vars, valid := interpreter.ParseAllowEnvList(val)
+			if !valid {
+				return cfg, nil, false
+			}
+			cfg.opts.Permissions.AllowEnv = append(cfg.opts.Permissions.AllowEnv, vars...)
 			i = nextIdx
 			continue
 		}
@@ -559,19 +576,21 @@ func consumeFlagValue(args []string, idx int, flagName string) (string, int, boo
 func printVersion(w io.Writer) {
 	v := Version
 	if v == "" {
-		v = "1.0.1"
+		v = "1.1.0"
 	}
 	bd := BuildDate
 	if bd == "" {
 		bd = "unknown"
 	}
+	osName := runtime.GOOS
+	if len(osName) > 0 {
+		osName = strings.ToUpper(osName[:1]) + osName[1:]
+	}
 	goVer := strings.TrimPrefix(runtime.Version(), "go")
 	fmt.Fprintf(
 		w,
-		"GRAB %s (cli) (built: %s) (%s %s go%s)\n"+
-			"Copyright (c) 2026 Urbanspress\n"+
-			"Built by Urbanspress\n"+
-			"Grisp Persistent Application Server & Native MCP Runtime\n",
-		v, bd, runtime.GOOS, runtime.GOARCH, goVer,
+		"GRAB %s (built: %s) (%s %s go%s)\n"+
+			"Built by Miles Development Experts LLC\n",
+		v, bd, osName, runtime.GOARCH, goVer,
 	)
 }

@@ -1,6 +1,13 @@
 # GRAB Tandem Handoff
 
 - **Current Owner:** Google Antigravity
+- **GRAB 1.1 Additive Standard Library & Server Security Release (`v1.1.0`, November 14, 2026):**
+  - Designed and implemented **GRAB `v1.1.0`** under the `v1.x` additive-only compatibility guarantee (`specifications/GRAB-PLATFORM-SPEC-110.md`, `ADR-027c`, `ADR-028a`–`ADR-028c`), supporting GrabLab CMS v0.3.0 authentication, sessions, encrypted OAuth2/PKCE social login, and interactive **Grex JS v1.0.0** admin pages:
+    - **Native `use crypto` module (`internal/interpreter/crypto.go`):** `crypto.hash_password` & `crypto.verify_password` (`argon2id` via `golang.org/x/crypto/argon2` `m=19456,t=2,p=1`, 16-byte random salt, PHC encoding, constant-time `crypto/subtle` verify), `crypto.random_urlsafe` & `crypto.random_hex` (`crypto/rand`, bounded `16..64` bytes), `crypto.sha256_hex` & `crypto.sha256_base64url` (RFC 7636 PKCE `S256` challenge & token hashing), and `crypto.encrypt_aead` & `crypto.decrypt_aead` (AES-256-GCM authenticated encryption at rest with `"v1:"` envelope & explicit 32-byte key decoding).
+    - **Capability-gated `use env` module & `--allow-env` (`internal/interpreter/env.go`, `capabilities.go`, `internal/parser/parser.go`, `internal/server/workers.go`, `cmd/grab/main.go`):** Default-deny `env.get` & `env.has` failing closed with `PermissionDenied` (`GRAB-E401`), contextual `env.has` parser support, child worker env forwarding in `restrictedWorkerEnv`, and identical parity across AST interpreter and Bytecode VM (`--engine=auto`/`ast`/`vm`).
+    - **Opt-in `--allow-scripts` CSP flag on `grab serve` (`internal/server/supervisor.go`, `application.go`, `cmd/grab/main.go`):** Keeps strict `script-src 'none'` (`object-src 'none'`) by default and emits `script-src 'self'` (zero `unsafe-eval`/`unsafe-inline` scripts) when explicitly enabled so local **Grex JS v1.0.0** bundles run natively under strict CSP.
+  - Added full unit, parser, capability denial, AST/VM differential parity, live HTTP CSP, CLI, and MCP offline validation tests across `internal/interpreter`, `internal/parser`, `internal/server`, `cmd/grab`, and `tests/grab11_conformance_test.go`.
+  - Updated `CHANGELOG.md`, `docs/ROADMAP.md`, `docs/adr/ADR-DECISION-REGISTER.md`, `AGENTS.md`, `docs/features/grab_11_features.html`, `docs/features/index.html`, and generated `docs/releases/pdf/GRAB-v1.1.0-Guide.pdf` + cross-platform binaries (`grab-windows-amd64.exe`, `grab-linux-amd64`, `SHA256SUMS.txt`).
 - **GRAB 1.0 General Availability & `v1.0.0` Release Promotion (November 13, 2026):**
   - Completed mandatory 30-minute 1/2/4-worker sustained fault and load gate per `specifications/GRAB-SCALE-SPEC-008.md` Section 12 and `specifications/GRAB-PLATFORM-SPEC-100.md` Section 5 with zero waivers (`tests/grab08_sustained_load_test.go`).
   - Executed 100% clean live-service tests against PostgreSQL 18 and Redis 8.2.2 containers with signed HMAC webhooks, idempotent deduplication, cached catalog queries, WebSocket pub/sub live broadcasts, and mid-run SIGKILL fault injection with clean supervisor auto-recovery.
@@ -56,7 +63,7 @@
 - **Environment notes:** Sandbox policy blocks ordinary loopback client TCP connections; authorized real-service tests run with network access. HTTP-wire conformance also uses the existing `net.Pipe` transport. Race tests run inside Linux Docker because the Windows host has no C compiler. Benchmark timings are machine-specific, not a capacity guarantee.
 - **Worktree:** GRAB 0.8 Parts 1, 2, and 3 are complete, verified with 100% passing tests, and checkpointed to `origin/main`. Disposable MariaDB/PostgreSQL services predated this work; only the Part 3 Redis fixture was created here.
 - **Next Pending Task (Google Antigravity):**
-  1. GRAB 1.0 General Availability release promotion complete: `v1.0.0` tagged and synchronized across `origin` (`urbanspress/grab.in.the.making`) and `stable` (`urbanspress/grab.stable`).
-  2. Verify live VPS auto-deployment on `https://allenmiles.com` pulling from `stable` `v1.0.0`.
-  3. Await owner direction on Post-1.0 priorities (`Grex JS` browser runtime, `Grex` visual designer, `GrabLab` CMS, `Groxy AI` agent runtime, or `Gashboard` VPS manager per `docs/ROADMAP.md`).
+  1. GRAB `v1.1.0` additive release promotion complete: `v1.1.0` tagged and synchronized across `origin` (`urbanspress/grab.in.the.making`) and `stable` (`urbanspress/grab.stable`), with PDF walkthrough guide and cross-platform binaries attached.
+  2. Integrate `use crypto`, `use env` (`--allow-env`), and `grab serve --allow-scripts` into downstream **GrabLab CMS v0.3.0** (`urbanspress/grablab-cms`).
+  3. Proceed with downstream ecosystem milestones (**Grex Visual Theme**, **Groxy AI**, **Gashboard** + **Grabtaculous**) per `docs/ROADMAP.md`.
 - **Recommended Antigravity model for next step:** **Gemini 4 Argon (Medium)** or **Gemini 3.8 Flash (High)** for post-1.0 planning and roadmap exploration.

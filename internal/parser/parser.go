@@ -662,9 +662,10 @@ func (parser *Parser) parseCallableTarget() (string, lexer.Span, string, lexer.S
 	if parser.match(lexer.TokenDot) {
 		var second lexer.Token
 		var err error
-		// Specification 008's cache.set uses an existing statement keyword
-		// contextually after this exact module qualifier only.
-		if first.Lexeme == "cache" && parser.check(lexer.TokenSet) {
+		// Specification 008's cache.set and GRAB 1.1's env.has use existing
+		// statement/operator keywords contextually after their exact module qualifiers only.
+		if (first.Lexeme == "cache" && parser.check(lexer.TokenSet)) ||
+			(first.Lexeme == "env" && parser.check(lexer.TokenHas)) {
 			second = parser.advance()
 		} else {
 			second, err = parser.consume(lexer.TokenIdentifier)
@@ -1336,8 +1337,12 @@ func (parser *Parser) tokenAt(offset int) lexer.Token {
 }
 
 func (parser *Parser) isImplicitQualifiedCall() bool {
+	second := parser.tokenAt(2).Kind
+	mod := parser.currentToken().Lexeme
 	return parser.tokenAt(1).Kind == lexer.TokenDot &&
-		(parser.tokenAt(2).Kind == lexer.TokenIdentifier || parser.currentToken().Lexeme == "cache" && parser.tokenAt(2).Kind == lexer.TokenSet) &&
+		(second == lexer.TokenIdentifier ||
+			(mod == "cache" && second == lexer.TokenSet) ||
+			(mod == "env" && second == lexer.TokenHas)) &&
 		parser.tokenAt(3).Kind == lexer.TokenUsing
 }
 

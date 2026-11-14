@@ -162,7 +162,7 @@ func beginnerHint(code string, err error) string {
 	case "GRAB-E311":
 		return "The server took too long to respond. Increase 'timeout_ms' in options or wrap the call in 'try ... catch err ... end'."
 	case "GRAB-E401":
-		return "File access is locked by default. Grant folder access with '--allow-read <dir>' or '--allow-write <dir>' (sensitive files like .env and .git are always blocked)."
+		return "Access is locked by default. Grant file access with '--allow-read <dir>' or '--allow-write <dir>', or environment variable access with '--allow-env <VAR>' (sensitive files like .env and .git are always blocked)."
 	case "GRAB-E402":
 		return "Network access is locked by default. Re-run with '--allow-net <host>' to allow requests to this host (private/metadata IPs are blocked by default)."
 	default:

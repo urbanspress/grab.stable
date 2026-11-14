@@ -29,6 +29,8 @@ func (f stdlibFunc) acceptsArity(n int) bool {
 }
 
 var stdlibModules = map[string]map[string]stdlibFunc{
+	"crypto":  cryptoFunctions,
+	"env":     envFunctions,
 	"cache":   cacheFunctions,
 	"sockets": nil,
 	"api":     apiFunctions,

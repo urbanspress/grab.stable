@@ -17,9 +17,17 @@ import (
 )
 
 func setSecurityHeaders(h http.Header) {
+	setSecurityHeadersWithPolicy(h, false)
+}
+
+func setSecurityHeadersWithPolicy(h http.Header, allowScripts bool) {
 	h.Set("X-Content-Type-Options", "nosniff")
 	h.Set("X-Frame-Options", "DENY")
-	h.Set("Content-Security-Policy", "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'none'; object-src 'none'")
+	if allowScripts {
+		h.Set("Content-Security-Policy", "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; object-src 'none'")
+	} else {
+		h.Set("Content-Security-Policy", "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'none'; object-src 'none'")
+	}
 	if h.Get("Cache-Control") == "" {
 		h.Set("Cache-Control", "no-store")
 	}

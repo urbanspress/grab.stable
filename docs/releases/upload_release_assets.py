@@ -24,7 +24,9 @@ MILESTONES = [
     "v0.7.0",
     "v0.8.0",
     "v0.9.0",
-    "v1.0.0"
+    "v1.0.0",
+    "v1.0.1",
+    "v1.1.0"
 ]
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -56,13 +58,16 @@ def main():
             sys.exit(1)
             
         files_to_upload = [pdf_file]
-        if tag == "v1.0.0":
+        if tag in ("v1.0.0", "v1.0.1", "v1.1.0"):
             win_bin = os.path.join(DIST_DIR, "grab-windows-amd64.exe")
             linux_bin = os.path.join(DIST_DIR, "grab-linux-amd64")
             if not os.path.exists(win_bin) or not os.path.exists(linux_bin):
                 print(f"Error: Binaries in {DIST_DIR} missing!")
                 sys.exit(1)
             files_to_upload.extend([win_bin, linux_bin])
+            sums_file = os.path.join(DIST_DIR, "SHA256SUMS.txt")
+            if os.path.exists(sums_file):
+                files_to_upload.append(sums_file)
             
         for repo in REPOS:
             success = upload_file(repo, tag, files_to_upload)

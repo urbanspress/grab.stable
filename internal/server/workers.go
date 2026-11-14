@@ -498,6 +498,9 @@ func restrictedWorkerEnv(opts interpreter.Options, cfg Config) []string {
 	for _, name := range opts.DataGrants.SecretNames() {
 		names[name] = true
 	}
+	for _, name := range opts.Permissions.AllowEnv {
+		names[name] = true
+	}
 	var env []string
 	for name := range names {
 		if value, ok := os.LookupEnv(name); ok {

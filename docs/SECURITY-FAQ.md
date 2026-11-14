@@ -63,7 +63,7 @@ By default, Grisp sends an ultra-strict security header (`Content-Security-Polic
 Because our initial test template had CSS directly inside `<style>` tags in the HTML, the browser followed Grisp's strict instructions and fell back to unstyled text.
 
 **The Solution:**  
-We updated the edge reverse proxy (Nginx) to explicitly authorize `style-src 'self' 'unsafe-inline'`. This permits visual CSS styling while continuing to 100% block all JavaScript execution (`script-src 'none'`) and object embeds (`object-src 'none'`).
+We updated the edge reverse proxy (Nginx) to explicitly authorize `style-src 'self' 'unsafe-inline'`. This permits visual CSS styling while continuing to 100% block all JavaScript execution (`script-src 'none'`) and object embeds (`object-src 'none'`). Starting in GRAB `v1.1.0`, passing `--allow-scripts` to `grab serve` explicitly permits local static scripts via `script-src 'self'` (for self-hosted **Grex JS** bundles) while still blocking inline `<script>` tags, `unsafe-eval`, third-party origins, and `object-src 'none'`.
 
 ---
 

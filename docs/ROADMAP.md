@@ -277,6 +277,20 @@ Implemented and verified under Google Antigravity (`go build ./...`, Windows `go
 
 ---
 
+### GRAB 1.1 — Cryptographic Primitives, Capability Env & Opt-In Script CSP (`v1.1.0`)
+
+**Status:** Complete (Implemented, verified, and released — November 14, 2026)
+**Specification:** [`GRAB-PLATFORM-SPEC-110.md`](../specifications/GRAB-PLATFORM-SPEC-110.md)
+**Visual guide:** [`GRAB 1.1 guide`](features/grab_11_features.html)
+
+Additive security and runtime capabilities under the `v1.x` compatibility guarantee (`ADR-027c`, `ADR-028a`–`ADR-028c`), implemented identically across AST, Bytecode VM, and `auto` engines:
+
+- **Native `use crypto` module:** Argon2id password hashing and constant-time verification (`crypto.hash_password`, `crypto.verify_password`), bounded `crypto/rand` tokens (`crypto.random_urlsafe`, `crypto.random_hex`), SHA-256 / OAuth2 PKCE `S256` hashing (`crypto.sha256_hex`, `crypto.sha256_base64url`), and AES-256-GCM authenticated encryption at rest (`crypto.encrypt_aead`, `crypto.decrypt_aead`).
+- **Capability-gated `use env` module (`--allow-env <VAR[,VAR...]>`):** Default-deny `env.get` / `env.has` failing closed with `GRAB-E401` for ungranted variables, with contextual parser support and child worker env forwarding.
+- **Opt-in `--allow-scripts` CSP flag on `grab serve`:** Keeps strict `script-src 'none'` by default and emits `script-src 'self'` (preserving `object-src 'none'` and forbidding `unsafe-eval`/`unsafe-inline` scripts) so local **Grex JS v1.0.0** bundles execute cleanly in GrabLab CMS interactive admin UIs.
+
+---
+
 ## Post-1.0 — Future research and downstream products
 
 **Status:** Planned (Not Yet Approved for Implementation)

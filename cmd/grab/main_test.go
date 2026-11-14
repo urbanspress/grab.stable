@@ -562,21 +562,23 @@ func TestVersion_CLI(t *testing.T) {
 		BuildDate = origBuildDate
 	})
 
+	osName := runtime.GOOS
+	if len(osName) > 0 {
+		osName = strings.ToUpper(osName[:1]) + osName[1:]
+	}
 	goVer := strings.TrimPrefix(runtime.Version(), "go")
 	expected := func(v, bd string) string {
 		return fmt.Sprintf(
-			"GRAB %s (cli) (built: %s) (%s %s go%s)\n"+
-				"Copyright (c) 2026 Urbanspress\n"+
-				"Built by Urbanspress\n"+
-				"Grisp Persistent Application Server & Native MCP Runtime\n",
-			v, bd, runtime.GOOS, runtime.GOARCH, goVer,
+			"GRAB %s (built: %s) (%s %s go%s)\n"+
+				"Built by Miles Development Experts LLC\n",
+			v, bd, osName, runtime.GOARCH, goVer,
 		)
 	}
 
 	t.Run("defaults", func(t *testing.T) {
-		Version = "1.0.1"
+		Version = "1.1.0"
 		BuildDate = "unknown"
-		want := expected("1.0.1", "unknown")
+		want := expected("1.1.0", "unknown")
 
 		for _, arg := range []string{"-v", "--version", "version"} {
 			t.Run(arg, func(t *testing.T) {

@@ -249,6 +249,11 @@ func (e *Error) Error() string {
 			return fmt.Sprintf("%s %q at line %d, column %d", e.Kind, e.Name, e.Span.Start.Line, e.Span.Start.Column)
 		}
 		return fmt.Sprintf("%s at line %d, column %d", e.Kind, e.Span.Start.Line, e.Span.Start.Column)
+	case PermissionDenied:
+		if e.Err != nil && e.Err.Error() != "permission denied" {
+			return fmt.Sprintf("%s: %v at line %d, column %d", e.Kind, e.Err, e.Span.Start.Line, e.Span.Start.Column)
+		}
+		return fmt.Sprintf("%s at line %d, column %d", e.Kind, e.Span.Start.Line, e.Span.Start.Column)
 	default:
 		return fmt.Sprintf("%s at line %d, column %d", e.Kind, e.Span.Start.Line, e.Span.Start.Column)
 	}

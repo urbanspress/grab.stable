@@ -32,7 +32,7 @@ import (
 type Config struct {
 	Workers, WorkerBasePort                       int
 	WorkerArguments, WorkerFiles                  []string
-	AllowPublic, Reload                           bool
+	AllowPublic, Reload, AllowScripts             bool
 	TrustedProxy, Static, LogFormat               string
 	MaxConcurrency, MaxQueue                      int
 	QueueTimeout, RequestTimeout, ShutdownTimeout time.Duration
@@ -416,7 +416,7 @@ func (a *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	id := fmt.Sprintf("req_%x_%x", start.UnixNano(), a.ids.Add(1))
 	ip, scheme, host := a.metadata(r)
 	entry := requestLog{Timestamp: start.UTC().Format(time.RFC3339Nano), Level: "info", RequestID: id, Method: r.Method, Path: r.URL.Path, ClientIP: ip, Status: 500}
-	setSecurityHeaders(w.Header())
+	setSecurityHeadersWithPolicy(w.Header(), a.cfg.AllowScripts)
 	w.Header().Set("X-Request-ID", id)
 	// All application writes are buffered; panic recovery can always emit a clean error.
 	status := 500
@@ -446,7 +446,7 @@ func (a *Application) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		for k, v := range headers {
 			w.Header()[k] = v
 		}
-		setSecurityHeaders(w.Header())
+		setSecurityHeadersWithPolicy(w.Header(), a.cfg.AllowScripts)
 		entry.Status = status
 		entry.DurationMS = float64(time.Since(start).Microseconds()) / 1000
 		if status >= 500 {

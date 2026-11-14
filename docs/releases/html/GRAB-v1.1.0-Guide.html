@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>GRAB 1.1 Visual Guide — Native Cryptography, Capability Env & Opt-In Script CSP</title>
+<style>
+
+:root {
+  --ink: #0f172a;
+  --muted: #475569;
+  --light-muted: #64748b;
+  --line: #cbd5e1;
+  --bg-page: #f8fafc;
+  --surface: #ffffff;
+  --navy: #0f172a;
+  --navy-light: #1e293b;
+  --teal: #0d9488;
+  --teal-soft: #ccfbf1;
+  --blue: #0284c7;
+  --blue-soft: #e0f2fe;
+  --green: #15803d;
+  --green-soft: #dcfce7;
+  --amber: #b45309;
+  --amber-soft: #fef3c7;
+  --purple: #7e22ce;
+  --purple-soft: #f3e8ff;
+}
+
+* { box-sizing: border-box; }
+@page {
+  size: A4;
+  margin: 12mm 14mm 14mm 14mm;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: var(--ink);
+  background: var(--bg-page);
+  line-height: 1.55;
+  font-size: 13.5px;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.page-break {
+  page-break-before: always;
+}
+
+.avoid-break {
+  page-break-inside: avoid;
+}
+
+/* Header & Hero */
+.header-hero {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #0d9488 100%);
+  color: white;
+  border-radius: 12px;
+  padding: 24px 28px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.version-pill {
+  display: inline-block;
+  background: #38bdf8;
+  color: #0f172a;
+  font-weight: 800;
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.date-tag {
+  font-size: 11.5px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+h1 {
+  font-size: 26px;
+  line-height: 1.2;
+  margin: 0 0 6px 0;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+}
+
+.subtitle {
+  font-size: 15px;
+  color: #38bdf8;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+}
+
+.lead-p {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #e2e8f0;
+  margin: 0;
+}
+
+/* Metaphor Box */
+.metaphor-box {
+  background: var(--surface);
+  border: 1px solid #bae6fd;
+  border-left: 5px solid #0284c7;
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+}
+
+.metaphor-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0284c7;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.metaphor-body {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Walkthrough Section */
+.section-heading {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--navy);
+  margin: 22px 0 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 2px solid var(--line);
+  padding-bottom: 5px;
+}
+
+.section-heading span.badge-num {
+  background: var(--navy);
+  color: white;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+}
+
+.walkthrough-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.walkthrough-column {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.col-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+}
+
+.col-header.frontend { color: #0284c7; }
+.col-header.backend { color: #0f766e; }
+
+.item-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+
+.item-card:last-child { margin-bottom: 0; }
+
+.item-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 3px;
+}
+
+.item-desc {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* Data Flow Diagram */
+.flow-diagram {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.flow-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--navy);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.flow-steps {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.flow-step {
+  flex: 1;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 8px 10px;
+  text-align: center;
+}
+
+.flow-step.active {
+  background: #e0f2fe;
+  border-color: #38bdf8;
+}
+
+.flow-step-num {
+  font-size: 10px;
+  font-weight: 800;
+  color: #0284c7;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.flow-step-text {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--navy);
+  line-height: 1.3;
+}
+
+.flow-arrow {
+  color: #94a3b8;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+/* Comparison Table */
+table.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  margin-bottom: 20px;
+}
+
+table.compare-table th {
+  background: #0f172a;
+  color: white;
+  text-align: left;
+  padding: 9px 12px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+table.compare-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 12px;
+  color: var(--muted);
+  vertical-align: top;
+}
+
+table.compare-table tr:last-child td { border-bottom: none; }
+table.compare-table td.strong { font-weight: 700; color: var(--navy); }
+table.compare-table td.grab-win { background: #f0fdf4; color: #166534; font-weight: 600; }
+
+/* Code Display */
+.code-box {
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: #e2e8f0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11.5px;
+  line-height: 1.5;
+  margin-bottom: 18px;
+  border: 1px solid #1e293b;
+}
+
+.code-title {
+  color: #38bdf8;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid #334155;
+  padding-bottom: 4px;
+}
+
+.code-box pre {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.code-kw { color: #f472b6; font-weight: 700; }
+.code-str { color: #a7f3d0; }
+.code-num { color: #fbbf24; }
+.code-fn { color: #38bdf8; }
+.code-comment { color: #64748b; font-style: italic; }
+
+/* Checklist Box */
+.checklist-box {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.checklist-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #166534;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.checklist-items {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 12px;
+  font-size: 11.5px;
+  color: #15803d;
+  font-weight: 600;
+}
+
+.checklist-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.check-icon {
+  color: #16a34a;
+  font-weight: 900;
+}
+
+/* Footer */
+footer {
+  margin-top: 20px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: var(--light-muted);
+}
+
+</style>
+</head>
+<body>
+
+<!-- PAGE 1: HERO & METAPHOR -->
+<div class="header-hero">
+  <div class="header-top">
+    <span class="version-pill">GRAB v1.1.0 · Milestone Guide</span>
+    <span class="date-tag">November 2026 · Spec: GRAB-PLATFORM-SPEC-110.md</span>
+  </div>
+  <h1>Native Cryptography, Capability Env & Opt-In Script CSP</h1>
+  <div class="subtitle">Production-Grade Security Primitives for Authentication, Encrypted OAuth2/PKCE & Interactive Grex JS Pages</div>
+  <p class="lead-p">GRAB 1.1 adds production-grade password hashing, cryptographic tokens, SHA-256/PKCE digests, AES-256-GCM encryption at rest, default-deny environment variables, and opt-in script CSP while keeping 100% compatibility across every existing GRAB 1.0 application.</p>
+</div>
+
+<div class="metaphor-box">
+  <div class="metaphor-title">&#128161; Everyday Metaphor: The Vault Door & Keycard Turnstile</div>
+  <p class="metaphor-body">Imagine upgrading a boutique store with a bank-grade steel vault (`use crypto`), badge-only keycards for the back office (`use env --allow-env`), and a glass security vestibule that lets your own verified cash-register displays run safely while keeping every outside script locked out (`grab serve --allow-scripts`). Storefront pages load fast, secrets never wander into logs, and customer logins meet modern banking security automatically.</p>
+</div>
+
+<div class="section-heading">
+  <span class="badge-num">1</span>
+  <span>The Customer Browsing &amp; Buying Experience Walkthrough</span>
+</div>
+<p style="color: var(--muted); margin: 0 0 12px 0; font-size: 12.5px;">
+  How this milestone elevates what the online shopper sees on their screen and what the GRAB platform guarantees behind the scenes.
+</p>
+
+<div class="walkthrough-grid">
+  <!-- Frontend Column -->
+  <div class="walkthrough-column">
+    <div class="col-header frontend">
+      <span>&#128065; Frontend: What the Shopper Sees</span>
+    </div>
+    <div class="item-card"><div class="item-title">Bank-Grade Password Protection</div><p class="item-desc">Customer and admin passwords are protected with memory-hard Argon2id hashing and random salts (`crypto.hash_password` / `crypto.verify_password`) — never reversible or stored in plain text.</p></div><div class="item-card"><div class="item-title">Interactive Zero-Bloat Admin UIs</div><p class="item-desc">Passing `--allow-scripts` lets your own local Grex JS bundles (`script-src 'self'`) power instant, snappy admin dashboards while still blocking inline and third-party scripts.</p></div><div class="item-card"><div class="item-title">Safe Social Login (OAuth2 PKCE)</div><p class="item-desc">Built-in `crypto.sha256_base64url` and `crypto.random_urlsafe` power tamper-proof OAuth2 PKCE logins without unsafe external packages.</p></div><div class="item-card"><div class="item-title">Zero Leakage Guarantee</div><p class="item-desc">Secrets live in approved environment variables (`--allow-env`) and encrypted cookies/tokens (`crypto.encrypt_aead`) rather than hardcoded source files.</p></div>
+  </div>
+
+  <!-- Backend Column -->
+  <div class="walkthrough-column">
+    <div class="col-header backend">
+      <span>&#9881; Backend: What Grisp &amp; GRAB Do</span>
+    </div>
+    <div class="item-card"><div class="item-title">8 Native Cryptographic Primitives</div><p class="item-desc">`use crypto` provides Argon2id hashing/verify, `crypto/rand` URL-safe/hex tokens (bounded `16..64` bytes), SHA-256 hex/base64url, and AES-256-GCM AEAD encryption across both AST and Bytecode VM.</p></div><div class="item-card"><div class="item-title">Default-Deny Environment Security</div><p class="item-desc">`use env` (`env.get` / `env.has`) fails closed with `GRAB-E401` unless explicitly allowlisted with `--allow-env <VAR[,VAR...]>`, and forwards approved vars cleanly to multi-worker processes.</p></div><div class="item-card"><div class="item-title">Strict Script CSP Opt-In</div><p class="item-desc">`grab serve` retains `script-src 'none'` by default and upgrades strictly to `script-src 'self'` (keeping `object-src 'none'`, zero `unsafe-eval`) only when `--allow-scripts` is passed.</p></div><div class="item-card"><div class="item-title">100% AST/VM Differential Parity</div><p class="item-desc">Every `crypto.*` and `env.*` function runs identically across `--engine=ast`, `--engine=vm`, and `--engine=auto`, verified alongside MCP `grab_check` offline validation.</p></div>
+  </div>
+</div>
+
+<!-- PAGE BREAK FOR CLEAN PRINTING -->
+<div class="page-break"></div>
+
+<!-- PAGE 2: ARCHITECTURE FLOW, COMPARISONS, CODE & CHECKLIST -->
+<div class="section-heading" style="margin-top: 0;">
+  <span class="badge-num">2</span>
+  <span>Visual Data Flow &amp; Architecture</span>
+</div>
+
+<div class="flow-diagram">
+  <div class="flow-title">Customer Request &amp; Execution Lifecycle</div>
+  <div class="flow-steps">
+    
+        <div class="flow-step">
+          <div class="flow-step-num">1. Grant Secrets</div>
+          <div class="flow-step-text">grab serve --allow-env AEAD_KEY --allow-scripts</div>
+        </div>
+        <div class="flow-arrow">&rarr;</div>
+        <div class="flow-step active">
+          <div class="flow-step-num">2. Hash & Encrypt</div>
+          <div class="flow-step-text">Argon2id passwords & AES-256-GCM tokens</div>
+        </div>
+        <div class="flow-arrow">&rarr;</div>
+        <div class="flow-step">
+          <div class="flow-step-num">3. PKCE & Sessions</div>
+          <div class="flow-step-text">CSPRNG tokens & SHA-256 challenges</div>
+        </div>
+        <div class="flow-arrow">&rarr;</div>
+        <div class="flow-step active">
+          <div class="flow-step-num">4. Strict CSP Header</div>
+          <div class="flow-step-text">script-src 'self'; object-src 'none'</div>
+        </div>
+        
+  </div>
+</div>
+
+<div class="section-heading">
+  <span class="badge-num">3</span>
+  <span>Business &amp; Technical Advantage Comparison</span>
+</div>
+
+<table class="compare-table">
+  <thead>
+    <tr>
+      <th style="width: 25%;">Capability</th>
+      <th style="width: 37%;">Legacy / Unhardened Stacks</th>
+      <th style="width: 38%;">GRAB Platform Standard</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td class="strong">Password Storage</td><td>Unsalted hashes or external shell calls</td><td class="grab-win">Native Argon2id (`m=19456,t=2,p=1`) + `crypto/subtle` verify</td></tr><tr><td class="strong">OAuth2 Tokens at Rest</td><td>Plaintext DB tokens or custom XOR</td><td class="grab-win">Authenticated AES-256-GCM (`v1:...`) with 12-byte random nonce</td></tr><tr><td class="strong">Host Env Variables</td><td>Ambient global read of all OS secrets</td><td class="grab-win">Default-deny `--allow-env` allowlist failing closed with `GRAB-E401`</td></tr><tr><td class="strong">Browser JavaScript CSP</td><td>Blanket `script-src 'none'` or unsafe wildcards</td><td class="grab-win">Strict default `none`, opt-in `--allow-scripts` emitting `script-src 'self'`</td></tr>
+  </tbody>
+</table>
+
+<div class="section-heading">
+  <span class="badge-num">4</span>
+  <span>Real-World Code in Action</span>
+</div>
+
+<div class="code-box">
+  <div class="code-title">Production Auth & PKCE Session Flow in GRAB 1.1</div>
+  <pre><code>use crypto
+use env
+
+set aead_key to env.get using "SESSION_AEAD_KEY"
+set pw_hash to crypto.hash_password using "customer-passphrase"
+set verified to crypto.verify_password using "customer-passphrase", pw_hash
+
+set session_id to crypto.random_urlsafe using 32
+set session_digest to crypto.sha256_hex using session_id
+set pkce_challenge to crypto.sha256_base64url using session_id
+set sealed_oauth to crypto.encrypt_aead using "oauth_refresh_token", aead_key
+set plain_oauth to crypto.decrypt_aead using sealed_oauth, aead_key</code></pre>
+</div>
+
+<div class="checklist-box">
+  <div class="checklist-title">&#128737; Milestone Verification &amp; Release Acceptance</div>
+  <div class="checklist-items">
+    <div class="checklist-item"><span class="check-icon">&#10003;</span><span>Native `use crypto` (Argon2id, CSPRNG, SHA-256/PKCE, AES-256-GCM)</span></div><div class="checklist-item"><span class="check-icon">&#10003;</span><span>Capability-Gated `use env` & `--allow-env` Fail-Closed `GRAB-E401`</span></div><div class="checklist-item"><span class="check-icon">&#10003;</span><span>Opt-In `--allow-scripts` CSP (`script-src 'self'`, Zero `unsafe-eval`)</span></div><div class="checklist-item"><span class="check-icon">&#10003;</span><span>Full AST, Bytecode VM & `auto` Parity Tests (`TestGRAB11*`)</span></div><div class="checklist-item"><span class="check-icon">&#10003;</span><span>Cross-Platform `windows/amd64` & `linux/amd64` Binaries + `SHA256SUMS.txt`</span></div><div class="checklist-item"><span class="check-icon">&#10003;</span><span>Synchronized `v1.1.0` Release on `origin` & `stable`</span></div>
+  </div>
+</div>
+
+<footer>
+  <span>GRAB Programming Language &amp; Application Platform</span>
+  <span>Verified Release Guide · v1.1.0 · Released on origin &amp; stable</span>
+</footer>
+
+</body>
+</html>

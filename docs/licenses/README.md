@@ -8,6 +8,7 @@ Pinned cache and WebSocket dependencies:
 | `github.com/cespare/xxhash/v2` | `v2.3.0` | [MIT](xxhash-MIT.txt) |
 | `go.uber.org/atomic` | `v1.12.0` | [MIT](atomic-MIT.txt) |
 | `github.com/coder/websocket` | `v1.8.14` | [ISC](coder-websocket-ISC.txt) |
+| `golang.org/x/crypto` | `v0.59.0` | [BSD 3-Clause](golang-org-x-crypto-BSD-3-Clause.txt) |
 
 Notices were copied from the downloaded pinned modules. `go.sum` records module
 checksums. This lists the new cache dependencies, not every existing GRAB

@@ -18,12 +18,14 @@ var (
 	errInvalidNetworkURL       = errors.New("invalid or unsupported HTTP URL")
 )
 
-// Permissions defines explicit filesystem and network capabilities granted to a
-// GRAB execution. The zero value grants no capabilities (default-deny).
+// Permissions defines explicit filesystem, network, and environment variable
+// capabilities granted to a GRAB execution. The zero value grants no
+// capabilities (default-deny).
 type Permissions struct {
 	AllowRead  []string
 	AllowWrite []string
 	AllowNet   []string
+	AllowEnv   []string
 }
 
 // ParseAllowNetList parses and validates a comma-separated --allow-net flag value,

@@ -30,3 +30,32 @@ func TestCacheSetContextualMember(t *testing.T) {
 		}
 	}
 }
+
+func TestEnvHasContextualMember(t *testing.T) {
+	for _, tt := range []struct {
+		source string
+		valid  bool
+	}{
+		{"set ok to env.has using \"SECRET\"\n", true},
+		{"show env.has using \"SECRET\"\n", true},
+		{"show call env.has using \"SECRET\"\n", true},
+		{"set hit to env has \"SECRET\"\n", true},
+		{"call other.has using \"SECRET\"\n", false},
+		{"call env.show using \"SECRET\"\n", false},
+	} {
+		p, e := Parse("env.grab", tt.source)
+		if (e == nil) != tt.valid {
+			t.Fatalf("%q: %v", tt.source, e)
+		}
+		if p != nil {
+			formatted, e := Format("env.grab", tt.source)
+			if e != nil {
+				t.Fatal(e)
+			}
+			again, e := Format("again.grab", formatted)
+			if e != nil || again != formatted {
+				t.Fatal("unstable formatting", e)
+			}
+		}
+	}
+}

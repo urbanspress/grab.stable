@@ -1040,6 +1040,62 @@ Grisp Persistent Application Server & Native MCP Runtime""",
             "Cross-Platform `windows/amd64` & `linux/amd64` Binaries Built",
             "Synchronized `v1.0.1` Release on `origin` & `stable`"
         ]
+    },
+    {
+        "version": "v1.1.0",
+        "milestone_num": "1.1",
+        "title": "Native Cryptography, Capability Env & Opt-In Script CSP",
+        "subtitle": "Production-Grade Security Primitives for Authentication, Encrypted OAuth2/PKCE & Interactive Grex JS Pages",
+        "date": "November 2026",
+        "spec": "GRAB-PLATFORM-SPEC-110.md",
+        "lead": "GRAB 1.1 adds production-grade password hashing, cryptographic tokens, SHA-256/PKCE digests, AES-256-GCM encryption at rest, default-deny environment variables, and opt-in script CSP while keeping 100% compatibility across every existing GRAB 1.0 application.",
+        "metaphor_title": "The Vault Door & Keycard Turnstile",
+        "metaphor_text": "Imagine upgrading a boutique store with a bank-grade steel vault (`use crypto`), badge-only keycards for the back office (`use env --allow-env`), and a glass security vestibule that lets your own verified cash-register displays run safely while keeping every outside script locked out (`grab serve --allow-scripts`). Storefront pages load fast, secrets never wander into logs, and customer logins meet modern banking security automatically.",
+        "frontend_cards": [
+            ("Bank-Grade Password Protection", "Customer and admin passwords are protected with memory-hard Argon2id hashing and random salts (`crypto.hash_password` / `crypto.verify_password`) — never reversible or stored in plain text."),
+            ("Interactive Zero-Bloat Admin UIs", "Passing `--allow-scripts` lets your own local Grex JS bundles (`script-src 'self'`) power instant, snappy admin dashboards while still blocking inline and third-party scripts."),
+            ("Safe Social Login (OAuth2 PKCE)", "Built-in `crypto.sha256_base64url` and `crypto.random_urlsafe` power tamper-proof OAuth2 PKCE logins without unsafe external packages."),
+            ("Zero Leakage Guarantee", "Secrets live in approved environment variables (`--allow-env`) and encrypted cookies/tokens (`crypto.encrypt_aead`) rather than hardcoded source files.")
+        ],
+        "backend_cards": [
+            ("8 Native Cryptographic Primitives", "`use crypto` provides Argon2id hashing/verify, `crypto/rand` URL-safe/hex tokens (bounded `16..64` bytes), SHA-256 hex/base64url, and AES-256-GCM AEAD encryption across both AST and Bytecode VM."),
+            ("Default-Deny Environment Security", "`use env` (`env.get` / `env.has`) fails closed with `GRAB-E401` unless explicitly allowlisted with `--allow-env <VAR[,VAR...]>`, and forwards approved vars cleanly to multi-worker processes."),
+            ("Strict Script CSP Opt-In", "`grab serve` retains `script-src 'none'` by default and upgrades strictly to `script-src 'self'` (keeping `object-src 'none'`, zero `unsafe-eval`) only when `--allow-scripts` is passed."),
+            ("100% AST/VM Differential Parity", "Every `crypto.*` and `env.*` function runs identically across `--engine=ast`, `--engine=vm`, and `--engine=auto`, verified alongside MCP `grab_check` offline validation.")
+        ],
+        "flow": [
+            ("1. Grant Secrets", "grab serve --allow-env AEAD_KEY --allow-scripts"),
+            ("2. Hash & Encrypt", "Argon2id passwords & AES-256-GCM tokens"),
+            ("3. PKCE & Sessions", "CSPRNG tokens & SHA-256 challenges"),
+            ("4. Strict CSP Header", "script-src 'self'; object-src 'none'")
+        ],
+        "comparison": [
+            ("Password Storage", "Unsalted hashes or external shell calls", "Native Argon2id (`m=19456,t=2,p=1`) + `crypto/subtle` verify"),
+            ("OAuth2 Tokens at Rest", "Plaintext DB tokens or custom XOR", "Authenticated AES-256-GCM (`v1:...`) with 12-byte random nonce"),
+            ("Host Env Variables", "Ambient global read of all OS secrets", "Default-deny `--allow-env` allowlist failing closed with `GRAB-E401`"),
+            ("Browser JavaScript CSP", "Blanket `script-src 'none'` or unsafe wildcards", "Strict default `none`, opt-in `--allow-scripts` emitting `script-src 'self'`")
+        ],
+        "code_title": "Production Auth & PKCE Session Flow in GRAB 1.1",
+        "code": """use crypto
+use env
+
+set aead_key to env.get using "SESSION_AEAD_KEY"
+set pw_hash to crypto.hash_password using "customer-passphrase"
+set verified to crypto.verify_password using "customer-passphrase", pw_hash
+
+set session_id to crypto.random_urlsafe using 32
+set session_digest to crypto.sha256_hex using session_id
+set pkce_challenge to crypto.sha256_base64url using session_id
+set sealed_oauth to crypto.encrypt_aead using "oauth_refresh_token", aead_key
+set plain_oauth to crypto.decrypt_aead using sealed_oauth, aead_key""",
+        "checklist": [
+            "Native `use crypto` (Argon2id, CSPRNG, SHA-256/PKCE, AES-256-GCM)",
+            "Capability-Gated `use env` & `--allow-env` Fail-Closed `GRAB-E401`",
+            "Opt-In `--allow-scripts` CSP (`script-src 'self'`, Zero `unsafe-eval`)",
+            "Full AST, Bytecode VM & `auto` Parity Tests (`TestGRAB11*`)",
+            "Cross-Platform `windows/amd64` & `linux/amd64` Binaries + `SHA256SUMS.txt`",
+            "Synchronized `v1.1.0` Release on `origin` & `stable`"
+        ]
     }
 ]
 
