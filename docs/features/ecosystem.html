@@ -559,15 +559,16 @@
           <span class="product-tag">Autonomous MCP Agent</span>
           <span class="badge badge-slate">Planned Ecosystem (Post-1.0)</span>
         </div>
-        <h3>Groxy AI — Autonomous Design &amp; CMS Expert</h3>
+        <h3>Groxy AI — Autonomous Design, SEO &amp; CMS Expert</h3>
         <p class="product-lead">
-          An autonomous site designer and GrabLab expert agent powered by <code>grab mcp</code>,
-          <code>GRAB-DESIGN-SYSTEM.md</code>, and cost-free local models via Ollama + OpenCode.
+          An autonomous site designer, SEO auditor, and GrabLab expert agent powered by <code>grab mcp</code>,
+          <code>GRAB-DESIGN-SYSTEM.md</code>, a curated <strong>SEO Knowledge &amp; Reasoning Playbook</strong>
+          (Semrush, Ahrefs, and Google Search Central best practices), and cost-free local models via Ollama + OpenCode.
         </p>
         <div class="role-list">
-          <div class="role-box"><strong>For Non-Coders / Owners:</strong> Describe a landing page, catalog, or content type in plain English and let Groxy AI build and verify it with zero recurring AI API bills.</div>
+          <div class="role-box"><strong>For Non-Coders / Owners:</strong> Toggle <code>groxy_assist_enabled</code> on any post, product, page, or image to audit search intent, meta titles/descriptions, internal links, <code>schema.org</code> JSON-LD, and WCAG AA <code>alt</code> text—receiving safe, reviewable draft suggestions without overwriting live copy.</div>
           <div class="role-box"><strong>For Designers:</strong> Follows spacing, typography, and accessibility guardrails in <code>GRAB-DESIGN-SYSTEM.md</code> using native Grex components instead of messy inline CSS hacks.</div>
-          <div class="role-box"><strong>For Developers:</strong> Inspects schemas, scaffolds routes/templates, and checks every generated file through <code>grab mcp</code> and <code>grab check</code> before saving.</div>
+          <div class="role-box"><strong>For Developers:</strong> Pairs deterministic on-page DOM/content auditing with <code>grab mcp</code> CMS &amp; Grex Theme Builder tools (<code>query_entries</code>, <code>create_entry_draft</code>, <code>update_entry_layout</code>, <code>list_media</code>, <code>list_menus</code>).</div>
         </div>
       </article>
 
@@ -611,10 +612,11 @@
     <section class="boundaries">
       <h2>Post-1.0 Ecosystem Build Order &amp; Approval Boundaries</h2>
       <ul>
-        <li><strong>Step 1 — <code>grex-js v1.0.0</code>:</strong> <strong>Complete</strong> in <code>urbanspress/grex-js</code> (reactive signals, 20-element zero-wrapper-div catalog, tokens, and preview bridge).</li>
-        <li><strong>Step 2 — <code>grablab-cms</code>:</strong> <strong>Active</strong> in <code>urbanspress/grablab-cms</code> (Zero-Plugin Core + Exclusive Active Theme Engine; <code>GRABLAB-SPEC-001.md</code> in review).</li>
-        <li><strong>Step 3 — Grex Theme Builder:</strong> <strong>Planned</strong> in <code>urbanspress/grex-builder</code> (Installable Visual Theme &amp; Page/Theme Studio; disables prior theme and takes exclusive template control when activated).</li>
-        <li><strong>Step 4 — <code>groxy-ai</code> &amp; Step 5 — <code>gashboard</code> + <code>grabtaculous</code>:</strong> <strong>Planned (Not Yet Approved for Implementation)</strong>; includes 1-click install of GrabLab + Grex Visual Theme.</li>
+        <li><strong>Step 1 — <code>grex-js v1.0.0</code>:</strong> <strong>Complete</strong> in <code>urbanspress/grex-js.progress</code> / <code>urbanspress/grex-js.stable</code> (reactive signals, 20-element zero-wrapper-div catalog, tokens, and preview bridge).</li>
+        <li><strong>Step 2 — <code>grablab-cms v1.0.0</code>:</strong> <strong>Complete</strong> in <code>urbanspress/grablab-cms.progress</code> / <code>urbanspress/grablab-cms.stable</code> (Zero-Plugin Core + Exclusive Active Theme Engine; <code>v1.1.0</code> planned for SEO Redirect Manager &amp; Groxy AI Assist).</li>
+        <li><strong>Step 3 — Grex Theme Builder:</strong> <strong>Active</strong> in <code>urbanspress/grex-builder.progress</code> / <code>urbanspress/grex-builder.stable</code> (Installable <code>mode: "visual"</code> GrabLab Theme &amp; Studio; disables prior theme and takes exclusive template control when activated).</li>
+        <li><strong>Step 4 — <code>groxy-ai</code>:</strong> <strong>Planned (Not Yet Approved for Implementation)</strong> in <code>urbanspress/groxy-ai.progress</code> / <code>urbanspress/groxy-ai.stable</code> — Autonomous design, SEO intelligence (Semrush/Ahrefs/Google Search Central playbook + deterministic DOM/content auditing), and <code>grab mcp</code> CMS/Builder agent.</li>
+        <li><strong>Step 5 — <code>gashboard</code> + <code>grabtaculous</code>:</strong> <strong>Planned (Not Yet Approved for Implementation)</strong>; includes 1-click install of GrabLab + Grex Visual Theme.</li>
         <li><strong>Core GRAB <code>v1.0.1</code>:</strong> Language, compiler/VM, and Grisp server are complete and live in <code>urbanspress/grab.progress</code> / <code>urbanspress/grab.stable</code>.</li>
       </ul>
     </section>

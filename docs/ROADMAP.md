@@ -309,7 +309,7 @@ UI strategy and server/browser security boundary are approved (`ADR-014`, `ADR-0
 - **Step 1 — `grex-js v1.0.0`:** **Complete** ([`urbanspress/grex-js.progress`](https://github.com/urbanspress/grex-js.progress) / [`urbanspress/grex-js.stable`](https://github.com/urbanspress/grex-js.stable)) — Native reactive UI runtime, 20-element zero-wrapper-div catalog, tokens, and preview bridge.
 - **Step 2 — `grablab-cms v1.0.0`:** **Complete** ([`urbanspress/grablab-cms.progress`](https://github.com/urbanspress/grablab-cms.progress) / [`urbanspress/grablab-cms.stable`](https://github.com/urbanspress/grablab-cms.stable)) — Flagship Savvy CMS built on a **Zero-Plugin Core + Exclusive Active Theme Architecture**.
 - **Step 3 — Grex Theme Builder:** **Active** ([`urbanspress/grex-builder.progress`](https://github.com/urbanspress/grex-builder.progress) / [`urbanspress/grex-builder.stable`](https://github.com/urbanspress/grex-builder.stable)) — Installable `mode: "visual"` GrabLab Theme & Visual Design Studio (`GREX-BUILDER-SPEC-001.md` drafted for approval); disables any prior theme and takes full exclusive template control when activated inside GrabLab.
-- **Step 4 — `groxy-ai`:** **Planned** (`urbanspress/groxy-ai.progress` / `urbanspress/groxy-ai.stable`) — Autonomous design & CMS agent tooling.
+- **Step 4 — `groxy-ai`:** **Planned** (`urbanspress/groxy-ai.progress` / `urbanspress/groxy-ai.stable`) — Autonomous design, SEO intelligence & CMS agent tooling combining a curated **SEO Knowledge & Reasoning Playbook** (Semrush, Ahrefs, and Google Search Central best practices) with deterministic on-page DOM/content auditing and `grab mcp` CMS/Builder tools.
 - **Step 5 — `gashboard` + `grabtaculous`:** **Planned** (`urbanspress/gashboard.progress` / `urbanspress/gashboard.stable`) — Desktop VPS control panel and 1-click app marketplace (includes 1-click install of GrabLab + Grex Visual Theme).
 
 Each downstream ecosystem repository requires separate owner approval before implementation:
@@ -347,10 +347,8 @@ Each downstream ecosystem repository requires separate owner approval before imp
   7. **AI Designer Guardrails (`GRAB-DESIGN-SYSTEM.md` + `grab mcp`):** Curated
      spacing, typography, and accessibility rules paired with `grab mcp` tools
      so **Groxy AI** composes world-class, validated pages out of native elements.
-- **Groxy AI (Autonomous Design & CMS Expert Agent):** Powered by `grab mcp`,
-  `GRAB-DESIGN-SYSTEM.md`, and cost-free local models (via Ollama + OpenCode)
-  so creators can scaffold **GrabLab** schemas, build **Grex** layouts, and
-  validate `.grab` / `.grab.html` pages automatically with zero recurring API fees.
+- **Groxy AI (Autonomous Design, SEO Intelligence & CMS Expert Agent):** Powered by `grab mcp`,
+  `GRAB-DESIGN-SYSTEM.md`, a curated **SEO Knowledge & Reasoning Playbook** (modeled on proven Semrush, Ahrefs, and Google Search Central best practices: search intent, semantic entity coverage, CTR meta optimization, `schema.org` JSON-LD, internal linking graphs, and WCAG AA image `alt` rules), and cost-free local models (via Ollama + OpenCode). Combines deterministic on-page DOM/content auditing with `grab mcp` CMS & Grex Theme Builder tools (`query_entries`, `create_entry_draft`, `update_entry_layout`, `list_media`, `list_menus`) so creators can scaffold **GrabLab** schemas, build **Grex** layouts, audit live/draft pages, and return safe reviewable SEO/copy suggestions with zero recurring API fees.
 - **Gashboard & Grabtaculous (Discreet Desktop VPS Control Panel & 1-Click App Marketplace):**
   - **Gashboard (Desktop-Based VPS Control Panel):** Eliminates public
     web-panel login attack surfaces entirely by running as a local desktop
