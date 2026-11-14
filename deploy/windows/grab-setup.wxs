@@ -23,9 +23,9 @@
     <Property Id="ARPURLINFOABOUT" Value="https://github.com/urbanspress/grab.stable" />
     <Property Id="ARPURLUPDATEINFO" Value="https://github.com/urbanspress/grab.stable/releases" />
 
-    <!-- HiDPI Branding Bitmaps -->
-    <Binary Id="WixUIDialogBmp" SourceFile="wizard-welcome.bmp" />
-    <Binary Id="WixUIBannerBmp" SourceFile="wizard-header.bmp" />
+    <!-- Override WiX built-in UI bitmaps (eliminates red default placeholder flash on startup) -->
+    <WixVariable Id="WixUIDialogBmp" Value="wizard-welcome.bmp" />
+    <WixVariable Id="WixUIBannerBmp" Value="wizard-header.bmp" />
 
     <!-- Install Directory & Default Options -->
     <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
@@ -137,7 +137,7 @@
 
       <!-- Screen 1: Welcome -->
       <Dialog Id="GrabWelcomeDlg" Width="370" Height="270" Title="GRAB 1.1.0 Setup">
-        <Control Id="Bitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="234" TabSkip="no" Text="WixUIDialogBmp" />
+        <Control Id="Bitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="234" TabSkip="no" Text="WixUI_Bmp_Dialog" />
         <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
         <Control Id="Title" Type="Text" X="135" Y="20" Width="220" Height="45" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Bigger}Welcome to the GRAB 1.1.0 Setup Wizard" />
         <Control Id="Description" Type="Text" X="135" Y="74" Width="220" Height="60" Transparent="yes" NoPrefix="yes" Text="The Setup Wizard will install GRAB v1.1 on your computer. Click Next to continue or Cancel to exit the Setup Wizard." />
@@ -152,7 +152,7 @@
 
       <!-- Screen 2: End-User License Agreement (Single Checkbox) -->
       <Dialog Id="GrabLicenseAgreementDlg" Width="370" Height="270" Title="GRAB 1.1.0 Setup">
-        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" TabSkip="no" Text="WixUIBannerBmp" />
+        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" TabSkip="no" Text="WixUI_Bmp_Banner" />
         <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="370" Height="0" />
         <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
         <Control Id="Title" Type="Text" X="15" Y="6" Width="280" Height="15" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}End-User License Agreement" />
@@ -178,7 +178,7 @@
 
       <!-- Screen 3: Destination Folder & Add to PATH -->
       <Dialog Id="GrabInstallDirDlg" Width="370" Height="270" Title="GRAB 1.1.0 Setup">
-        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" TabSkip="no" Text="WixUIBannerBmp" />
+        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" TabSkip="no" Text="WixUI_Bmp_Banner" />
         <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="370" Height="0" />
         <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
         <Control Id="Title" Type="Text" X="15" Y="6" Width="280" Height="15" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}Destination Folder" />
@@ -208,7 +208,7 @@
 
       <!-- Screen 4: Tools for GRAB Ecosystem -->
       <Dialog Id="GrabToolsDlg" Width="370" Height="270" Title="GRAB 1.1.0 Setup">
-        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" TabSkip="no" Text="WixUIBannerBmp" />
+        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" TabSkip="no" Text="WixUI_Bmp_Banner" />
         <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="370" Height="0" />
         <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
         <Control Id="Title" Type="Text" X="15" Y="6" Width="280" Height="15" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}Tools for GRAB Ecosystem" />
@@ -253,7 +253,7 @@
 
       <!-- Screen 5a: Native Completion Dialog -->
       <Dialog Id="GrabExitDialog" Width="370" Height="270" Title="GRAB 1.1.0 Setup">
-        <Control Id="Bitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="234" TabSkip="no" Text="WixUIDialogBmp" />
+        <Control Id="Bitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="234" TabSkip="no" Text="WixUI_Bmp_Dialog" />
         <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
         <Control Id="Title" Type="Text" X="135" Y="20" Width="220" Height="40" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Bigger}Completed the GRAB 1.1.0 Setup Wizard" />
         <Control Id="Description" Type="Text" X="135" Y="74" Width="220" Height="60" Transparent="yes" NoPrefix="yes" Text="Click the Finish button to exit the Setup Wizard." />
@@ -267,7 +267,7 @@
 
       <!-- Screen 5b: Native Windows Installer Interruption Dialog -->
       <Dialog Id="GrabUserExit" Width="370" Height="270" Title="GRAB 1.1.0 Setup">
-        <Control Id="Bitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="234" TabSkip="no" Text="WixUIDialogBmp" />
+        <Control Id="Bitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="234" TabSkip="no" Text="WixUI_Bmp_Dialog" />
         <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
         <Control Id="Title" Type="Text" X="135" Y="20" Width="220" Height="40" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Bigger}GRAB Setup Wizard was interrupted" />
         <Control Id="Description" Type="Text" X="135" Y="74" Width="220" Height="60" Transparent="yes" NoPrefix="yes" Text="GRAB Setup Wizard was interrupted — Your system has not been modified. No GRAB files or folders were installed." />
