@@ -991,6 +991,55 @@ end
             "Complete Language SemVer Compatibility Freeze",
             "Clean govulncheck & Full Cross-Platform Suite"
         ]
+    },
+    {
+        "version": "v1.0.1",
+        "milestone_num": "1.0.1",
+        "title": "CLI Version Reporting Polish & Release Packaging",
+        "subtitle": "Instant Build Verification: Clean 4-Line Version Banner & Reproducible Release Binaries",
+        "date": "November 2026",
+        "spec": "GRAB-PLATFORM-SPEC-100.md",
+        "lead": "GRAB 1.0.1 refines the developer and operator CLI experience with instant version, build timestamp, platform architecture, and runtime identification via `grab -v`, `grab --version`, and `grab version`.",
+        "metaphor_title": "The Stamped Brass Nameplate",
+        "metaphor_text": "Every commercial espresso machine or storefront oven carries a stamped brass nameplate showing its exact model, build date, and certification. GRAB 1.0.1 adds that same unmistakable nameplate to the `grab` CLI—so whether you are checking a local laptop install or a production Linux container, one quick command confirms the exact version and build timestamp.",
+        "frontend_cards": [
+            ("Zero-Guesswork Support", "Store owners and operators can run `grab -v` to report exact runtime details when troubleshooting or upgrading."),
+            ("Consistent CLI Ergonomics", "Supports `-v`, `--version`, and `version` subcommand conventions familiar to PHP, Go, and Node developers."),
+            ("Clean Exit Behavior", "Returns exit code `0` cleanly for automated health scripts, CI pipelines, and desktop installer checks."),
+            ("Production Branding", "Clearly identifies the Urbanspress copyright and Grisp Persistent Application Server & Native MCP Runtime.")
+        ],
+        "backend_cards": [
+            ("Build-Time `-ldflags` Injection", "Supports `-X main.Version=...` and `-X main.BuildDate=...` (`MMM DD YYYY HH:MM:SS`) with safe `1.0.1` / `unknown` defaults."),
+            ("Runtime Target Reporting", "Automatically prints `GOOS`, `GOARCH`, and the exact Go toolchain version (`go1.27.3`)."),
+            ("Automated CLI Unit Tests", "Verified by `TestVersion_CLI` in `cmd/grab/main_test.go` covering defaults, custom `-ldflags`, and invalid extra args."),
+            ("100% Full Suite Verification", "All 19 testable Go packages verified passing via `go test -count=1 ./...` prior to `v1.0.1` release.")
+        ],
+        "flow": [
+            ("1. Operator Runs", "grab -v / --version / version"),
+            ("2. Metadata Read", "Version, BuildDate, GOOS, GOARCH"),
+            ("3. Banner Printed", "4-line Urbanspress & Grisp output"),
+            ("4. Clean Exit", "Exit code 0")
+        ],
+        "comparison": [
+            ("Version Discovery", "No `-v` flag or ambiguous commit hashes", "Clean 4-line banner with `MMM DD YYYY HH:MM:SS` timestamp"),
+            ("Release Auditing", "Hard to verify which binary is deployed", "Exact `Version`, `GOOS`, `GOARCH`, and Go version printed"),
+            ("Automation Safety", "Unstructured output or non-zero exit", "Deterministic stdout format with exit code `0`"),
+            ("Build Reproducibility", "Ad-hoc local builds", "Standardized `-ldflags` + `SHA256SUMS.txt` verification")
+        ],
+        "code_title": "Checking Your Installed GRAB CLI Version",
+        "code": """$ grab -v
+GRAB 1.0.1 (cli) (built: Nov 13 2026 19:18:55) (windows amd64 go1.27.3)
+Copyright (c) 2026 Urbanspress
+Built by Urbanspress
+Grisp Persistent Application Server & Native MCP Runtime""",
+        "checklist": [
+            "`grab -v`, `grab --version`, and `grab version` Return Exit Code 0",
+            "Build-Time `-ldflags` (`Version` & `BuildDate`) Supported",
+            "`TestVersion_CLI` Unit Tests Passing in `cmd/grab`",
+            "Full `go test -count=1 ./...` Suite 100% Passing",
+            "Cross-Platform `windows/amd64` & `linux/amd64` Binaries Built",
+            "Synchronized `v1.0.1` Release on `origin` & `stable`"
+        ]
     }
 ]
 

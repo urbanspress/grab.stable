@@ -269,6 +269,12 @@ Implemented and verified under Google Antigravity (`go build ./...`, Windows `go
 - **Core `v1.0.0` Stability & Compatibility Freeze (`ADR-027c`):** Formal SemVer `v1.x` freeze of GRAB syntax, exact numeric rules, error codes (`GRAB-E001`–`GRAB-E403`), `.grab.html` context-aware escaping, all 14 standard library modules, and `--engine=auto` Bytecode VM differential parity.
 - **Production Release & Security Gates (`ADR-017`, `ADR-027d`):** Final pre-1.0 security audit, Windows/Linux cross-platform binary checks, `govulncheck ./...`, `go mod verify`, GRAB 0.8 Section 12 sustained fault/load gate (`docs/SCALE-TESTING.md`), documentation completeness, and synchronized `v1.0.0` promotion to both `origin` and `stable`.
 
+### GRAB 1.0.1 — CLI Version Reporting Polish (`v1.0.1`)
+
+**Status:** Complete (Implemented, verified, and released — November 13, 2026)
+
+- Added `grab -v`, `grab --version`, and `grab version` to `cmd/grab/main.go` with `-ldflags` build-time `Version` and `BuildDate` (`MMM DD YYYY HH:MM:SS`) injection, outputting the clean 4-line GRAB / Urbanspress / Grisp CLI banner with exit code `0`, covered by `TestVersion_CLI` and full `go test -count=1 ./...` verification.
+
 ---
 
 ## Post-1.0 — Future research and downstream products
@@ -286,7 +292,7 @@ UI strategy and server/browser security boundary are approved (`ADR-014`, `ADR-0
 ### Post-1.0 Ecosystem Milestones
 
 **Dedicated Multi-Repository Architecture:** To keep the core GRAB programming language and Grisp application server repository (`grab.in.the.making` / `grab.stable`) decoupled, lightweight, and clean, each downstream ecosystem layer will live in its own dedicated GitHub repository:
-- `grex-js`: Native reactive UI runtime and browser compiler.
+- `grex-js`: Native reactive UI runtime and browser compiler (**Step 1 launched in dedicated repository [`urbanspress/grex-js`](https://github.com/urbanspress/grex-js)**).
 - `grex-builder`: Responsive visual page builder and element library.
 - `grablab-cms`: Flagship CMS application, permalink router, and publishing workflows.
 - `groxy-ai`: Autonomous design & CMS agent tooling.

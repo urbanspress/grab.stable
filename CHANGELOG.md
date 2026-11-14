@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.1] - 2026-11-13
+
+### Added
+- **CLI Version Reporting (`grab -v`, `grab --version`, `grab version`):**
+  - Added clean 4-line PHP-style CLI version banner branded for GRAB & Urbanspress, displaying the build version, `MMM DD YYYY HH:MM:SS` build timestamp, target `GOOS`/`GOARCH`, and Go toolchain version.
+  - Added `-ldflags` build-time metadata support (`main.Version`, defaulting to `1.0.1`, and `main.BuildDate`, defaulting to `unknown`), returning exit code `0` cleanly.
+  - Added `TestVersion_CLI` unit tests in `cmd/grab/main_test.go` covering default metadata, custom `-ldflags` metadata, and invalid extra argument rejection.
+
+---
+
 ## [1.0.0] - 2026-11-13
 
 ### Added

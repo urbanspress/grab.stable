@@ -3,8 +3,10 @@ package main
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -550,4 +552,80 @@ func TestCheckFormatAndFlags_CLI(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestVersion_CLI(t *testing.T) {
+	origVersion := Version
+	origBuildDate := BuildDate
+	t.Cleanup(func() {
+		Version = origVersion
+		BuildDate = origBuildDate
+	})
+
+	goVer := strings.TrimPrefix(runtime.Version(), "go")
+	expected := func(v, bd string) string {
+		return fmt.Sprintf(
+			"GRAB %s (cli) (built: %s) (%s %s go%s)\n"+
+				"Copyright (c) 2026 Urbanspress\n"+
+				"Built by Urbanspress\n"+
+				"Grisp Persistent Application Server & Native MCP Runtime\n",
+			v, bd, runtime.GOOS, runtime.GOARCH, goVer,
+		)
+	}
+
+	t.Run("defaults", func(t *testing.T) {
+		Version = "1.0.1"
+		BuildDate = "unknown"
+		want := expected("1.0.1", "unknown")
+
+		for _, arg := range []string{"-v", "--version", "version"} {
+			t.Run(arg, func(t *testing.T) {
+				var stdout, stderr bytes.Buffer
+				code := run([]string{arg}, &stdout, &stderr)
+				if code != 0 {
+					t.Fatalf("exit code = %d, want 0 (stderr: %q)", code, stderr.String())
+				}
+				if stderr.Len() != 0 {
+					t.Fatalf("stderr = %q, want empty", stderr.String())
+				}
+				if stdout.String() != want {
+					t.Fatalf("stdout =\n%s\nwant:\n%s", stdout.String(), want)
+				}
+			})
+		}
+	})
+
+	t.Run("custom ldflags metadata", func(t *testing.T) {
+		Version = "1.0.1"
+		BuildDate = "Nov 13 2026 19:13:00"
+		want := expected("1.0.1", "Nov 13 2026 19:13:00")
+
+		for _, arg := range []string{"-v", "--version", "version"} {
+			t.Run(arg, func(t *testing.T) {
+				var stdout, stderr bytes.Buffer
+				code := run([]string{arg}, &stdout, &stderr)
+				if code != 0 {
+					t.Fatalf("exit code = %d, want 0 (stderr: %q)", code, stderr.String())
+				}
+				if stdout.String() != want {
+					t.Fatalf("stdout =\n%s\nwant:\n%s", stdout.String(), want)
+				}
+			})
+		}
+	})
+
+	t.Run("extra argument rejected", func(t *testing.T) {
+		for _, arg := range []string{"-v", "--version", "version"} {
+			t.Run(arg, func(t *testing.T) {
+				var stdout, stderr bytes.Buffer
+				code := run([]string{arg, "extra"}, &stdout, &stderr)
+				if code != 2 {
+					t.Fatalf("exit code = %d, want 2", code)
+				}
+				if !strings.Contains(stderr.String(), "usage:") {
+					t.Fatalf("stderr = %q, want usage", stderr.String())
+				}
+			})
+		}
+	})
 }

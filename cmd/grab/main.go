@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
@@ -21,6 +22,12 @@ import (
 	"grab/internal/template"
 )
 
+// Build-time version metadata populated via -ldflags "-X main.Version=... -X main.BuildDate=...".
+var (
+	Version   = "1.0.1"
+	BuildDate = "unknown"
+)
+
 const usageText = "usage: grab run [--engine auto|ast|vm] [--db-config <manifest.json>] [--allow-db <alias:read|read-write|migrate>] [--diagnostics beginner|developer|production] [--allow-read <dir>] [--allow-write <dir>] [--allow-net <host[,host...]>] <file.grab>\n" +
 	"       grab migrate --db-config <manifest.json> --allow-db <alias:migrate> <migrations.grab>\n" +
 	"       grab serve [--engine auto|ast|vm] [--addr 127.0.0.1:8080] [--allow-public] [--trusted-proxy <ip[,cidr...]>] [--static <[prefix=]dir>] [--reload] [--max-concurrency 64] [--max-queue 128] [--queue-timeout 1s] [--request-timeout 10s] [--max-body-bytes 1048576] [--shutdown-timeout 10s] [--log-format text|json] [--diagnostics beginner|developer|production] [--allow-read <dir>] [--allow-write <dir>] [--allow-net <host[,host...]>] <file.grab> [template.grab.html]\n" +
@@ -29,7 +36,8 @@ const usageText = "usage: grab run [--engine auto|ast|vm] [--db-config <manifest
 	"       worker flags for serve: --workers <1..32> --worker-base-port <port> (consecutive loopback ports; external balancer required)\n" +
 	"       grab check [--diagnostics beginner|developer|production] <file.grab> [template.grab.html]\n" +
 	"       grab format [--write] <file.grab>\n" +
-	"       grab mcp [--workspace <dir>] [--allow-write] [--db-config <manifest.json>] [--platform-config <grab.platform.json>] [--api-contract <grab.api.json>]"
+	"       grab mcp [--workspace <dir>] [--allow-write] [--db-config <manifest.json>] [--platform-config <grab.platform.json>] [--api-contract <grab.api.json>]\n" +
+	"       grab version | -v | --version"
 
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -48,6 +56,13 @@ func runContext(ctx context.Context, arguments []string, stdout, stderr io.Write
 	}
 
 	switch arguments[0] {
+	case "-v", "--version", "version":
+		if len(arguments) != 1 {
+			fmt.Fprintln(stderr, usageText)
+			return 2
+		}
+		printVersion(stdout)
+		return 0
 	case "mcp":
 		return runMCP(ctx, arguments[1:], os.Stdin, stdout, stderr)
 	case "events":
@@ -539,4 +554,24 @@ func consumeFlagValue(args []string, idx int, flagName string) (string, int, boo
 		return args[idx+1], idx + 1, true
 	}
 	return "", idx, false
+}
+
+func printVersion(w io.Writer) {
+	v := Version
+	if v == "" {
+		v = "1.0.1"
+	}
+	bd := BuildDate
+	if bd == "" {
+		bd = "unknown"
+	}
+	goVer := strings.TrimPrefix(runtime.Version(), "go")
+	fmt.Fprintf(
+		w,
+		"GRAB %s (cli) (built: %s) (%s %s go%s)\n"+
+			"Copyright (c) 2026 Urbanspress\n"+
+			"Built by Urbanspress\n"+
+			"Grisp Persistent Application Server & Native MCP Runtime\n",
+		v, bd, runtime.GOOS, runtime.GOARCH, goVer,
+	)
 }
