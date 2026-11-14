@@ -10,7 +10,7 @@ import subprocess
 import time
 
 REPOS = [
-    "urbanspress/grab.in.the.making",
+    "urbanspress/grab.in.progress",
     "urbanspress/grab.stable"
 ]
 

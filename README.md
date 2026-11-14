@@ -2,7 +2,7 @@
 
 <p align="center">
   <a href="https://go.dev"><img src="https://img.shields.io/badge/go-%3E%3D%201.26-00ADD8?style=flat&logo=go" alt="Go Version"></a>
-  <a href="https://github.com/urbanspress/grab/releases"><img src="https://img.shields.io/badge/release-v0.8.0-165caa?style=flat&logo=github" alt="Latest Release"></a>
+  <a href="https://github.com/urbanspress/grab.stable/releases"><img src="https://img.shields.io/badge/release-v1.1.0-165caa?style=flat&logo=github" alt="Latest Release"></a>
   <a href="tests/"><img src="https://img.shields.io/badge/tests-100%25%20passing-success?style=flat&logo=checkmarx" alt="Conformance Tests"></a>
   <a href="SECURITY.md"><img src="https://img.shields.io/badge/security-default--deny%20capabilities-006e67?style=flat" alt="Security Model"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg?style=flat" alt="License: MIT"></a>
@@ -65,9 +65,9 @@ GRAB is engineered from first principles to power modern, connected web applicat
 
 ### 2. Build the Executable
 ```sh
-# Clone the repository
-git clone https://github.com/urbanspress/grab.git
-cd grab
+# Clone the stable repository (or grab.in.progress.git for active development)
+git clone https://github.com/urbanspress/grab.stable.git
+cd grab.stable
 
 # Build the CLI
 go build ./cmd/grab
