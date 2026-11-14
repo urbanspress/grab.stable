@@ -65,7 +65,7 @@ GRAB is engineered from first principles to power modern, connected web applicat
 
 ### 2. Build the Executable
 ```sh
-# Clone the stable repository (or grab.in.progress.git for active development)
+# Clone the stable repository (or grab.progress.git for active development)
 git clone https://github.com/urbanspress/grab.stable.git
 cd grab.stable
 
