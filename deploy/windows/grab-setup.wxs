@@ -127,168 +127,218 @@
       <DialogRef Id="FatalError" />
       <DialogRef Id="FilesInUse" />
       <DialogRef Id="MsiRMFilesInUse" />
-      <DialogRef Id="PrepareDlg" />
-      <DialogRef Id="ProgressDlg" />
       <DialogRef Id="ResumeDlg" />
       <DialogRef Id="MaintenanceWelcomeDlg" />
       <DialogRef Id="MaintenanceTypeDlg" />
       <DialogRef Id="CancelDlg" />
-      <DialogRef Id="VerifyReadyDlg" />
+
+      <!-- Prepare Dialog (matches 460x330 size, zero flicker) -->
+      <Dialog Id="GrabPrepareDlg" Width="460" Height="330" Title="GRAB 1.1.0 Setup" Modeless="yes">
+        <Control Id="Bitmap" Type="Bitmap" X="0" Y="0" Width="165" Height="294" TabSkip="no" Text="WixUI_Bmp_Dialog" />
+        <Control Id="BottomLine" Type="Line" X="0" Y="294" Width="460" Height="0" />
+        <Control Id="Title" Type="Text" X="182" Y="24" Width="258" Height="45" NoPrefix="yes" Text="{\WixUI_Font_Bigger}Welcome to the GRAB 1.1.0 Setup Wizard" />
+        <Control Id="Description" Type="Text" X="182" Y="80" Width="258" Height="40" NoPrefix="yes" Text="Please wait while the Setup Wizard prepares to guide you through the installation." />
+        <Control Id="Back" Type="PushButton" X="270" Y="303" Width="56" Height="17" Disabled="yes" Text="&amp;Back" />
+        <Control Id="Next" Type="PushButton" X="326" Y="303" Width="56" Height="17" Disabled="yes" Text="&amp;Next" />
+        <Control Id="Cancel" Type="PushButton" X="394" Y="303" Width="56" Height="17" Cancel="yes" Text="Cancel">
+          <Publish Event="SpawnDialog" Value="CancelDlg" />
+        </Control>
+      </Dialog>
 
       <!-- Screen 1: Welcome -->
-      <Dialog Id="GrabWelcomeDlg" Width="370" Height="270" Title="GRAB 1.1.0 Setup">
-        <Control Id="Bitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="234" TabSkip="no" Text="WixUI_Bmp_Dialog" />
-        <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
-        <Control Id="Title" Type="Text" X="135" Y="20" Width="220" Height="45" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Bigger}Welcome to the GRAB 1.1.0 Setup Wizard" />
-        <Control Id="Description" Type="Text" X="135" Y="74" Width="220" Height="60" Transparent="yes" NoPrefix="yes" Text="The Setup Wizard will install GRAB v1.1 on your computer. Click Next to continue or Cancel to exit the Setup Wizard." />
-        <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Disabled="yes" Text="&amp;Back" />
-        <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="&amp;Next">
+      <Dialog Id="GrabWelcomeDlg" Width="460" Height="330" Title="GRAB 1.1.0 Setup">
+        <Control Id="Bitmap" Type="Bitmap" X="0" Y="0" Width="165" Height="294" TabSkip="no" Text="WixUI_Bmp_Dialog" />
+        <Control Id="BottomLine" Type="Line" X="0" Y="294" Width="460" Height="0" />
+        <Control Id="Title" Type="Text" X="182" Y="24" Width="258" Height="45" NoPrefix="yes" Text="{\WixUI_Font_Bigger}Welcome to the GRAB 1.1.0 Setup Wizard" />
+        <Control Id="Description" Type="Text" X="182" Y="80" Width="258" Height="60" NoPrefix="yes" Text="The Setup Wizard will install GRAB v1.1 on your computer. Click Next to continue or Cancel to exit the Setup Wizard." />
+        <Control Id="Back" Type="PushButton" X="270" Y="303" Width="56" Height="17" Disabled="yes" Text="&amp;Back" />
+        <Control Id="Next" Type="PushButton" X="326" Y="303" Width="56" Height="17" Default="yes" Text="&amp;Next">
           <Publish Event="NewDialog" Value="GrabLicenseAgreementDlg" />
         </Control>
-        <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="Cancel">
+        <Control Id="Cancel" Type="PushButton" X="394" Y="303" Width="56" Height="17" Cancel="yes" Text="Cancel">
           <Publish Event="SpawnDialog" Value="CancelDlg" />
         </Control>
       </Dialog>
 
       <!-- Screen 2: End-User License Agreement (Single Checkbox) -->
-      <Dialog Id="GrabLicenseAgreementDlg" Width="370" Height="270" Title="GRAB 1.1.0 Setup">
-        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" TabSkip="no" Text="WixUI_Bmp_Banner" />
-        <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="370" Height="0" />
-        <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
-        <Control Id="Title" Type="Text" X="15" Y="6" Width="280" Height="15" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}End-User License Agreement" />
-        <Control Id="Description" Type="Text" X="25" Y="23" Width="280" Height="15" Transparent="yes" NoPrefix="yes" Text="Please read the following License Agreement carefully." />
+      <Dialog Id="GrabLicenseAgreementDlg" Width="460" Height="330" Title="GRAB 1.1.0 Setup">
+        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="460" Height="44" TabSkip="no" Text="WixUI_Bmp_Banner" />
+        <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="460" Height="0" />
+        <Control Id="BottomLine" Type="Line" X="0" Y="294" Width="460" Height="0" />
+        <Control Id="Title" Type="Text" X="15" Y="6" Width="360" Height="15" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}End-User License Agreement" />
+        <Control Id="Description" Type="Text" X="25" Y="23" Width="360" Height="15" Transparent="yes" NoPrefix="yes" Text="Please read the following License Agreement carefully." />
 
-        <Control Id="LicenseText" Type="ScrollableText" X="20" Y="56" Width="330" Height="144" Sunken="yes" TabSkip="no">
+        <Control Id="LicenseText" Type="ScrollableText" X="20" Y="56" Width="420" Height="204" Sunken="yes" TabSkip="no">
           <Text SourceFile="LICENSE.rtf" />
         </Control>
-        <Control Id="LicenseAcceptedCheckBox" Type="CheckBox" X="20" Y="208" Width="330" Height="18" CheckBoxValue="1" Property="LicenseAccepted" Text="I &amp;accept the terms in the License Agreement" />
+        <Control Id="LicenseAcceptedCheckBox" Type="CheckBox" X="20" Y="268" Width="420" Height="18" CheckBoxValue="1" Property="LicenseAccepted" Text="I &amp;accept the terms in the License Agreement" />
 
-        <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="&amp;Back">
+        <Control Id="Back" Type="PushButton" X="270" Y="303" Width="56" Height="17" Text="&amp;Back">
           <Publish Event="NewDialog" Value="GrabWelcomeDlg" />
         </Control>
-        <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="&amp;Next"
+        <Control Id="Next" Type="PushButton" X="326" Y="303" Width="56" Height="17" Default="yes" Text="&amp;Next"
                  DisableCondition="LicenseAccepted &lt;&gt; &quot;1&quot;"
                  EnableCondition="LicenseAccepted = &quot;1&quot;">
           <Publish Event="NewDialog" Value="GrabInstallDirDlg" />
         </Control>
-        <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="Cancel">
+        <Control Id="Cancel" Type="PushButton" X="394" Y="303" Width="56" Height="17" Cancel="yes" Text="Cancel">
           <Publish Event="SpawnDialog" Value="CancelDlg" />
         </Control>
       </Dialog>
 
       <!-- Screen 3: Destination Folder & Add to PATH -->
-      <Dialog Id="GrabInstallDirDlg" Width="370" Height="270" Title="GRAB 1.1.0 Setup">
-        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" TabSkip="no" Text="WixUI_Bmp_Banner" />
-        <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="370" Height="0" />
-        <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
-        <Control Id="Title" Type="Text" X="15" Y="6" Width="280" Height="15" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}Destination Folder" />
-        <Control Id="Description" Type="Text" X="25" Y="23" Width="280" Height="15" Transparent="yes" NoPrefix="yes" Text="Choose where GRAB will be installed on your computer." />
+      <Dialog Id="GrabInstallDirDlg" Width="460" Height="330" Title="GRAB 1.1.0 Setup">
+        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="460" Height="44" TabSkip="no" Text="WixUI_Bmp_Banner" />
+        <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="460" Height="0" />
+        <Control Id="BottomLine" Type="Line" X="0" Y="294" Width="460" Height="0" />
+        <Control Id="Title" Type="Text" X="15" Y="6" Width="360" Height="15" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}Destination Folder" />
+        <Control Id="Description" Type="Text" X="25" Y="23" Width="360" Height="15" Transparent="yes" NoPrefix="yes" Text="Choose where GRAB will be installed on your computer." />
 
-        <Control Id="FolderLabel" Type="Text" X="20" Y="62" Width="330" Height="14" NoPrefix="yes" Text="Install GRAB to:" />
-        <Control Id="Folder" Type="PathEdit" X="20" Y="78" Width="264" Height="18" Property="WIXUI_INSTALLDIR" Indirect="yes" />
-        <Control Id="ChangeFolder" Type="PushButton" X="292" Y="78" Width="58" Height="18" Text="C&amp;hange...">
+        <Control Id="FolderLabel" Type="Text" X="20" Y="64" Width="420" Height="14" NoPrefix="yes" Text="Install GRAB to:" />
+        <Control Id="Folder" Type="PathEdit" X="20" Y="80" Width="354" Height="18" Property="WIXUI_INSTALLDIR" Indirect="yes" />
+        <Control Id="ChangeFolder" Type="PushButton" X="382" Y="80" Width="58" Height="18" Text="C&amp;hange...">
           <Publish Property="_BrowseProperty" Value="[WIXUI_INSTALLDIR]" Order="1" />
           <Publish Event="SpawnDialog" Value="BrowseDlg" Order="2" />
         </Control>
 
-        <Control Id="AddToPathCheckBox" Type="CheckBox" X="20" Y="114" Width="330" Height="18" CheckBoxValue="1" Property="ADD_TO_PATH" Text="Add GRAB to System PATH (recommended)" />
-        <Control Id="PathHint" Type="Text" X="34" Y="134" Width="316" Height="26" Transparent="yes" NoPrefix="yes" Text="{\GrabUI_Font_Muted}Allows running the 'grab' command from any PowerShell, Command Prompt, or terminal window. Cleanly removed on uninstall." />
+        <Control Id="AddToPathCheckBox" Type="CheckBox" X="20" Y="118" Width="420" Height="18" CheckBoxValue="1" Property="ADD_TO_PATH" Text="Add GRAB to System PATH (recommended)" />
+        <Control Id="PathHint" Type="Text" X="34" Y="138" Width="406" Height="28" NoPrefix="yes" Text="{\GrabUI_Font_Muted}Allows running the 'grab' command from any PowerShell, Command Prompt, or terminal window. Cleanly removed on uninstall." />
 
-        <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="&amp;Back">
+        <Control Id="Back" Type="PushButton" X="270" Y="303" Width="56" Height="17" Text="&amp;Back">
           <Publish Event="NewDialog" Value="GrabLicenseAgreementDlg" />
         </Control>
-        <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="&amp;Next">
+        <Control Id="Next" Type="PushButton" X="326" Y="303" Width="56" Height="17" Default="yes" Text="&amp;Next">
           <Publish Event="SetTargetPath" Value="[WIXUI_INSTALLDIR]" Order="1" />
           <Publish Event="NewDialog" Value="GrabToolsDlg" Order="2" />
         </Control>
-        <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="Cancel">
+        <Control Id="Cancel" Type="PushButton" X="394" Y="303" Width="56" Height="17" Cancel="yes" Text="Cancel">
           <Publish Event="SpawnDialog" Value="CancelDlg" />
         </Control>
       </Dialog>
 
       <!-- Screen 4: Tools for GRAB Ecosystem -->
-      <Dialog Id="GrabToolsDlg" Width="370" Height="270" Title="GRAB 1.1.0 Setup">
-        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" TabSkip="no" Text="WixUI_Bmp_Banner" />
-        <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="370" Height="0" />
-        <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
-        <Control Id="Title" Type="Text" X="15" Y="6" Width="280" Height="15" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}Tools for GRAB Ecosystem" />
-        <Control Id="Description" Type="Text" X="25" Y="23" Width="280" Height="15" Transparent="yes" NoPrefix="yes" Text="Select optional companion tools to install via winget after setup." />
+      <Dialog Id="GrabToolsDlg" Width="460" Height="330" Title="GRAB 1.1.0 Setup">
+        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="460" Height="44" TabSkip="no" Text="WixUI_Bmp_Banner" />
+        <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="460" Height="0" />
+        <Control Id="BottomLine" Type="Line" X="0" Y="294" Width="460" Height="0" />
+        <Control Id="Title" Type="Text" X="15" Y="6" Width="360" Height="15" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}Tools for GRAB Ecosystem" />
+        <Control Id="Description" Type="Text" X="25" Y="23" Width="360" Height="15" Transparent="yes" NoPrefix="yes" Text="Select optional companion tools to install via winget after setup." />
 
         <!-- Docker Desktop -->
-        <Control Id="DockerCheck" Type="CheckBox" X="20" Y="56" Width="290" Height="16" CheckBoxValue="1" Property="INSTALL_DOCKER" Text="{\GrabUI_Font_Bold}Docker Desktop"
+        <Control Id="DockerCheck" Type="CheckBox" X="20" Y="60" Width="380" Height="16" CheckBoxValue="1" Property="INSTALL_DOCKER" Text="{\GrabUI_Font_Bold}Docker Desktop"
                  HideCondition="DOCKER_INSTALLED" ShowCondition="NOT DOCKER_INSTALLED" />
-        <Control Id="DockerInstalledCheck" Type="CheckBox" X="20" Y="56" Width="290" Height="16" CheckBoxValue="1" Property="DOCKER_INSTALLED_DUMMY" Disabled="yes" Text="Docker Desktop (Already installed)"
+        <Control Id="DockerInstalledCheck" Type="CheckBox" X="20" Y="60" Width="380" Height="16" CheckBoxValue="1" Property="DOCKER_INSTALLED_DUMMY" Disabled="yes" Text="Docker Desktop (Already installed)"
                  ShowCondition="DOCKER_INSTALLED" HideCondition="NOT DOCKER_INSTALLED" />
-        <Control Id="DockerBadge" Type="Text" X="326" Y="56" Width="24" Height="14" NoPrefix="yes" Text="{\GrabUI_Font_Badge}(i)" ToolTip="Runs hardened, read-only Grisp production containers and local Redis, PostgreSQL, or MariaDB databases for GRAB apps." />
-        <Control Id="DockerDesc" Type="Text" X="34" Y="73" Width="316" Height="24" Transparent="yes" NoPrefix="yes" Text="{\GrabUI_Font_Muted}Runs hardened, read-only Grisp production containers and local Redis, PostgreSQL, or MariaDB databases for GRAB apps." />
+        <Control Id="DockerBadge" Type="Text" X="416" Y="60" Width="24" Height="14" NoPrefix="yes" Text="{\GrabUI_Font_Badge}(i)" ToolTip="Runs hardened, read-only Grisp production containers and local Redis, PostgreSQL, or MariaDB databases for GRAB apps." />
+        <Control Id="DockerDesc" Type="Text" X="34" Y="78" Width="406" Height="24" NoPrefix="yes" Text="{\GrabUI_Font_Muted}Runs hardened, read-only Grisp production containers and local Redis, PostgreSQL, or MariaDB databases for GRAB apps." />
 
         <!-- Git for Windows -->
-        <Control Id="GitCheck" Type="CheckBox" X="20" Y="104" Width="290" Height="16" CheckBoxValue="1" Property="INSTALL_GIT" Text="{\GrabUI_Font_Bold}Git for Windows"
+        <Control Id="GitCheck" Type="CheckBox" X="20" Y="112" Width="380" Height="16" CheckBoxValue="1" Property="INSTALL_GIT" Text="{\GrabUI_Font_Bold}Git for Windows"
                  HideCondition="GIT_INSTALLED" ShowCondition="NOT GIT_INSTALLED" />
-        <Control Id="GitInstalledCheck" Type="CheckBox" X="20" Y="104" Width="290" Height="16" CheckBoxValue="1" Property="GIT_INSTALLED_DUMMY" Disabled="yes" Text="Git for Windows (Already installed)"
+        <Control Id="GitInstalledCheck" Type="CheckBox" X="20" Y="112" Width="380" Height="16" CheckBoxValue="1" Property="GIT_INSTALLED_DUMMY" Disabled="yes" Text="Git for Windows (Already installed)"
                  ShowCondition="GIT_INSTALLED" HideCondition="NOT GIT_INSTALLED" />
-        <Control Id="GitBadge" Type="Text" X="326" Y="104" Width="24" Height="14" NoPrefix="yes" Text="{\GrabUI_Font_Badge}(i)" ToolTip="Clones GRAB starter templates, tracks app version history, and powers grabman ecosystem updates." />
-        <Control Id="GitDesc" Type="Text" X="34" Y="121" Width="316" Height="24" Transparent="yes" NoPrefix="yes" Text="{\GrabUI_Font_Muted}Clones GRAB starter templates, tracks app version history, and powers grabman ecosystem updates." />
+        <Control Id="GitBadge" Type="Text" X="416" Y="112" Width="24" Height="14" NoPrefix="yes" Text="{\GrabUI_Font_Badge}(i)" ToolTip="Clones GRAB starter templates, tracks app version history, and powers grabman ecosystem updates." />
+        <Control Id="GitDesc" Type="Text" X="34" Y="130" Width="406" Height="24" NoPrefix="yes" Text="{\GrabUI_Font_Muted}Clones GRAB starter templates, tracks app version history, and powers grabman ecosystem updates." />
 
         <!-- Go Toolchain -->
-        <Control Id="GoCheck" Type="CheckBox" X="20" Y="152" Width="290" Height="16" CheckBoxValue="1" Property="INSTALL_GO" Text="{\GrabUI_Font_Bold}Go Toolchain (Optional — For Source Contributors)"
+        <Control Id="GoCheck" Type="CheckBox" X="20" Y="164" Width="380" Height="16" CheckBoxValue="1" Property="INSTALL_GO" Text="{\GrabUI_Font_Bold}Go Toolchain (Optional — For Source Contributors)"
                  HideCondition="GO_INSTALLED" ShowCondition="NOT GO_INSTALLED" />
-        <Control Id="GoInstalledCheck" Type="CheckBox" X="20" Y="152" Width="290" Height="16" CheckBoxValue="1" Property="GO_INSTALLED_DUMMY" Disabled="yes" Text="Go Toolchain (Already installed)"
+        <Control Id="GoInstalledCheck" Type="CheckBox" X="20" Y="164" Width="380" Height="16" CheckBoxValue="1" Property="GO_INSTALLED_DUMMY" Disabled="yes" Text="Go Toolchain (Already installed)"
                  ShowCondition="GO_INSTALLED" HideCondition="NOT GO_INSTALLED" />
-        <Control Id="GoBadge" Type="Text" X="326" Y="152" Width="24" Height="14" NoPrefix="yes" Text="{\GrabUI_Font_Badge}(i)" ToolTip="Only needed if you plan to modify or compile GRAB from source; running pre-built GRAB apps does not require Go." />
-        <Control Id="GoDesc" Type="Text" X="34" Y="169" Width="316" Height="24" Transparent="yes" NoPrefix="yes" Text="{\GrabUI_Font_Muted}Only needed if you plan to modify or compile GRAB from source; running pre-built GRAB apps does not require Go." />
+        <Control Id="GoBadge" Type="Text" X="416" Y="164" Width="24" Height="14" NoPrefix="yes" Text="{\GrabUI_Font_Badge}(i)" ToolTip="Only needed if you plan to modify or compile GRAB from source; running pre-built GRAB apps does not require Go." />
+        <Control Id="GoDesc" Type="Text" X="34" Y="182" Width="406" Height="24" NoPrefix="yes" Text="{\GrabUI_Font_Muted}Only needed if you plan to modify or compile GRAB from source; running pre-built GRAB apps does not require Go." />
 
-        <Control Id="ToolsNote" Type="Text" X="20" Y="204" Width="330" Height="22" Transparent="yes" NoPrefix="yes" Text="{\GrabUI_Font_Muted}Checked tools will be installed via winget after GRAB setup finishes." />
+        <Control Id="ToolsNote" Type="Text" X="20" Y="254" Width="420" Height="22" NoPrefix="yes" Text="{\GrabUI_Font_Muted}Checked tools will be installed via winget after GRAB setup finishes." />
 
-        <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="&amp;Back">
+        <Control Id="Back" Type="PushButton" X="270" Y="303" Width="56" Height="17" Text="&amp;Back">
           <Publish Event="NewDialog" Value="GrabInstallDirDlg" />
         </Control>
-        <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="&amp;Next">
-          <Publish Event="NewDialog" Value="VerifyReadyDlg" />
+        <Control Id="Next" Type="PushButton" X="326" Y="303" Width="56" Height="17" Default="yes" Text="&amp;Next">
+          <Publish Event="NewDialog" Value="GrabVerifyReadyDlg" />
         </Control>
-        <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="Cancel">
+        <Control Id="Cancel" Type="PushButton" X="394" Y="303" Width="56" Height="17" Cancel="yes" Text="Cancel">
+          <Publish Event="SpawnDialog" Value="CancelDlg" />
+        </Control>
+      </Dialog>
+
+      <!-- Verify Ready Dialog (460x330) -->
+      <Dialog Id="GrabVerifyReadyDlg" Width="460" Height="330" Title="GRAB 1.1.0 Setup" TrackDiskSpace="yes">
+        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="460" Height="44" TabSkip="no" Text="WixUI_Bmp_Banner" />
+        <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="460" Height="0" />
+        <Control Id="BottomLine" Type="Line" X="0" Y="294" Width="460" Height="0" />
+        <Control Id="Title" Type="Text" X="15" Y="6" Width="360" Height="15" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}Ready to install GRAB 1.1.0" />
+        <Control Id="Description" Type="Text" X="25" Y="23" Width="360" Height="15" Transparent="yes" NoPrefix="yes" Text="Click Install to begin the installation." />
+        <Control Id="BodyText" Type="Text" X="20" Y="64" Width="420" Height="40" NoPrefix="yes" Text="Click Install to begin the installation. Click Back to review or change any of your installation settings. Click Cancel to exit the wizard." />
+        <Control Id="Back" Type="PushButton" X="270" Y="303" Width="56" Height="17" Text="&amp;Back">
+          <Publish Event="NewDialog" Value="GrabToolsDlg" Order="1" Condition="NOT Installed" />
+          <Publish Event="NewDialog" Value="MaintenanceTypeDlg" Order="2" Condition="Installed AND NOT PATCH" />
+        </Control>
+        <Control Id="Install" Type="PushButton" X="326" Y="303" Width="56" Height="17" Default="yes" ElevationShield="yes" Text="&amp;Install">
+          <Publish Event="EndDialog" Value="Return" />
+        </Control>
+        <Control Id="Cancel" Type="PushButton" X="394" Y="303" Width="56" Height="17" Cancel="yes" Text="Cancel">
+          <Publish Event="SpawnDialog" Value="CancelDlg" />
+        </Control>
+      </Dialog>
+
+      <!-- Progress Dialog (460x330) -->
+      <Dialog Id="GrabProgressDlg" Width="460" Height="330" Title="GRAB 1.1.0 Setup" Modeless="yes">
+        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="460" Height="44" TabSkip="no" Text="WixUI_Bmp_Banner" />
+        <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="460" Height="0" />
+        <Control Id="BottomLine" Type="Line" X="0" Y="294" Width="460" Height="0" />
+        <Control Id="Title" Type="Text" X="15" Y="6" Width="360" Height="15" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}Installing GRAB 1.1.0" />
+        <Control Id="Description" Type="Text" X="25" Y="23" Width="360" Height="15" Transparent="yes" NoPrefix="yes" Text="Please wait while the Setup Wizard installs GRAB 1.1.0." />
+        <Control Id="StatusLabel" Type="Text" X="20" Y="100" Width="420" Height="16" NoPrefix="yes" Text="Status:">
+          <Subscribe Event="ActionText" Attribute="Text" />
+        </Control>
+        <Control Id="ProgressBar" Type="ProgressBar" X="20" Y="120" Width="420" Height="14" ProgressBlocks="yes" Text="Progress done">
+          <Subscribe Event="SetProgress" Attribute="Progress" />
+        </Control>
+        <Control Id="Back" Type="PushButton" X="270" Y="303" Width="56" Height="17" Disabled="yes" Text="&amp;Back" />
+        <Control Id="Next" Type="PushButton" X="326" Y="303" Width="56" Height="17" Disabled="yes" Text="&amp;Next" />
+        <Control Id="Cancel" Type="PushButton" X="394" Y="303" Width="56" Height="17" Cancel="yes" Text="Cancel">
           <Publish Event="SpawnDialog" Value="CancelDlg" />
         </Control>
       </Dialog>
 
       <!-- Screen 5a: Native Completion Dialog -->
-      <Dialog Id="GrabExitDialog" Width="370" Height="270" Title="GRAB 1.1.0 Setup">
-        <Control Id="Bitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="234" TabSkip="no" Text="WixUI_Bmp_Dialog" />
-        <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
-        <Control Id="Title" Type="Text" X="135" Y="20" Width="220" Height="40" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Bigger}Completed the GRAB 1.1.0 Setup Wizard" />
-        <Control Id="Description" Type="Text" X="135" Y="74" Width="220" Height="60" Transparent="yes" NoPrefix="yes" Text="Click the Finish button to exit the Setup Wizard." />
-        <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Disabled="yes" Text="&amp;Back" />
-        <Control Id="Finish" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Cancel="yes" Text="&amp;Finish">
+      <Dialog Id="GrabExitDialog" Width="460" Height="330" Title="GRAB 1.1.0 Setup">
+        <Control Id="Bitmap" Type="Bitmap" X="0" Y="0" Width="165" Height="294" TabSkip="no" Text="WixUI_Bmp_Dialog" />
+        <Control Id="BottomLine" Type="Line" X="0" Y="294" Width="460" Height="0" />
+        <Control Id="Title" Type="Text" X="182" Y="24" Width="258" Height="40" NoPrefix="yes" Text="{\WixUI_Font_Bigger}Completed the GRAB 1.1.0 Setup Wizard" />
+        <Control Id="Description" Type="Text" X="182" Y="80" Width="258" Height="60" NoPrefix="yes" Text="Click the Finish button to exit the Setup Wizard." />
+        <Control Id="Back" Type="PushButton" X="270" Y="303" Width="56" Height="17" Disabled="yes" Text="&amp;Back" />
+        <Control Id="Finish" Type="PushButton" X="326" Y="303" Width="56" Height="17" Default="yes" Cancel="yes" Text="&amp;Finish">
           <Publish Event="DoAction" Value="LaunchSelectedTools" Order="1" Condition="INSTALL_DOCKER = &quot;1&quot; OR INSTALL_GIT = &quot;1&quot; OR INSTALL_GO = &quot;1&quot;" />
           <Publish Event="EndDialog" Value="Return" Order="2" />
         </Control>
-        <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Disabled="yes" Text="Cancel" />
+        <Control Id="Cancel" Type="PushButton" X="394" Y="303" Width="56" Height="17" Disabled="yes" Text="Cancel" />
       </Dialog>
 
       <!-- Screen 5b: Native Windows Installer Interruption Dialog -->
-      <Dialog Id="GrabUserExit" Width="370" Height="270" Title="GRAB 1.1.0 Setup">
-        <Control Id="Bitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="234" TabSkip="no" Text="WixUI_Bmp_Dialog" />
-        <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
-        <Control Id="Title" Type="Text" X="135" Y="20" Width="220" Height="40" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Bigger}GRAB Setup Wizard was interrupted" />
-        <Control Id="Description" Type="Text" X="135" Y="74" Width="220" Height="60" Transparent="yes" NoPrefix="yes" Text="GRAB Setup Wizard was interrupted — Your system has not been modified. No GRAB files or folders were installed." />
-        <Control Id="FinishNote" Type="Text" X="135" Y="140" Width="220" Height="30" Transparent="yes" NoPrefix="yes" Text="Click Finish to exit the Setup Wizard." />
-        <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Disabled="yes" Text="&amp;Back" />
-        <Control Id="Finish" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Cancel="yes" Text="&amp;Finish">
+      <Dialog Id="GrabUserExit" Width="460" Height="330" Title="GRAB 1.1.0 Setup">
+        <Control Id="Bitmap" Type="Bitmap" X="0" Y="0" Width="165" Height="294" TabSkip="no" Text="WixUI_Bmp_Dialog" />
+        <Control Id="BottomLine" Type="Line" X="0" Y="294" Width="460" Height="0" />
+        <Control Id="Title" Type="Text" X="182" Y="24" Width="258" Height="40" NoPrefix="yes" Text="{\WixUI_Font_Bigger}GRAB Setup Wizard was interrupted" />
+        <Control Id="Description" Type="Text" X="182" Y="80" Width="258" Height="60" NoPrefix="yes" Text="GRAB Setup Wizard was interrupted — Your system has not been modified. No GRAB files or folders were installed." />
+        <Control Id="FinishNote" Type="Text" X="182" Y="146" Width="258" Height="30" NoPrefix="yes" Text="Click Finish to exit the Setup Wizard." />
+        <Control Id="Back" Type="PushButton" X="270" Y="303" Width="56" Height="17" Disabled="yes" Text="&amp;Back" />
+        <Control Id="Finish" Type="PushButton" X="326" Y="303" Width="56" Height="17" Default="yes" Cancel="yes" Text="&amp;Finish">
           <Publish Event="EndDialog" Value="Exit" />
         </Control>
-        <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Disabled="yes" Text="Cancel" />
+        <Control Id="Cancel" Type="PushButton" X="394" Y="303" Width="56" Height="17" Disabled="yes" Text="Cancel" />
       </Dialog>
 
       <!-- Wire standard WixUI navigation to our 5-screen flow -->
-      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="GrabToolsDlg" Order="1" Condition="NOT Installed" />
-      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg" Order="2" Condition="Installed AND NOT PATCH" />
       <Publish Dialog="MaintenanceWelcomeDlg" Control="Next" Event="NewDialog" Value="MaintenanceTypeDlg" />
-      <Publish Dialog="MaintenanceTypeDlg" Control="RepairButton" Event="NewDialog" Value="VerifyReadyDlg" />
-      <Publish Dialog="MaintenanceTypeDlg" Control="RemoveButton" Event="NewDialog" Value="VerifyReadyDlg" />
+      <Publish Dialog="MaintenanceTypeDlg" Control="RepairButton" Event="NewDialog" Value="GrabVerifyReadyDlg" />
+      <Publish Dialog="MaintenanceTypeDlg" Control="RemoveButton" Event="NewDialog" Value="GrabVerifyReadyDlg" />
       <Publish Dialog="MaintenanceTypeDlg" Control="Back" Event="NewDialog" Value="MaintenanceWelcomeDlg" />
 
       <InstallUISequence>
-        <Show Dialog="GrabWelcomeDlg" Before="ProgressDlg" Condition="NOT Installed" />
+        <Show Dialog="GrabPrepareDlg" Before="AppSearch" />
+        <Show Dialog="GrabWelcomeDlg" Before="GrabProgressDlg" Condition="NOT Installed" />
+        <Show Dialog="GrabProgressDlg" Before="ExecuteAction" />
         <Show Dialog="GrabExitDialog" OnExit="success" />
         <Show Dialog="GrabUserExit" OnExit="cancel" />
       </InstallUISequence>
