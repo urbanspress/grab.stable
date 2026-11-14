@@ -562,16 +562,12 @@ func TestVersion_CLI(t *testing.T) {
 		BuildDate = origBuildDate
 	})
 
-	osName := runtime.GOOS
-	if len(osName) > 0 {
-		osName = strings.ToUpper(osName[:1]) + osName[1:]
-	}
-	goVer := strings.TrimPrefix(runtime.Version(), "go")
 	expected := func(v, bd string) string {
 		return fmt.Sprintf(
-			"GRAB %s (built: %s) (%s %s go%s)\n"+
+			"GRAB %s (built: %s) (%s)\n"+
+				"Copyright (c) Miles Development Experts LLC\n"+
 				"Built by Miles Development Experts LLC\n",
-			v, bd, osName, runtime.GOARCH, goVer,
+			v, bd, runtime.Version(),
 		)
 	}
 
