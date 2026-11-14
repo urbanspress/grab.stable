@@ -308,7 +308,7 @@ UI strategy and server/browser security boundary are approved (`ADR-014`, `ADR-0
 **Dedicated Multi-Repository Architecture & Build Order:** To keep the core GRAB programming language and Grisp application server repository (`grab.in.the.making` / `grab.stable`) decoupled, lightweight, and clean, each downstream ecosystem layer lives in its own dedicated GitHub repository:
 - **Step 1 — `grex-js v1.0.0`:** **Complete** ([`urbanspress/grex-js`](https://github.com/urbanspress/grex-js)) — Native reactive UI runtime, 20-element zero-wrapper-div catalog, tokens, and preview bridge.
 - **Step 2 — `grablab-cms v1.0.0`:** **Complete** ([`urbanspress/grablab-cms`](https://github.com/urbanspress/grablab-cms)) — Flagship Savvy CMS built on a **Zero-Plugin Core + Exclusive Active Theme Architecture**.
-- **Step 3 — `grex-builder`:** **Active** ([`urbanspress/grex-builder`](https://github.com/urbanspress/grex-builder)) — Installable `mode: "visual"` GrabLab Theme & Visual Design Studio (`GREX-BUILDER-SPEC-001.md` drafted for approval); disables any prior theme and takes full exclusive template control when activated inside GrabLab.
+- **Step 3 — Grex Theme Builder:** **Active** ([`urbanspress/grex-builder`](https://github.com/urbanspress/grex-builder)) — Installable `mode: "visual"` GrabLab Theme & Visual Design Studio (`GREX-BUILDER-SPEC-001.md` drafted for approval); disables any prior theme and takes full exclusive template control when activated inside GrabLab.
 - **Step 4 — `groxy-ai`:** **Planned** ([`urbanspress/groxy-ai`](https://github.com/urbanspress/groxy-ai)) — Autonomous design & CMS agent tooling.
 - **Step 5 — `gashboard` + `grabtaculous`:** **Planned** ([`urbanspress/gashboard`](https://github.com/urbanspress/gashboard)) — Desktop VPS control panel and 1-click app marketplace (includes 1-click install of GrabLab + Grex Visual Theme).
 
@@ -324,8 +324,8 @@ Each downstream ecosystem repository requires separate owner approval before imp
   dynamic WordPress-style pretty permalinks (`/:slug`, custom permalink patterns, and automatic 301 redirect history),
   content types, custom fields, pages/posts, media management, roles/permissions,
   native hooks/filters, query loops, and exclusive active theme ownership (coded `.grab`/`.grab.html` themes or the Grex Visual Theme).
-- **Grex & Grex JS (Responsive-First Visual Page Builder & Reactive UI Engine — Step 1 Complete, Step 3 Active in `urbanspress/grex-builder`):**
-  A visual page builder (**Grex**, `grex-builder`) powered by its completed reactive frontend engine
+- **Grex Theme Builder & Grex JS (Responsive-First Visual Page Builder & Reactive UI Engine — Step 1 Complete, Step 3 Active in `urbanspress/grex-builder`):**
+  A visual page and theme builder (**Grex Theme Builder**) powered by its completed reactive frontend engine
   (**Grex JS v1.0.0**, `grex-js`), installing as a first-class **Visual Theme** inside GrabLab (disabling any prior theme and taking 100% exclusive template rendering control when activated) and outperforming Bricks, Elementor, and Divi with clean semantic markup and zero wrapper-div bloat:
   1. **Native Responsive-First Element Library:** Clean, semantic drag-and-drop
      elements (Layout Containers/Grid/Flex, Typography, Media, Buttons, Forms,
