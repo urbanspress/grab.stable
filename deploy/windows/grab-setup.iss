@@ -43,7 +43,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Messages]
 WelcomeLabel1=Welcome to the GRAB {#AppVersion} Setup Wizard
-WelcomeLabel2=This will install GRAB {#AppVersion} on your computer.%n%nIt is recommended that you close all other applications before continuing.%n%nClick Next to continue, or Cancel to exit Setup.
+WelcomeLabel2=The Setup Wizard will install GRAB v1.1 on your computer. Click Next to continue or Cancel to exit the Setup Wizard.
 WizardLicense=End-User License Agreement
 LicenseLabel=Please read the following License Agreement carefully.
 LicenseLabel3=Please read the following License Agreement. You must accept the terms of this agreement before continuing with the installation.
@@ -51,8 +51,8 @@ LicenseAccepted=I &accept the terms in the License Agreement
 LicenseNotAccepted=I &do not accept the terms in the License Agreement
 WizardSelectDir=Destination Folder
 SelectDirDesc=Where should GRAB be installed?
-SelectDirLabel3=Setup will install GRAB into the following folder.
-SelectDirBrowseLabel=To continue, click Next. If you would like to select a different folder, click Browse.
+SelectDirLabel3=Install GRAB to:
+SelectDirBrowseLabel=
 WizardReady=Ready to Install GRAB
 ReadyLabel1=Setup is now ready to begin installing GRAB {#AppVersion} on your computer.
 ReadyLabel2a=Click Install to begin the installation, or click Back if you want to review or change any settings.
@@ -71,6 +71,11 @@ const
 
 var
   Interrupted: Boolean;
+  LicenseAcceptCheck: TNewCheckBox;
+  ToolsPage: TWizardPage;
+  DockerCheck: TNewCheckBox;
+  GitCheck: TNewCheckBox;
+  GoCheck: TNewCheckBox;
 
 function SendMessageW(hWnd: HWND; Msg: UINT; wParam: LongInt; lParam: LongInt): LongInt;
   external 'SendMessageW@user32.dll stdcall';
@@ -78,6 +83,94 @@ function SendMessageW(hWnd: HWND; Msg: UINT; wParam: LongInt; lParam: LongInt): 
 function NormalizeDir(const S: string): string;
 begin
   Result := RemoveBackslashUnlessRoot(Trim(S));
+end;
+
+function IsDockerInstalled(): Boolean;
+begin
+  Result :=
+    FileExists(ExpandConstant('{commonpf}\Docker\Docker\Docker Desktop.exe')) or
+    FileExists(ExpandConstant('{commonpf32}\Docker\Docker\Docker Desktop.exe')) or
+    (FileSearch('docker.exe', GetEnv('PATH')) <> '') or
+    RegKeyExists(HKEY_LOCAL_MACHINE, 'SOFTWARE\Docker Inc.\Docker\1.0') or
+    RegKeyExists(HKEY_LOCAL_MACHINE, 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Docker Desktop');
+end;
+
+function IsGitInstalled(): Boolean;
+begin
+  Result :=
+    FileExists(ExpandConstant('{commonpf}\Git\cmd\git.exe')) or
+    FileExists(ExpandConstant('{commonpf32}\Git\cmd\git.exe')) or
+    (FileSearch('git.exe', GetEnv('PATH')) <> '') or
+    RegKeyExists(HKEY_LOCAL_MACHINE, 'SOFTWARE\GitForWindows') or
+    RegKeyExists(HKEY_CURRENT_USER, 'SOFTWARE\GitForWindows');
+end;
+
+function IsGoInstalled(): Boolean;
+begin
+  Result :=
+    FileExists(ExpandConstant('{commonpf}\Go\bin\go.exe')) or
+    FileExists('C:\Go\bin\go.exe') or
+    (FileSearch('go.exe', GetEnv('PATH')) <> '') or
+    RegKeyExists(HKEY_LOCAL_MACHINE, 'SOFTWARE\GoProgrammingLanguage');
+end;
+
+procedure LicenseAcceptCheckClick(Sender: TObject);
+begin
+  if LicenseAcceptCheck.Checked then
+  begin
+    WizardForm.LicenseAcceptedRadio.Checked := True;
+    WizardForm.NextButton.Enabled := True;
+  end
+  else
+  begin
+    WizardForm.LicenseNotAcceptedRadio.Checked := True;
+    WizardForm.NextButton.Enabled := False;
+  end;
+end;
+
+function CreateToolRow(const ParentPage: TWizardPage; const TopPos: Integer;
+  const BaseLabel, TooltipText: string; const AlreadyInstalled: Boolean): TNewCheckBox;
+var
+  CheckBox: TNewCheckBox;
+  InfoBadge: TLabel;
+begin
+  CheckBox := TNewCheckBox.Create(ParentPage);
+  CheckBox.Parent := ParentPage.Surface;
+  CheckBox.Left := 0;
+  CheckBox.Top := TopPos;
+  CheckBox.Width := ParentPage.SurfaceWidth - ScaleX(38);
+  CheckBox.Height := ScaleY(22);
+  CheckBox.Checked := False;
+  if AlreadyInstalled then
+  begin
+    CheckBox.Caption := BaseLabel + ' (Already installed)';
+    CheckBox.Enabled := False;
+  end
+  else
+  begin
+    CheckBox.Caption := BaseLabel;
+    CheckBox.Enabled := True;
+  end;
+
+  InfoBadge := TLabel.Create(ParentPage);
+  InfoBadge.Parent := ParentPage.Surface;
+  InfoBadge.AutoSize := False;
+  InfoBadge.Left := ParentPage.SurfaceWidth - ScaleX(28);
+  InfoBadge.Top := TopPos + ScaleY(2);
+  InfoBadge.Width := ScaleX(24);
+  InfoBadge.Height := ScaleY(18);
+  InfoBadge.Caption := '(i)';
+  InfoBadge.Alignment := taCenter;
+  InfoBadge.Transparent := False;
+  InfoBadge.Color := $00D47800;
+  InfoBadge.Font.Color := clWhite;
+  InfoBadge.Font.Style := [fsBold];
+  InfoBadge.Font.Size := 8;
+  InfoBadge.ShowHint := True;
+  InfoBadge.Hint := TooltipText;
+  InfoBadge.Cursor := crHand;
+
+  Result := CheckBox;
 end;
 
 procedure AddDirToSystemPath(const DirToAdd: string);
@@ -156,19 +249,113 @@ begin
 end;
 
 procedure InitializeWizard();
+var
+  HintLabel: TNewStaticText;
 begin
   Interrupted := False;
+  WizardForm.ShowHint := True;
+
+  // Screen 2: Replace two radio buttons with a single acceptance checkbox
+  WizardForm.LicenseAcceptedRadio.Visible := False;
+  WizardForm.LicenseNotAcceptedRadio.Visible := False;
+  WizardForm.LicenseMemo.Height :=
+    WizardForm.LicenseNotAcceptedRadio.Top - WizardForm.LicenseMemo.Top - ScaleY(8);
+
+  LicenseAcceptCheck := TNewCheckBox.Create(WizardForm.LicensePage);
+  LicenseAcceptCheck.Parent := WizardForm.LicensePage;
+  LicenseAcceptCheck.Left := WizardForm.LicenseMemo.Left;
+  LicenseAcceptCheck.Top := WizardForm.LicenseMemo.Top + WizardForm.LicenseMemo.Height + ScaleY(12);
+  LicenseAcceptCheck.Width := WizardForm.LicenseMemo.Width;
+  LicenseAcceptCheck.Height := ScaleY(22);
+  LicenseAcceptCheck.Caption := 'I accept the terms in the License Agreement';
+  LicenseAcceptCheck.Checked := False;
+  LicenseAcceptCheck.OnClick := @LicenseAcceptCheckClick;
+
+  // Screen 3: Hide yellow folder icon and place clean "Install GRAB to:" label above path box
+  WizardForm.SelectDirBitmapImage.Visible := False;
+  WizardForm.SelectDirBrowseLabel.Visible := False;
+  WizardForm.SelectDirLabel.Left := WizardForm.DirEdit.Left;
+  WizardForm.SelectDirLabel.Width :=
+    WizardForm.DirEdit.Width + WizardForm.DirBrowseButton.Width + ScaleX(8);
+  WizardForm.SelectDirLabel.Top := WizardForm.DirEdit.Top - ScaleY(22);
+  WizardForm.SelectDirLabel.Caption := 'Install GRAB to:';
+
+  // Screen 4: Tools for GRAB Ecosystem
+  ToolsPage := CreateCustomPage(
+    wpSelectDir,
+    'Tools for GRAB Ecosystem',
+    'Select any optional companion tools you would like to install. Already-installed tools are detected automatically.'
+  );
+
+  DockerCheck := CreateToolRow(
+    ToolsPage,
+    ScaleY(12),
+    'Docker Desktop',
+    'Runs hardened, read-only Grisp production containers and local Redis, PostgreSQL, or MariaDB databases for GRAB apps.',
+    IsDockerInstalled()
+  );
+
+  GitCheck := CreateToolRow(
+    ToolsPage,
+    ScaleY(50),
+    'Git for Windows',
+    'Clones GRAB starter templates, tracks app version history, and powers grabman ecosystem updates.',
+    IsGitInstalled()
+  );
+
+  GoCheck := CreateToolRow(
+    ToolsPage,
+    ScaleY(88),
+    'Go Toolchain (Optional — For Source Contributors)',
+    'Only needed if you plan to modify or compile GRAB from source; running pre-built GRAB apps does not require Go.',
+    IsGoInstalled()
+  );
+
+  HintLabel := TNewStaticText.Create(ToolsPage);
+  HintLabel.Parent := ToolsPage.Surface;
+  HintLabel.Left := 0;
+  HintLabel.Top := ScaleY(134);
+  HintLabel.Width := ToolsPage.SurfaceWidth;
+  HintLabel.WordWrap := True;
+  HintLabel.Caption := 'Hover over any (i) badge for details. Checked tools will be installed via winget after GRAB setup finishes.';
+end;
+
+procedure CurPageChanged(CurPageID: Integer);
+begin
+  if CurPageID = wpLicense then
+  begin
+    WizardForm.NextButton.Enabled := LicenseAcceptCheck.Checked;
+  end;
+
+  if CurPageID = wpReady then
+    SendMessageW(WizardForm.NextButton.Handle, BCM_SETSHIELD, 0, 1)
+  else
+    SendMessageW(WizardForm.NextButton.Handle, BCM_SETSHIELD, 0, 0);
 end;
 
 function UpdateReadyMemo(Space, NewLine, MemoUserInfoInfo, MemoDirInfo, MemoTypeInfo,
   MemoComponentsInfo, MemoGroupInfo, MemoTasksInfo: string): string;
+var
+  ToolsSummary: string;
 begin
   Result := '';
   if MemoDirInfo <> '' then
     Result := Result + MemoDirInfo + NewLine + NewLine;
+
   Result := Result + 'System integration:' + NewLine +
     Space + 'Add GRAB to the system PATH' + NewLine +
     Space + 'Register GRAB {#AppVersion} in Windows Installed Apps';
+
+  ToolsSummary := '';
+  if DockerCheck.Enabled and DockerCheck.Checked then
+    ToolsSummary := ToolsSummary + NewLine + Space + 'Install Docker Desktop (via winget)';
+  if GitCheck.Enabled and GitCheck.Checked then
+    ToolsSummary := ToolsSummary + NewLine + Space + 'Install Git for Windows (via winget)';
+  if GoCheck.Enabled and GoCheck.Checked then
+    ToolsSummary := ToolsSummary + NewLine + Space + 'Install Go Toolchain (via winget)';
+
+  if ToolsSummary <> '' then
+    Result := Result + NewLine + NewLine + 'Optional GRAB Ecosystem tools:' + ToolsSummary;
 end;
 
 function NextButtonClick(CurPageID: Integer): Boolean;
@@ -216,10 +403,39 @@ begin
   WizardForm.ActiveControl := WizardForm.NextButton;
 end;
 
+procedure RunSelectedToolInstalls();
+var
+  Cmd: string;
+  ResultCode: Integer;
+begin
+  Cmd := '';
+  if DockerCheck.Enabled and DockerCheck.Checked then
+    Cmd := Cmd + 'Write-Host ''Installing Docker Desktop...''; winget install -e --id Docker.DockerDesktop --accept-source-agreements --accept-package-agreements; ';
+  if GitCheck.Enabled and GitCheck.Checked then
+    Cmd := Cmd + 'Write-Host ''Installing Git for Windows...''; winget install -e --id Git.Git --accept-source-agreements --accept-package-agreements; ';
+  if GoCheck.Enabled and GoCheck.Checked then
+    Cmd := Cmd + 'Write-Host ''Installing Go Toolchain...''; winget install -e --id GoLang.Go --accept-source-agreements --accept-package-agreements; ';
+
+  if Cmd <> '' then
+  begin
+    Exec(
+      'powershell.exe',
+      '-NoProfile -ExecutionPolicy Bypass -Command "' + Cmd + 'Write-Host ''''; Read-Host ''Optional tool setup finished. Press Enter to close''"',
+      '',
+      SW_SHOWNORMAL,
+      ewWaitUntilTerminated,
+      ResultCode
+    );
+  end;
+end;
+
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssPostInstall then
+  begin
     AddDirToSystemPath(ExpandConstant('{app}'));
+    RunSelectedToolInstalls();
+  end;
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
