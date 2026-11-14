@@ -32,7 +32,7 @@ Read this checklist **before** editing any Go package in GRAB. These invariants 
 
 ## 5. Two-Repository Workflow & Release Protection
 - **Strict `stable` Protection:** All AI agents and models MUST push work-in-progress commits, drafts, and partial milestone checkpoints ONLY to `origin` (`urbanspress/grab.in.the.making`). Pushing to `stable` (`urbanspress/grab.stable`) is strictly forbidden unless the milestone is 100% `Complete` in `docs/ROADMAP.md`, `go build ./...` and `go test -count=1 ./...` pass 100%, and `HANDOFF.md` records no pending milestone tasks.
-- **Synchronized Releases:** Whenever a completed milestone is promoted to `stable`, the agent must push `main` and annotated version tags to both `origin` and `stable`, and create the matching GitHub Release on both repositories (`gh release create <tag> --repo urbanspress/grab.in.the.making` and `gh release create <tag> --repo urbanspress/grab.stable`).
+- **Synchronized Releases:** Whenever a completed milestone is promoted to `stable`, the agent must push `main` and annotated version tags to both `origin` and `stable`, create the matching GitHub Release on both repositories (`gh release create <tag> --repo urbanspress/grab.in.the.making` and `gh release create <tag> --repo urbanspress/grab.stable`), run `scripts/build-release.ps1 -Version <X.Y.Z>`, and attach `GRAB-Setup-<X.Y.Z>.exe`, `grab-windows-amd64.exe`, `grab-linux-amd64`, `SHA256SUMS.txt`, and `GRAB-v<X.Y.Z>-Guide.pdf` to both `origin` and `stable` GitHub Releases.
 
 ---
 
