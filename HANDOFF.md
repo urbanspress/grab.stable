@@ -62,8 +62,7 @@
 - **Verification:** Final `go test ./...` and `go build ./...` both exited 0; all package and conformance tests passed. `go test ./internal/server -run '^$' -bench . -benchmem -benchtime=100ms` also passed. The checked-in example is validated, canonically formatted, and exercised by HTTP tests.
 - **Environment notes:** Sandbox policy blocks ordinary loopback client TCP connections; authorized real-service tests run with network access. HTTP-wire conformance also uses the existing `net.Pipe` transport. Race tests run inside Linux Docker because the Windows host has no C compiler. Benchmark timings are machine-specific, not a capacity guarantee.
 - **Worktree:** GRAB 0.8 Parts 1, 2, and 3 are complete, verified with 100% passing tests, and checkpointed to `origin/main`. Disposable MariaDB/PostgreSQL services predated this work; only the Part 3 Redis fixture was created here.
-- **Next Pending Task (Google Antigravity):**
-  1. GRAB `v1.1.0` additive release promotion complete: `v1.1.0` tagged and synchronized across `origin` (`urbanspress/grab.progress`) and `stable` (`urbanspress/grab.stable`), with PDF walkthrough guide and cross-platform binaries attached.
-  2. Integrate `use crypto`, `use env` (`--allow-env`), and `grab serve --allow-scripts` into downstream **GrabLab CMS v0.3.0** (`urbanspress/grablab-cms`).
-  3. Proceed with downstream ecosystem milestones (**Grex Visual Theme**, **Groxy AI**, **Gashboard** + **Grabtaculous**) per `docs/ROADMAP.md`.
-- **Recommended Antigravity model for next step:** **Gemini 4 Argon (Medium)** or **Gemini 3.8 Flash (High)** for post-1.0 planning and roadmap exploration.
+- **Next Pending Task (OpenAI Codex / Google Antigravity):**
+  1. All 6 core ecosystem layers (`GRAB v1.1.0`, `grex-js v1.0.0`, `grablab-cms v1.0.1`, `grex-builder v1.0.0`, `groxy-ai v1.0.0`, Step 5 `grabman`/`grabtaculous`/`gashboard v1.0.0`, and Step 6 `groxy-desk v1.0.0`) are `100%` Complete and frozen at `v1.0.0+`.
+  2. Proceed with **Post-1.0 Feature Unlocks (`Groxy AI v1.1.0–v1.7.0`, `GrabLab CMS v1.2.0–v1.4.0`, `Grex Theme Builder v1.1.0–v1.2.0`)** per `docs/ROADMAP.md` and `C:\Development\CODEX-HANDOFF.md`.
+- **Recommended Antigravity model for next step:** **Google Hydrogen (Medium)** (or **OpenAI Codex** via `C:\Development\CODEX-HANDOFF.md`) for drafting Post-1.0 Feature Unlock specifications.
