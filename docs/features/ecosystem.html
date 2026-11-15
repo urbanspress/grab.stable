@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GRAB Ecosystem Showcase — Grisp, GrabLab, Grex, Groxy AI &amp; Gashboard</title>
+<title>GRAB Ecosystem Showcase — Grisp, GrabLab, Grex, Groxy AI, Gashboard &amp; Groxy Desk</title>
 <style>
   :root {
     --page-bg: #f8fafc;
@@ -425,8 +425,9 @@
         Built on the deterministic GRAB language and hardened server engine, the GRAB Ecosystem unites
         <strong>Grisp</strong> (our snappy multi-worker server), <strong>GrabLab</strong> (our savvy CMS),
         <strong>Grex &amp; Grex JS</strong> (visual page builder and reactive UI runtime),
-        <strong>Groxy AI</strong> (local MCP design and CMS agent), and
-        <strong>Gashboard + Grabtaculous</strong> (our discreet desktop VPS manager and 1-click app marketplace).
+        <strong>Groxy AI</strong> (local MCP design and CMS agent),
+        <strong>Gashboard + Grabtaculous</strong> (our discreet desktop VPS manager and 1-click app marketplace), and
+        <strong>Groxy Desk</strong> (our native Windows WebView2 vibe-coding IDE, local Grisp server manager, and SSH studio).
       </p>
       <p>
         Roadmap details live in <a href="../ROADMAP.md">docs/ROADMAP.md</a> and hosting rules live in
@@ -455,6 +456,12 @@
               <div class="flow-step">1-Click Marketplace</div>
               <div class="flow-title">Grabtaculous</div>
               <p class="flow-desc">Built into Gashboard to deploy GrabLab + Grex and popular companion self-hosted apps (analytics, automation, object storage, webmail) in seconds.</p>
+            </div>
+            <div class="flow-arrow" aria-hidden="true">+</div>
+            <div class="flow-node desktop">
+              <div class="flow-step">Local Vibe-Coding IDE</div>
+              <div class="flow-title">Groxy Desk</div>
+              <p class="flow-desc">Lightweight WebView2 + Grex JS desktop studio with split-pane code/canvas/AI editing, local Grisp site routing, Ollama/MCP runtime, and SSH DB tunnels.</p>
             </div>
           </div>
         </div>
@@ -606,6 +613,29 @@
         </div>
       </article>
 
+      <!-- Groxy Desk -->
+      <article class="product-card" id="groxy-desk">
+        <div class="card-top">
+          <span class="product-tag">Desktop Vibe-Coding IDE · Step 6</span>
+          <span class="badge badge-slate">Planned Ecosystem (Post-1.0)</span>
+        </div>
+        <h3>Groxy Desk — Native Windows IDE, Local Grisp Manager &amp; SSH Studio</h3>
+        <p class="product-lead">
+          A lightweight native Windows <strong>WebView2 + Grex JS v1.0.0</strong> desktop studio (~15&ndash;25 MB RAM, zero Electron/Chromium bloat) uniting split-pane vibe-coding, local Nginx-style <strong>Grisp</strong> (<code>grab.exe</code>) site management, built-in <strong>Groxy AI</strong> + <code>grab mcp</code>, and SSH database tunneling in one branded <code>.exe</code> installer.
+        </p>
+        <ul class="cap-list">
+          <li><strong>Split-Pane Vibe-Coding Shell:</strong> Mirrors Google Antigravity's workflow with a Code Editor, Live Split-Screen <strong>Grex Theme Builder</strong> Canvas, and <strong>Groxy AI</strong> Agent Sidebar.</li>
+          <li><strong>Local Grisp (<code>grab.exe</code>) Server Manager:</strong> 1-click local site creation, start/stop/reload controls, port/local-SSL routing, and isolated SQLite/PostgreSQL/MariaDB environments for local <strong>GrabLab CMS</strong> + <strong>Grex Theme Builder</strong> sites.</li>
+          <li><strong>Built-In Groxy AI &amp; <code>grab mcp</code> Runtime:</strong> Connects directly to local <strong>Ollama</strong> models (zero API fees) or user-configured API keys, powered by <code>GRAB-DESIGN-SYSTEM.md</code>, <code>SITE-CONTEXT.md</code>, the 22-rule SEO/A11y/DOM auditor, 8 Design Style Packs, and <strong>&#128640; &ldquo;Let Groxy Boost This&rdquo;</strong>.</li>
+          <li><strong>SSH Tunneling &amp; Deploy Bridge:</strong> Local <code>127.0.0.1</code> SSH tunnels to remote PostgreSQL/MariaDB databases, <code>Site DNA</code> snapshot sync, and 1-click deployment via <code>grabman.lock</code> to <strong>Gashboard + Grabtaculous</strong>.</li>
+        </ul>
+        <div class="role-list">
+          <div class="role-box"><strong>For Non-Coders / Owners:</strong> Build and preview local GrabLab + Grex sites with zero terminal setup, let Groxy AI boost pages locally, and deploy in one click.</div>
+          <div class="role-box"><strong>For Designers:</strong> Edit visually side-by-side with live Grex Theme Builder rendering, 8 Design Style Packs, and instant local SSL preview URLs.</div>
+          <div class="role-box"><strong>For Developers:</strong> Full <code>grab mcp</code> + <code>Site DNA</code> workflow, isolated local DBs, and secure <code>127.0.0.1</code> SSH tunnels to remote production/staging databases without Electron overhead.</div>
+        </div>
+      </article>
+
     </section>
 
     <!-- Boundaries -->
@@ -617,6 +647,7 @@
         <li><strong>Step 3 — Grex Theme Builder:</strong> <strong>Active</strong> in <code>urbanspress/grex-builder.progress</code> / <code>urbanspress/grex-builder.stable</code> (Installable <code>mode: "visual"</code> GrabLab Theme &amp; Studio; disables prior theme and takes exclusive template control when activated).</li>
         <li><strong>Step 4 — <code>groxy-ai</code>:</strong> <strong>Planned (Not Yet Approved for Implementation)</strong> in <code>urbanspress/groxy-ai.progress</code> / <code>urbanspress/groxy-ai.stable</code> — Autonomous design, SEO intelligence (Semrush/Ahrefs/Google Search Central playbook + deterministic DOM/content auditing), and <code>grab mcp</code> CMS/Builder agent.</li>
         <li><strong>Step 5 — <code>gashboard</code> + <code>grabtaculous</code>:</strong> <strong>Planned (Not Yet Approved for Implementation)</strong>; includes 1-click install of GrabLab + Grex Visual Theme.</li>
+        <li><strong>Step 6 — <code>groxy-desk</code> (Groxy Desk):</strong> <strong>Planned (Not Yet Approved for Implementation)</strong> in <code>urbanspress/groxy-desk.progress</code> / <code>urbanspress/groxy-desk.stable</code> — Native Windows WebView2 + <code>Grex JS v1.0.0</code> desktop vibe-coding IDE, local Grisp (<code>grab.exe</code>) server manager, built-in <code>Groxy AI</code> + <code>grab mcp</code> runtime (Ollama/API keys, 22-rule auditor, 8 Design Style Packs, <code>SITE-CONTEXT.md</code>), and SSH database tunneling / <code>Gashboard + Grabtaculous + grabman</code> bridge.</li>
         <li><strong>Core GRAB <code>v1.0.1</code>:</strong> Language, compiler/VM, and Grisp server are complete and live in <code>urbanspress/grab.progress</code> / <code>urbanspress/grab.stable</code>.</li>
       </ul>
     </section>

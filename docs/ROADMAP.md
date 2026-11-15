@@ -311,6 +311,7 @@ UI strategy and server/browser security boundary are approved (`ADR-014`, `ADR-0
 - **Step 3 — `grex-builder v1.0.0` (Grex Theme Builder):** **Complete** ([`urbanspress/grex-builder.progress`](https://github.com/urbanspress/grex-builder.progress) / [`urbanspress/grex-builder.stable`](https://github.com/urbanspress/grex-builder.stable)) — Installable `mode: "visual"` GrabLab theme & visual design studio (`GREX-BUILDER-SPEC-100.md` approved & frozen); disables any prior theme and takes full exclusive template control when activated inside GrabLab.
 - **Step 4 — `groxy-ai`:** **Next Active Milestone** (`urbanspress/groxy-ai.progress` / `urbanspress/groxy-ai.stable`) — Autonomous design, SEO intelligence & CMS agent tooling combining a curated **SEO Knowledge & Reasoning Playbook** (Semrush, Ahrefs, and Google Search Central best practices) with deterministic on-page DOM/content auditing and `grab mcp` CMS/Builder tools.
 - **Step 5 — `gashboard` + `grabtaculous`:** **Planned** (`urbanspress/gashboard.progress` / `urbanspress/gashboard.stable`) — Desktop VPS control panel and 1-click app marketplace (includes 1-click install of GrabLab + Grex Visual Theme).
+- **Step 6 — `groxy-desk` (Groxy Desk):** **Planned** ([`urbanspress/groxy-desk.progress`](https://github.com/urbanspress/groxy-desk.progress) / [`urbanspress/groxy-desk.stable`](https://github.com/urbanspress/groxy-desk.stable)) — Native Windows WebView2 + `Grex JS v1.0.0` desktop vibe-coding IDE, local Grisp (`grab.exe`) server manager, built-in `Groxy AI` + `grab mcp` runtime, and SSH database tunneling / `Gashboard + Grabtaculous + grabman` bridge.
 
 Each downstream ecosystem repository requires separate owner approval before implementation:
 
@@ -361,3 +362,19 @@ Each downstream ecosystem repository requires separate owner approval before imp
     templates to deploy **GrabLab + Grex** alongside popular self-hosted
     companion apps (such as analytics, automation, object storage, and webmail)
     in seconds.
+- **Groxy Desk (Native Windows Desktop Vibe-Coding IDE, Local Grisp Server Manager & SSH Studio — Step 6 Planned in `urbanspress/groxy-desk.progress` / `urbanspress/groxy-desk.stable`):**
+  - **Native Windows WebView2 + `Grex JS v1.0.0` Desktop Shell:** Lightweight
+    desktop application (~15–25 MB RAM, zero Electron/Chromium bloat) mirroring
+    Google Antigravity's split-pane vibe-coding workflow (`Code Editor + Live Split-Screen Grex Theme Builder Canvas + Groxy AI Agent Sidebar`).
+  - **Local Nginx-Style Grisp (`grab.exe`) Server Manager:** 1-click local
+    site creation, start/stop/reload controls, port/local-SSL routing, and
+    isolated SQLite/PostgreSQL/MariaDB environments for local **GrabLab CMS** +
+    **Grex Theme Builder** sites.
+  - **Built-In `Groxy AI` Autonomous Agent & `grab mcp` Runtime:** Connects
+    directly to local **Ollama** models (zero API fees) or user-configured API
+    keys, powered by `GRAB-DESIGN-SYSTEM.md`, `SITE-CONTEXT.md`, the 22-rule
+    SEO/A11y/DOM auditor, 8 Design Style Packs, and **🚀 "Let Groxy Boost This"**.
+  - **SSH Database Tunneling & `Gashboard + Grabtaculous + grabman` Bridge:**
+    Local `127.0.0.1` SSH tunnels to remote PostgreSQL/MariaDB databases,
+    `Site DNA` snapshot sync, and 1-click deployment via `grabman.lock`,
+    packaged into a branded Windows `.exe` installer.
