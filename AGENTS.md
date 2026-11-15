@@ -37,6 +37,31 @@ programming language and application platform.
 - **Release Tag Chronology Rule:** Always create and push annotated release tags strictly in ascending chronological order and never re-tag an older release after newer tags exist (so GitHub's Releases sidebar always stays in exact descending version order).
 - **Release Assets & Plain-English Guides:** Every release promotion MUST run `scripts/build-release.ps1 -Version <X.Y.Z>` (which cleanly rebuilds `dist/`, verifies `cmd/grab/resource_windows.syso`, compiles `grab-windows-amd64.exe` and `grab-linux-amd64` with `CGO_ENABLED=0` and UTC `MMM DD YYYY HH:MM:SS` `BuildDate` ldflags, compiles a single flicker-free Inno Setup Windows installer `GRAB-Setup-<X.Y.Z>.exe` from `deploy/windows/grab-setup.iss` via `iscc` — Inno Setup `.exe` only, never `.msi` — and generates `SHA256SUMS.txt`), generate the plain-English e-commerce walkthrough PDF (`docs/releases/pdf/GRAB-v<X.Y.Z>-Guide.pdf` via `docs/releases/generate_release_guides.py`), and attach `GRAB-Setup-<X.Y.Z>.exe`, `grab-windows-amd64.exe`, `grab-linux-amd64`, `SHA256SUMS.txt`, and `GRAB-v<X.Y.Z>-Guide.pdf` to the **Assets** section of both repositories' GitHub Releases (`gh release upload --clobber --repo urbanspress/grab.progress` and `gh release upload --clobber --repo urbanspress/grab.stable`).
 
+### SemVer (MAJOR.MINOR.PATCH) & Release Compatibility Matrix Standard
+1. **Strict `MAJOR.MINOR.PATCH` Semantic Versioning (`ADR-027c`):**
+   - **`1.0.x` (`PATCH`):** Strictly for non-breaking bug fixes, security hardening, documentation polish, and cross-layer audit patches (`100%` drop-in compatible).
+   - **`1.x.0` (`MINOR`):** For backwards-compatible new features, additive standard library/runtime capabilities, or new MCP/CMS/Builder endpoints.
+   - **`2.0.0` (`MAJOR`):** Reserved for breaking architectural or contract changes—**never used without explicit project-owner approval (`ADR-027c`)**.
+2. **Mandatory Release Compatibility Badge & Matrix Block:**
+   - Every GitHub Release (`v1.0.1`, `v1.1.0`, etc.) across both `.progress` and `.stable` repositories MUST display at the top of its release notes:
+     1. A **Release Type & Affected Layers** summary callout (`PATCH (v1.0.x)` vs. `MINOR (v1.x.0)`, which layer(s) changed, and whether any neighboring layer requires an upgrade).
+     2. An **Ecosystem Compatibility Matrix** Markdown table covering all five layers:
+
+````markdown
+### Release Type & Affected Layers
+- **Release Version & SemVer Tier:** `v<X.Y.Z>` (`PATCH 1.0.x — Non-Breaking Bug/Security/Audit Patch` | `MINOR 1.x.0 — Backwards-Compatible Feature Release`)
+- **Affected Layer(s):** `<Layer Name>` (`urbanspress/<repo>`)
+- **Neighboring Layer Upgrade Required?** `No — 100% drop-in compatible` (or explicit version requirement if `Yes`)
+
+| Ecosystem Layer | Repository | Required Version Range | Touched in This Release? | Neighbor Upgrade Required? |
+|---|---|---|---|---|
+| **Core Language, Bytecode VM & Grisp Server** | `urbanspress/grab` | `>= v1.1.0 (< v2.0.0)` | `Yes` / `No` | `No` |
+| **Reactive Frontend Runtime & 20-Element Library** | `urbanspress/grex-js` | `>= v1.0.0 (< v2.0.0)` | `Yes` / `No` | `No` |
+| **Flagship Zero-Plugin CMS** | `urbanspress/grablab-cms` | `>= v1.0.1 (< v2.0.0)` | `Yes` / `No` | `No` |
+| **Exclusive `mode: "visual"` Theme & Studio** | `urbanspress/grex-builder` | `>= v1.0.0 (< v2.0.0)` | `Yes` / `No` | `No` |
+| **Autonomous Design, Content & SEO Agent** | `urbanspress/groxy-ai` | `>= v0.1.0` | `Yes` / `No` | `No` |
+````
+
 ## Tandem Handoff Protocol
 - **Google Antigravity -> Codex:** If Google Antigravity fails to fix a bug or pass `go test ./...` after 2 attempts, or encounters complex spec/architecture work, it must stop editing and revert only the specific files it edited during that failed attempt. If any pre-existing uncommitted work would be affected, it must stop and ask the project owner for approval before reverting. It must log what it tried in `HANDOFF.md` and say: "Ready to hand off to Codex. Type `use-codex` to continue."
 - **Codex -> Google Antigravity:** Whenever Codex finishes an architectural task or core test suite, it must update `AGENTS.md`, write the next routine follow-up task into `HANDOFF.md`, and say: "Core task complete—ready to hand off to Google Antigravity. Type `use-antigravity` to continue."
@@ -91,7 +116,7 @@ and `ADR-025a`–`ADR-025h`.
 **GRAB 1.0 — Stable, production-ready platform & native MCP server (`grab mcp`)** is complete, verified, and released as `v1.0.0` (`go build ./...`, Windows `go test -count=1 ./...` across all 19 testable packages, Linux `go1.26.11` full `go test -race -mod=readonly -count=1 ./...`, `govulncheck v1.9.0 ./...` clean on both `go1.26.11` and `go1.27.4`, `go mod verify`, static `linux/amd64` build, `--read-only` container `server.asset` verification, and the 30-minute 1/2/4-worker sustained fault/load gate in `docs/SCALE-TESTING.md` 100% passing) under **Google Antigravity** (`specifications/GRAB-PLATFORM-SPEC-100.md`, `ADR-027a`–`ADR-027d`, `docs/features/grab_10_features.html`).
 **Current Owner:** Google Antigravity.
 
-Post-1.0 ecosystem tracks live in dedicated downstream repositories: **Step 1 (`grex-js v1.0.0`)** is complete in `urbanspress/grex-js`; **Step 2 (`grablab-cms v1.0.0`)** is complete in `urbanspress/grablab-cms` (Zero-Plugin Core + Exclusive Active Theme architecture); **Step 3 (`grex-builder v1.0.0` — Grex Theme Builder)** is complete in `urbanspress/grex-builder` (exclusive `mode: "visual"` GrabLab theme & visual design studio; `GREX-BUILDER-SPEC-100.md` approved & frozen); **Step 4 (`groxy-ai` — Autonomous Design & SEO Agent)** is the **Next Active Milestone** (`urbanspress/groxy-ai`, awaiting spec drafting/approval); and **Step 5 (`gashboard` + `grabtaculous`)** remains `Planned (Not Yet Approved for Implementation)`. Core GRAB (`v1.1.0`) remains focused exclusively on the language, compiler/VM, and Grisp server (`specifications/GRAB-PLATFORM-SPEC-110.md`, `ADR-028a`–`ADR-028c`, `docs/features/grab_11_features.html`).
+Post-1.0 ecosystem tracks live in dedicated downstream repositories: **Step 1 (`grex-js v1.0.0`)** is complete in `urbanspress/grex-js`; **Step 2 (`grablab-cms v1.0.1`)** is complete in `urbanspress/grablab-cms` (Zero-Plugin Core + Exclusive Active Theme architecture); **Step 3 (`grex-builder v1.0.0` — Grex Theme Builder)** is complete in `urbanspress/grex-builder` (exclusive `mode: "visual"` GrabLab theme & visual design studio; `GREX-BUILDER-SPEC-100.md` approved & frozen); **Step 4 (`groxy-ai` — Autonomous Design & SEO Agent)** is the **Next Active Milestone** (`urbanspress/groxy-ai.progress` / `urbanspress/groxy-ai.stable`, awaiting spec approval in `specifications/GROXY-AI-SPEC-001.md`); and **Step 5 (`gashboard` + `grabtaculous`)** remains `Planned (Not Yet Approved for Implementation)`. Core GRAB (`v1.1.0`) remains focused exclusively on the language, compiler/VM, and Grisp server (`specifications/GRAB-PLATFORM-SPEC-110.md`, `ADR-028a`–`ADR-028c`, `docs/features/grab_11_features.html`).
 
 ## Live GRAB 0.1 Status & Repository Map
 
