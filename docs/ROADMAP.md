@@ -312,7 +312,27 @@ UI strategy and server/browser security boundary are approved (`ADR-014`, `ADR-0
 - **Step 4 — `groxy-ai v1.0.0` (Groxy AI):** **Complete** ([`urbanspress/groxy-ai.progress`](https://github.com/urbanspress/groxy-ai.progress) / [`urbanspress/groxy-ai.stable`](https://github.com/urbanspress/groxy-ai.stable)) — Autonomous design, SEO intelligence & CMS agent tooling combining a curated 22-rule **SEO Knowledge & Reasoning Playbook**, deterministic 4-pillar auditing, 🚀 `"Let Groxy Boost This"` diffs, `GRAB-DESIGN-SYSTEM.md`-aware visual generation, site-wide linking/JSON-LD/alt enrichment, Nightly Watch + Site DNA export, and hardened `--read-only` container packaging.
 - **Step 5 — `gashboard v1.0.0` + `grabtaculous v1.0.0` + `grabman v1.0.0`:** **Complete** ([`urbanspress/gashboard.progress`](https://github.com/urbanspress/gashboard.progress) / [`urbanspress/gashboard.stable`](https://github.com/urbanspress/gashboard.stable), [`urbanspress/grabtaculous.progress`](https://github.com/urbanspress/grabtaculous.progress) / [`urbanspress/grabtaculous.stable`](https://github.com/urbanspress/grabtaculous.stable), [`urbanspress/grabman.progress`](https://github.com/urbanspress/grabman.progress) / [`urbanspress/grabman.stable`](https://github.com/urbanspress/grabman.stable)) — Desktop VPS control panel, Visual DB Manager, Namecheap DNS + Auto-HTTPS Wizard, 1-click app marketplace (includes 1-click install of GrabLab + Grex Visual Theme + Groxy AI), and `Site DNA` / `grabman.lock` orchestration.
 - **Step 6 — `groxy-desk v1.0.0` (Groxy Desk):** **Complete** ([`urbanspress/groxy-desk.progress`](https://github.com/urbanspress/groxy-desk.progress) / [`urbanspress/groxy-desk.stable`](https://github.com/urbanspress/groxy-desk.stable)) — Native Windows WebView2 + `Grex JS v1.0.0` desktop vibe-coding IDE, local Grisp (`grab.exe`) server manager, built-in `Groxy AI` + `grab mcp` runtime, SSH database tunneling / `Gashboard + Grabtaculous + grabman` bridge, 1-Click Local Author Mode, and branded Inno Setup `.exe` installer (`Groxy-Desk-Setup-1.0.0.exe`; `GROXY-DESK-SPEC-100.md` approved & frozen). **All 6 Core Ecosystem Layers (`GRAB v1.1.0`, `grex-js v1.0.0`, `grablab-cms v1.0.1`, `grex-builder v1.0.0`, `groxy-ai v1.0.0`, Step 5 `grabman`/`grabtaculous`/`gashboard v1.0.0`, and Step 6 `groxy-desk v1.0.0`) are now 100% Complete at `v1.0.0+`!**
-- **Post-1.0 Feature Unlocks (`Groxy AI v1.1.0–v1.7.0`, `GrabLab CMS v1.2.0–v1.4.0`, `Grex Theme Builder v1.1.0–v1.2.0`):** **Next Active Roadmap** — Backwards-compatible `MINOR` (`1.x.0`) feature expansions across the frozen `v1.0.0+` ecosystem baselines (starting with `Groxy AI v1.1.0–v1.7.0`, `GrabLab CMS v1.2.0–v1.4.0` including `v1.4.0` `mode: "author"`, and `Grex Theme Builder v1.1.0–v1.2.0`).
+- **Post-1.0 Feature Unlocks (`Groxy AI v1.1.0–v1.8.0`, `GrabLab CMS v1.2.0–v1.4.0`, `Grex Theme Builder v1.1.0–v1.2.0`, `Groxy Desk v1.1.0`, `Grabtaculous v1.1.0`):** **Next Active Roadmap** — Backwards-compatible `MINOR` (`1.x.0`) feature expansions across the frozen `v1.0.0+` ecosystem baselines:
+  - **Groxy AI (`v1.1.0–v1.8.0`):**
+    - **`v1.1.0` — Screenshot-to-Grex Visual Replica (`POST /api/groxy/vision-clone`):** **Approved target; specification in review** (`specifications/GROXY-AI-SPEC-110.md`).
+    - **`v1.2.0` — 1-Time Brand DNA & Voice Setup Wizard (`BRAND-DNA.md`) & Batch Content/Product Campaign Engine (`POST /api/groxy/batch-create`):** Planned.
+    - **`v1.3.0` — Autonomous Post-Purchase Email Flow Designer & Copywriter:** Planned.
+    - **`v1.4.0` — 5 Autonomous Storefront & Commerce AI Engines:** Planned.
+    - **`v1.5.0` — Bespoke Store Schema Quiz & Opt-In "Talk to Groxy" Database & Store Consultant:** Planned.
+    - **`v1.6.0` — Lovable/Base44-Style Iterative Section Co-Pilot & Golden-Ratio Design-Craft Engine:** Planned.
+    - **`v1.7.0` — Multi-Genre Storytelling Brain, Hemingway Readability Auditor & `schema.org/Book` JSON-LD Engine:** Planned.
+    - **`v1.8.0` — Baked-In Offline Knowledge Vault, Allowlisted Real-Time Web Research & Browser Co-Pilot (`POST /api/groxy/research/search`):** Planned.
+  - **GrabLab CMS (`v1.2.0–v1.4.0`):**
+    - **`v1.2.0` — Universal Commerce Webhooks (Stripe, PayPal, LemonSqueezy, Paddle) & Event-Triggered Email Queue (`email_outbox`):** Planned.
+    - **`v1.3.0` — Opt-In "Talk to Groxy" Database & Store Consultant Tab (`groxy_db_consultant_enabled`):** Planned.
+    - **`v1.4.0` — Dedicated "Author Mode" Publishing Module (`mode: "author"`, EPUB 3 / PDF / Zero-`<div>` Grex Reader):** Planned.
+  - **Grex Theme Builder (`v1.1.0–v1.2.0`):**
+    - **`v1.1.0` — Visual Custom Email Template Mode (`mode: "email"`) & Bulletproof Inline-CSS Email Compiler:** Planned.
+    - **`v1.2.0` — Rich Semantic Section Templates (`divCount === 0`) & CSS-Only Motion Presets:** Planned.
+  - **Groxy Desk (`v1.1.0`):**
+    - **`v1.1.0` — Interactive WebView2 Research & Account-Registration Co-Pilot:** Planned.
+  - **Grabtaculous (`v1.1.0`):**
+    - **`v1.1.0` — Curated 1-Click SearXNG Private Metasearch Blueprint (`catalog/`):** Planned.
 
 Each downstream ecosystem repository requires separate owner approval before implementation:
 
