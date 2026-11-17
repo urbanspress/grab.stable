@@ -76,13 +76,14 @@ programming language and application platform.
 - **Automatic Pickup:** Whenever either agent starts via `use-antigravity` or `use-codex`, it must immediately read `AGENTS.md` and `HANDOFF.md`, run `go test ./...` to confirm a clean baseline, and begin the next pending task without asking unnecessary setup questions.
 - **Owner Update:** Whenever handing off work, the outgoing agent must explicitly update the `Current Owner` line in `HANDOFF.md` to the incoming agent (`Google Antigravity` or `OpenAI Codex`) before ending its turn.
 
-### Internal Antigravity Model Guidance
-- Before ending a turn or starting a new phase, always advise the project owner which Antigravity model and effort level to select for the next step so AI Pro quota is used efficiently:
-  - **`Google Hydrogen (Medium)`:** Pre-implementation specifications (`*-SPEC-*.md`), documentation, governance updates, and single-module edits.
-  - **`Google Hydrogen (High)`:** Standard feature milestone implementations (`v0.4.0`, `v1.0.0` build & release).
-  - **`Orchestrator (Argon)`:** Second-opinion pre-`v1.0.0` security/DOM/contract audits, multi-repo cross-layer integrations, and complex refactors where Argon-level planning + automated delegation saves tokens.
-  - **`Google Hydrogen (Extra)`:** Reserved for autonomous AI engines (`Groxy AI`), multi-server orchestration (`Gashboard + Grabtaculous + grabman`), and stubborn cross-layer bugs.
-- **Mandatory Pause & Swap Prompt Rule:** Every active AI agent MUST pause at milestone boundaries or before high-risk cross-layer/pre-`v1.0.0` audits and explicitly tell the user when to switch to `Orchestrator (Argon)`, including a clear 1-sentence reason why `Orchestrator (Argon)` is recommended next.
+### Internal Antigravity & Codex Model + Effort Routing (4-Pool Quota-Aware Matrix)
+Route every phase to the exact **Model + Effort Tier** below so no single weekly quota pool depletes. Every Antigravity and Codex agent MUST follow this matrix and recommend the next tier at the end of every checkpoint:
+- **Stage 1 - Pre-Implementation Specs & Roadmaps (`*-SPEC-*.md`):** **Claude Sonnet (Medium)** or **Hydrogen (Medium)** (backup: **GPT-OSS 120B (Medium)**).
+- **Stage 2 - Pre-Implementation Cross-Layer Security & Contract Audits:** Alternate between **Claude Opus (High)** and **Orchestrator (Argon)** (reserved strictly for cross-layer boundaries, concurrency, and security audits).
+- **Stage 3 - Core Multi-File Feature Implementation & Unit/DOM Tests:** Alternate across releases between **Claude Sonnet (High)**, **GPT-OSS 120B (High)**, and **Hydrogen (High)** so no single weekly quota pool depletes.
+- **Stage 4 - Final Gate 3B E2E Closure, Walkthrough PDF & Dual-Remote Packaging:** **Gemini 3.8 Flash (`Single Package` mode)** or **Hydrogen (High)** (escalate to **Hydrogen (Extra)** or **Claude Opus (High)** only if a stubborn cross-layer bug requires deep root-cause debugging).
+- **Mandatory Closing Handoff Rule:** Every agent response MUST end with a clear **"Recommended Next Model & Effort Tier"** recommendation naming both the exact model and effort level (e.g., `Switch to Claude Opus (High) for the cross-layer audit` or `Switch to Claude Sonnet (High) for the v1.6.0 implementation`) and why.
+- **Mandatory Pause & Swap Prompt Rule:** Every active AI agent MUST pause at milestone boundaries or before high-risk cross-layer/pre-`v1.0.0` audits and explicitly tell the user which Model + Effort Tier to switch to next (per the matrix above), including a clear 1-sentence reason.
 - If an issue remains unresolved after 2 attempts on `Google Hydrogen (Extra)` or `Orchestrator (Argon)`, trigger the **Tandem Handoff Protocol** and hand off to **OpenAI Codex**.
 
 ## Tiered Model Routing
