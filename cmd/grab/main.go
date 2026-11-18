@@ -36,6 +36,7 @@ const usageText = "usage: grab run [--engine auto|ast|vm] [--db-config <manifest
 	"       worker flags for serve: --workers <1..32> --worker-base-port <port> (consecutive loopback ports; external balancer required)\n" +
 	"       grab check [--diagnostics beginner|developer|production] <file.grab> [template.grab.html]\n" +
 	"       grab format [--write] <file.grab>\n" +
+	"       grab init [--dir <path>] [--profile app|cms-stack|ai-stack] [--name <name>] [--interactive|--non-interactive] [--json]\n" +
 	"       grab mcp [--workspace <dir>] [--allow-write] [--db-config <manifest.json>] [--platform-config <grab.platform.json>] [--api-contract <grab.api.json>]\n" +
 	"       grab version | -v | --version"
 
@@ -63,6 +64,8 @@ func runContext(ctx context.Context, arguments []string, stdout, stderr io.Write
 		}
 		printVersion(stdout)
 		return 0
+	case "init":
+		return runInit(ctx, arguments[1:], os.Stdin, stdout, stderr)
 	case "mcp":
 		return runMCP(ctx, arguments[1:], os.Stdin, stdout, stderr)
 	case "events":

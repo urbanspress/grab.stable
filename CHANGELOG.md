@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Preserves `Content-Security-Policy: default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'none'; object-src 'none'` by default.
   - Passing `--allow-scripts` to `grab serve` emits `script-src 'self'` (keeping `object-src 'none'` and forbidding `unsafe-eval`/`unsafe-inline` scripts) so local **Grex JS v1.0.0** bundles run natively under strict CSP.
 - **Verification & Tooling:**
+  - Added `grab init` CLI subcommand (`cmd/grab/init.go`, `cmd/grab/init_test.go`) delegating via structured `exec.CommandContext` argv to `grabman init` with forwarded arguments and a plain-English install hint when `grabman` is absent from `PATH`.
   - Added unit, capability denial, AST/VM/Auto differential parity, live HTTP CSP, CLI flag, and MCP validation tests (`internal/interpreter/crypto_env_test.go`, `internal/parser/cache_test.go`, `internal/server/scripts_env_test.go`, `cmd/grab/v11_cli_test.go`, `tests/grab11_conformance_test.go`).
   - Added `specifications/GRAB-PLATFORM-SPEC-110.md`, `docs/features/grab_11_features.html`, `docs/releases/pdf/GRAB-v1.1.0-Guide.pdf`, and `golang.org/x/crypto` BSD-3-Clause notice in `docs/licenses/`.
 
